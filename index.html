@@ -1,6 +1,10 @@
 <!DOCTYPE html>
+
+
+
 <html lang="es">
 <head>
+  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
@@ -1030,6 +1034,10 @@
 
   <!-- Script -->
   <script>
+
+  
+const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
+    
     const app = {
       state: {
         currentUser: null,
@@ -1280,29 +1288,62 @@
         document.getElementById('vehicles-list').innerHTML = html || '<p style="color: var(--text-muted); text-align: center;">No hay vehículos registrados</p>';
       },
 
-      // ===== COMBUSTIBLE =====
+    // ===== COMBUSTIBLE (Versión Final con IA) =====
       async handleFileCapture(e) {
         const file = e.target.files[0];
         if (!file) return;
 
+        this.showAlert('🧠 Gemini analizando ticket...', 'info');
         const base64 = await this.fileToBase64(file);
+        
+        // Mostrar preview de inmediato
         const previewContainer = document.getElementById('preview-container');
-        
         previewContainer.innerHTML = `<img src="${base64}" style="width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">`;
-        
         document.getElementById('capture-form').style.display = 'block';
-        
-        // Pre-fill date/time
-        const now = new Date();
-        document.getElementById('fuel-date').value = now.toISOString().split('T')[0];
-        document.getElementById('fuel-time').value = now.toTimeString().slice(0, 5);
+
+        try {
+          // Llamada a tu Worker en Cloudflare
+          const response = await fetch(`${API_URL}/api/process-ticket`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              image: base64,
+              apiKey: localStorage.getItem('apiKey') // La clave que guardas en la PWA
+            })
+          });
+
+          const data = await response.json();
+          
+          if (data.ticket) {
+            const t = data.ticket;
+            // Rellenar automáticamente los campos extraídos por Gemini
+            document.getElementById('fuel-date').value = t.fecha || new Date().toISOString().split('T')[0];
+            document.getElementById('fuel-time').value = t.hora || new Date().toTimeString().slice(0, 5);
+            document.getElementById('fuel-liters').value = t.combustible?.liters || t.combustible?.litros || '';
+            document.getElementById('fuel-amount').value = t.monto?.total || '';
+            document.getElementById('fuel-cuit').value = t.surtidor?.cuit || '';
+            document.getElementById('fuel-location').value = t.surtidor?.localidad || '';
+            document.getElementById('fuel-address').value = t.surtidor?.direccion || '';
+            
+            this.showAlert('✅ Datos extraídos por IA', 'success');
+          }
+        } catch (err) {
+          console.error(err);
+          this.showAlert('❌ Error de conexión con IA', 'error');
+          // Si falla la IA, dejamos los valores por defecto para carga manual
+          const now = new Date();
+          document.getElementById('fuel-date').value = now.toISOString().split('T')[0];
+          document.getElementById('fuel-time').value = now.toTimeString().slice(0, 5);
+        }
       },
 
-      saveFuelRecord() {
+      async saveFuelRecord() {
         if (!this.state.currentVehicle) {
           alert('Selecciona un vehículo');
           return;
         }
+
+        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
 
         const record = {
           id: Date.now(),
@@ -1317,24 +1358,44 @@
         };
 
         if (!record.date || !record.liters || !record.amount) {
-          alert('Completa campos requeridos');
+          alert('Completa campos requeridos (Litros y Monto)');
           return;
         }
 
         this.initializeVehiclesIfNeeded();
-        if (!this.state.currentUser.vehicles[this.state.currentVehicle].fuelRecords) {
-          this.state.currentUser.vehicles[this.state.currentVehicle].fuelRecords = [];
-        }
-
-        this.state.currentUser.vehicles[this.state.currentVehicle].fuelRecords.push(record);
+        if (!vehicle.fuelRecords) vehicle.fuelRecords = [];
+        
+        vehicle.fuelRecords.push(record);
         this.saveLocalData();
 
-        // Enviar email de confirmación
+        // LLAMADA AL WORKER PARA EMAIL DE CONFIRMACIÓN
         this.sendConfirmationEmail(record);
 
-        this.showAlert('✅ Carga registrada', 'success');
+        this.showAlert('✅ Carga registrada y guardada', 'success');
         this.cancelCapture();
         this.renderDashboard();
+      },
+
+      async sendConfirmationEmail(record) {
+        if (!this.state.currentUser.email) return;
+
+        try {
+          await fetch(`${API_URL}/api/send-confirmation`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: this.state.currentUser.email,
+              userName: this.state.currentUser.name,
+              vehicleName: this.state.currentVehicle,
+              vehicleIcon: this.state.currentUser.vehicles[this.state.currentVehicle].icon,
+              fuelRecord: record,
+              location: record.location,
+              address: record.address
+            })
+          });
+        } catch (err) {
+          console.error("Error al enviar email:", err);
+        }
       },
 
       cancelCapture() {
