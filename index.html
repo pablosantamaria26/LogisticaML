@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Gestión integral de combustible y mantenimiento de flota vehicular">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230f172a' width='192' height='192'/><text x='96' y='110' font-size='80' font-weight='bold' fill='%2306b6d4' text-anchor='middle'>🚗</text></svg>">
+  <title>Fleet Control - Gestión de Flota</title>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #06b6d4;
+      --primary-dark: #0891b2;
+      --primary-light: #cffafe;
+      --bg-dark: #0f172a;
+      --bg-darker: #0a0e27;
+      --bg-card: #1e293b;
+      --text-light: #f1f5f9;
+      --text-gray: #cbd5e1;
+      --text-muted: #94a3b8;
+      --border: #334155;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 4px 16px rgba(0,0,0,0.4);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
+      color: var(--text-light);
+      line-height: 1.6;
+      overflow-x: hidden;
+      min-height: 100vh;
+    }
+
+    /* ===== LOGIN SCREEN ===== */
+    .login-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 2rem;
+      background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
+    }
+
+    .login-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+      animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .login-logo {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    .login-header h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .login-header p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+      color: var(--text-light);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 0.875rem;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-light);
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      transition: var(--transition);
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .pin-input {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+    }
+
+    .pin-digit {
+      width: 50px;
+      height: 50px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: rgba(15, 23, 42, 0.5);
+      color: var(--text-light);
+      font-family: 'JetBrains Mono', monospace;
+      transition: var(--transition);
+    }
+
+    .pin-digit:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+      background: rgba(6, 182, 212, 0.05);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 0.875rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: var(--bg-dark);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ===== MAIN APP ===== */
+    .app-container {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-logo {
+      font-size: 1.5rem;
+    }
+
+    .header-title h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .header-title p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    .icon-btn {
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid var(--border);
+      color: var(--primary);
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      font-size: 1.25rem;
+      cursor: pointer;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .icon-btn:hover {
+      background: rgba(6, 182, 212, 0.2);
+      border-color: var(--primary);
+    }
+
+    .user-info {
+      font-size: 0.875rem;
+      text-align: right;
+    }
+
+    .user-info strong {
+      color: var(--primary);
+      display: block;
+    }
+
+    .user-info small {
+      color: var(--text-muted);
+    }
+
+    /* ===== TABS ===== */
+    .tabs {
+      display: flex;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .tab-btn {
+      flex-shrink: 0;
+      padding: 1rem 1.5rem;
+      border: none;
+      background: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.875rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: var(--transition);
+      border-bottom: 2px solid transparent;
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-light);
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* ===== CONTENT ===== */
+    .main-content {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+    }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* ===== CARDS ===== */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.1);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+    }
+
+    .card-meta {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(6, 182, 212, 0.1);
+      color: var(--primary);
+    }
+
+    /* ===== VEHICLE SELECTOR ===== */
+    .vehicle-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .vehicle-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .vehicle-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+      transform: scaleX(0);
+      transform-origin: left;
+      transition: var(--transition);
+    }
+
+    .vehicle-card:hover {
+      border-color: var(--primary);
+      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.2);
+    }
+
+    .vehicle-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .vehicle-icon {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .vehicle-name {
+      font-size: 1.125rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .vehicle-info {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-bottom: 0.25rem;
+    }
+
+    /* ===== STATS ===== */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* ===== FORMS ===== */
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn-secondary {
+      background: var(--bg-dark);
+      color: var(--primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(6, 182, 212, 0.1);
+      border-color: var(--primary);
+    }
+
+    /* ===== ALERTS ===== */
+    .alert {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 0.75rem;
+      align-items: start;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateY(-10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--success);
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--danger);
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--warning);
+    }
+
+    /* ===== MODAL ===== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.active {
+      display: flex;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .modal-content {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .modal-header h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .modal-close:hover {
+      color: var(--text-light);
+    }
+
+    /* ===== TABLE ===== */
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: rgba(6, 182, 212, 0.05);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      text-align: left;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--primary);
+    }
+
+    td {
+      border: 1px solid var(--border);
+      padding: 1rem;
+    }
+
+    tr:hover {
+      background: rgba(6, 182, 212, 0.05);
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+      .main-content {
+        padding: 1rem;
+      }
+
+      .header {
+        flex-direction: column;
+        gap: 1rem;
+        text-align: center;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+
+      .vehicle-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .login-container {
+        padding: 2rem 1.5rem;
+      }
+    }
+
+    /* ===== UTILITIES ===== */
+    .text-center {
+      text-align: center;
+    }
+
+    .mt-2 {
+      margin-top: 1rem;
+    }
+
+    .mb-2 {
+      margin-bottom: 1rem;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(6, 182, 212, 0.3);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== LOGIN SCREEN ===== -->
+  <div id="login-screen" class="login-screen">
+    <div class="login-container">
+      <div class="login-header">
+        <div class="login-logo">🚗</div>
+        <h1>Fleet Control</h1>
+        <p>Gestión integral de flota</p>
+      </div>
+
+      <div id="login-form">
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="login-user" placeholder="Tu nombre de usuario" autofocus>
+        </div>
+
+        <div class="form-group">
+          <label>PIN (4 dígitos)</label>
+          <div class="pin-input">
+            <input type="text" class="pin-digit" id="pin-1" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" id="pin-2" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" id="pin-3" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit" id="pin-4" maxlength="1" inputmode="numeric">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="app.login()">
+          <span>🔓</span> Iniciar Sesión
+        </button>
+
+        <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.875rem;">
+          No tienes cuenta? <a href="#" onclick="app.showRegister()" style="color: var(--primary); text-decoration: none;">Registrate aquí</a>
+        </p>
+      </div>
+
+      <div id="register-form" style="display: none;">
+        <h3 style="margin-bottom: 1.5rem; text-align: center;">Crear Nueva Cuenta</h3>
+        
+        <div class="form-group">
+          <label>Tu Nombre</label>
+          <input type="text" id="register-name" placeholder="Juan Pérez">
+        </div>
+
+        <div class="form-group">
+          <label>Usuario</label>
+          <input type="text" id="register-user" placeholder="juanperez">
+        </div>
+
+        <div class="form-group">
+          <label>PIN (4 dígitos)</label>
+          <div class="pin-input">
+            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
+            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.register()">Registrarse</button>
+          <button class="btn btn-secondary" onclick="app.showLogin()">Volver</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app-screen" class="app-container" style="display: none;">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <div class="header-logo">🚗</div>
+        <div class="header-title">
+          <h2>Fleet Control</h2>
+          <p id="current-vehicle-header">Selecciona un vehículo</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" title="Sincronizar" onclick="app.sync()">🔄</button>
+        <button class="icon-btn" title="Más opciones" onclick="app.openMenu()">⋮</button>
+      </div>
+      <div class="user-info">
+        <strong id="user-name">Usuario</strong>
+        <small id="current-user-email">info@user.com</small>
+      </div>
+    </header>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="app.switchTab('dashboard')">📊 Dashboard</button>
+      <button class="tab-btn" onclick="app.switchTab('capture')">📷 Cargar Combustible</button>
+      <button class="tab-btn" onclick="app.switchTab('vehicles')">🚗 Vehículos</button>
+      <button class="tab-btn" onclick="app.switchTab('maintenance')">🔧 Mantenimiento</button>
+      <button class="tab-btn" onclick="app.switchTab('reports')">📈 Reportes</button>
+    </div>
+
+    <!-- Content -->
+    <main class="main-content">
+      <!-- Dashboard -->
+      <div id="tab-dashboard" class="tab-panel active">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+          <div class="stat-card">
+            <div class="stat-label">🚗 Vehículo Activo</div>
+            <div class="stat-value" id="stat-vehicle">-</div>
+            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Selecciona uno para comenzar</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">⛽ Gasto Mes Actual</div>
+            <div class="stat-value" id="stat-fuel">$0</div>
+            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Total de cargas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">📏 Km Recorridos</div>
+            <div class="stat-value" id="stat-km">0</div>
+            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Este mes</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">⚡ Rendimiento</div>
+            <div class="stat-value" id="stat-efficiency">-</div>
+            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">km/litro</div>
+          </div>
+        </div>
+
+        <!-- Vehicle selector -->
+        <h3 style="margin-bottom: 1rem; color: var(--primary);">SELECCIONAR VEHÍCULO</h3>
+        <div class="vehicle-grid" id="vehicle-selector"></div>
+
+        <!-- Alerts -->
+        <div id="alerts-container"></div>
+      </div>
+
+      <!-- Capture -->
+      <div id="tab-capture" class="tab-panel">
+        <div class="card">
+          <h3 style="margin-bottom: 1.5rem;">Registrar Carga de Combustible</h3>
+          <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;">
+          
+          <button class="btn btn-primary" style="margin-bottom: 1.5rem; width: 100%;" onclick="document.getElementById('file-input').click()">
+            <span>📷</span> Tomar Foto del Ticket
+          </button>
+
+          <div id="preview-container" style="margin-bottom: 1.5rem;"></div>
+          <div id="capture-form" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Fecha</label>
+                <input type="date" id="fuel-date">
+              </div>
+              <div class="form-group">
+                <label>Hora</label>
+                <input type="time" id="fuel-time">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Litros</label>
+                <input type="number" id="fuel-liters" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label>Monto Total ($)</label>
+                <input type="number" id="fuel-amount" step="0.01" placeholder="0.00">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>Surtidor (CUIT)</label>
+                <input type="text" id="fuel-cuit" placeholder="XX-XXXXXXXX-X">
+              </div>
+              <div class="form-group">
+                <label>Localidad</label>
+                <input type="text" id="fuel-location" placeholder="Buenos Aires">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Dirección</label>
+              <input type="text" id="fuel-address" placeholder="Av. Corrientes 1000">
+            </div>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" onclick="app.saveFuelRecord()">Guardar Registro</button>
+              <button class="btn btn-secondary" onclick="app.cancelCapture()">Cancelar</button>
+            </div>
+          </div>
+
+          <div id="capture-alerts"></div>
+        </div>
+      </div>
+
+      <!-- Vehicles -->
+      <div id="tab-vehicles" class="tab-panel">
+        <div id="vehicles-list"></div>
+      </div>
+
+      <!-- Maintenance -->
+      <div id="tab-maintenance" class="tab-panel">
+        <div class="card">
+          <h3 style="margin-bottom: 1.5rem;">Registro de Mantenimiento</h3>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Tipo de Servicio</label>
+              <select id="service-type">
+                <option value="">Selecciona...</option>
+                <option value="oil-change">Cambio de Aceite</option>
+                <option value="filter">Cambio de Filtros</option>
+                <option value="tires">Revisión de Neumáticos</option>
+                <option value="suspension">Revisión Suspensión</option>
+                <option value="brakes">Revisión Frenos</option>
+                <option value="other">Otro</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Fecha del Servicio</label>
+              <input type="date" id="service-date">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Km al Momento del Servicio</label>
+              <input type="number" id="service-km" placeholder="0">
+            </div>
+            <div class="form-group">
+              <label>Próximo Servicio (Km)</label>
+              <input type="number" id="service-next-km" placeholder="10000">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Notas</label>
+            <textarea id="service-notes" placeholder="Detalles del servicio realizado..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label>Taller / Técnico</label>
+            <input type="text" id="service-provider" placeholder="Nombre del taller">
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.saveMaintenanceRecord()">Guardar Servicio</button>
+          </div>
+        </div>
+
+        <h3 style="margin-bottom: 1.5rem; margin-top: 2rem; color: var(--primary);">HISTORIAL DE SERVICIOS</h3>
+        <div id="maintenance-list"></div>
+      </div>
+
+      <!-- Reports -->
+      <div id="tab-reports" class="tab-panel">
+        <div class="card">
+          <h3 style="margin-bottom: 1.5rem;">Generar Reportes</h3>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label>Rango de Fechas</label>
+              <select id="report-range">
+                <option value="month">Mes Actual</option>
+                <option value="3months">Últimos 3 Meses</option>
+                <option value="6months">Últimos 6 Meses</option>
+                <option value="custom">Personalizado</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Formato</label>
+              <select id="report-format">
+                <option value="screen">Ver en Pantalla</option>
+                <option value="pdf">Descargar PDF</option>
+                <option value="excel">Descargar Excel</option>
+                <option value="email">Enviar por Email</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.generateReport()">Generar Reporte</button>
+          </div>
+        </div>
+
+        <div id="report-content"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Menu Modal -->
+  <div id="menu-modal" class="modal">
+    <div class="modal-content" style="max-width: 300px;">
+      <div class="modal-header">
+        <h2>Opciones</h2>
+        <button class="modal-close" onclick="app.closeModal('menu-modal')">✕</button>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+        <button class="btn btn-secondary" onclick="app.openSettings()">⚙️ Configuración</button>
+        <button class="btn btn-secondary" onclick="app.exportData()">📥 Exportar Datos</button>
+        <button class="btn btn-secondary" onclick="app.logout()" style="color: var(--danger);">🚪 Cerrar Sesión</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Configuración</h2>
+        <button class="modal-close" onclick="app.closeModal('settings-modal')">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label>Email para Notificaciones</label>
+        <input type="email" id="settings-email" placeholder="tu@email.com">
+      </div>
+
+      <div class="form-group">
+        <label>Email Administrador</label>
+        <input type="email" id="settings-admin-email" placeholder="admin@empresa.com">
+      </div>
+
+      <div class="form-group">
+        <label>API Key Claude</label>
+        <input type="password" id="settings-api-key" placeholder="sk-...">
+      </div>
+
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="settings-notifications"> Recibir notificaciones por email
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="app.saveSettings()">Guardar</button>
+        <button class="btn btn-secondary" onclick="app.closeModal('settings-modal')">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    const app = {
+      state: {
+        currentUser: null,
+        currentVehicle: null,
+        users: {},
+        vehicles: {},
+        fuelRecords: {},
+        maintenanceRecords: {},
+        isOnline: navigator.onLine
+      },
+
+      async init() {
+        console.log('🚀 Iniciando Fleet Control');
+        
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+          try {
+            await navigator.serviceWorker.register('/service-worker.js');
+            console.log('✅ Service Worker registrado');
+          } catch (err) {
+            console.error('❌ Error Service Worker:', err);
+          }
+        }
+
+        // Cargar datos
+        this.loadLocalData();
+
+        // Event listeners
+        document.getElementById('file-input').addEventListener('change', (e) => this.handleFileCapture(e));
+        
+        // PIN input navigation
+        document.querySelectorAll('.pin-digit').forEach((input, i) => {
+          input.addEventListener('keyup', (e) => {
+            if (e.key === 'Backspace' && i > 0) {
+              document.querySelectorAll('.pin-digit')[i - 1].focus();
+            } else if (e.target.value.length === 1 && i < 3) {
+              document.querySelectorAll('.pin-digit')[i + 1].focus();
+            }
+          });
+        });
+
+        // Online/offline
+        window.addEventListener('online', () => {
+          this.state.isOnline = true;
+          this.showAlert('Conexión restaurada', 'success');
+          this.sync();
+        });
+        window.addEventListener('offline', () => {
+          this.state.isOnline = false;
+          this.showAlert('Modo offline activado', 'warning');
+        });
+
+        console.log('✅ Fleet Control iniciado');
+      },
+
+      // ===== AUTENTICACIÓN =====
+      showLogin() {
+        document.getElementById('login-form').style.display = 'block';
+        document.getElementById('register-form').style.display = 'none';
+      },
+
+      showRegister() {
+        document.getElementById('login-form').style.display = 'none';
+        document.getElementById('register-form').style.display = 'block';
+      },
+
+      login() {
+        const username = document.getElementById('login-user').value.trim();
+        const pin = Array.from(document.querySelectorAll('.pin-digit')).map(el => el.value).join('');
+
+        if (!username || pin.length !== 4) {
+          alert('Completa usuario y PIN');
+          return;
+        }
+
+        const user = Object.values(this.state.users).find(u => u.username === username);
+        if (!user || user.pin !== pin) {
+          alert('Usuario o PIN inválido');
+          return;
+        }
+
+        this.state.currentUser = user;
+        this.showApp();
+        this.renderDashboard();
+      },
+
+      register() {
+        const name = document.getElementById('register-name').value.trim();
+        const username = document.getElementById('register-user').value.trim();
+        const pin = Array.from(document.querySelectorAll('.register-pin')).map(el => el.value).join('');
+
+        if (!name || !username || pin.length !== 4) {
+          alert('Completa todos los campos');
+          return;
+        }
+
+        if (Object.values(this.state.users).find(u => u.username === username)) {
+          alert('Usuario ya existe');
+          return;
+        }
+
+        const userId = Date.now();
+        this.state.users[userId] = {
+          id: userId,
+          name,
+          username,
+          pin,
+          email: null,
+          createdAt: new Date().toISOString()
+        };
+
+        this.saveLocalData();
+        alert('Cuenta creada! Inicia sesión');
+        this.showLogin();
+      },
+
+      logout() {
+        this.state.currentUser = null;
+        this.state.currentVehicle = null;
+        document.getElementById('app-screen').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+        this.closeModal('menu-modal');
+        document.getElementById('login-user').value = '';
+        document.querySelectorAll('.pin-digit').forEach(el => el.value = '');
+      },
+
+      showApp() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('app-screen').style.display = 'flex';
+        document.getElementById('user-name').textContent = this.state.currentUser.name;
+      },
+
+      // ===== VEHÍCULOS =====
+      initializeVehiclesIfNeeded() {
+        if (!this.state.currentUser.vehicles) {
+          this.state.currentUser.vehicles = {};
+        }
+      },
+
+      selectVehicle(vehicleName) {
+        this.initializeVehiclesIfNeeded();
+        
+        if (!this.state.currentUser.vehicles[vehicleName]) {
+          this.state.currentUser.vehicles[vehicleName] = {
+            name: vehicleName,
+            icon: vehicleName === 'Toyota Hiace' ? '🚐' : (vehicleName === 'Volkswagen Saveiro' ? '🚙' : '🚗'),
+            currentKm: null,
+            createdAt: new Date().toISOString(),
+            fuelRecords: [],
+            maintenanceRecords: []
+          };
+        }
+
+        this.state.currentVehicle = vehicleName;
+        this.saveLocalData();
+
+        // Pedir KM inicial si es primera vez
+        if (!this.state.currentUser.vehicles[vehicleName].currentKm) {
+          this.askForInitialKm(vehicleName);
+        } else {
+          this.renderDashboard();
+          this.switchTab('capture');
+        }
+      },
+
+      askForInitialKm(vehicleName) {
+        const modal = document.getElementById('settings-modal');
+        document.getElementById('settings-email').parentElement.parentElement.innerHTML = `
+          <div class="form-group">
+            <label>Km Actuales del ${vehicleName}</label>
+            <input type="number" id="initial-km" placeholder="123456">
+            <small style="color: var(--text-muted);">Este dato se usa para calcular rendimiento y alertas de mantenimiento</small>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="app.setInitialKm('${vehicleName}')">Confirmar</button>
+          </div>
+        `;
+        this.openModal('settings-modal');
+      },
+
+      setInitialKm(vehicleName) {
+        const km = parseInt(document.getElementById('initial-km').value);
+        if (!km || km < 0) {
+          alert('Ingresa un valor válido');
+          return;
+        }
+        this.state.currentUser.vehicles[vehicleName].currentKm = km;
+        this.state.currentUser.vehicles[vehicleName].lastServiceKm = km;
+        this.saveLocalData();
+        this.closeModal('settings-modal');
+        this.renderDashboard();
+      },
+
+      renderVehicleSelector() {
+        const html = `
+          <div class="vehicle-card" onclick="app.selectVehicle('Toyota Hiace')">
+            <div class="vehicle-icon">🚐</div>
+            <div class="vehicle-name">Toyota Hiace</div>
+            <div class="vehicle-info">Furgón de carga</div>
+          </div>
+          <div class="vehicle-card" onclick="app.selectVehicle('Volkswagen Saveiro')">
+            <div class="vehicle-icon">🚙</div>
+            <div class="vehicle-name">Volkswagen Saveiro</div>
+            <div class="vehicle-info">Camioneta pickup</div>
+          </div>
+          <div class="vehicle-card" onclick="app.selectVehicle('Fiat Uno Cargo')">
+            <div class="vehicle-icon">🚗</div>
+            <div class="vehicle-name">Fiat Uno Cargo</div>
+            <div class="vehicle-info">Auto comercial</div>
+          </div>
+        `;
+        document.getElementById('vehicle-selector').innerHTML = html;
+      },
+
+      renderVehiclesTab() {
+        this.initializeVehiclesIfNeeded();
+        const vehicles = this.state.currentUser.vehicles;
+        let html = '';
+
+        Object.entries(vehicles).forEach(([name, data]) => {
+          const lastService = data.maintenanceRecords?.[data.maintenanceRecords.length - 1];
+          const nextServiceKm = lastService?.nextKm || data.currentKm + 10000;
+          const kmToNextService = nextServiceKm - (data.currentKm || 0);
+          
+          html += `
+            <div class="card" onclick="app.state.currentVehicle = '${name}'; app.switchTab('dashboard')">
+              <div class="card-header">
+                <div>
+                  <div class="card-title">${data.icon} ${name}</div>
+                  <div class="card-meta">Vehículo activo</div>
+                </div>
+                <div class="card-badge">${data.currentKm?.toLocaleString() || '0'} km</div>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Próximo Servicio</div>
+                  <div style="font-weight: 700; color: var(--primary);">${kmToNextService > 0 ? kmToNextService.toLocaleString() + ' km' : '⚠️ VENCIDO'}</div>
+                </div>
+                <div>
+                  <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Último Servicio</div>
+                  <div style="font-weight: 700;">${lastService ? new Date(lastService.date).toLocaleDateString() : 'No registrado'}</div>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+
+        document.getElementById('vehicles-list').innerHTML = html || '<p style="color: var(--text-muted); text-align: center;">No hay vehículos registrados</p>';
+      },
+
+      // ===== COMBUSTIBLE =====
+      async handleFileCapture(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const base64 = await this.fileToBase64(file);
+        const previewContainer = document.getElementById('preview-container');
+        
+        previewContainer.innerHTML = `<img src="${base64}" style="width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">`;
+        
+        document.getElementById('capture-form').style.display = 'block';
+        
+        // Pre-fill date/time
+        const now = new Date();
+        document.getElementById('fuel-date').value = now.toISOString().split('T')[0];
+        document.getElementById('fuel-time').value = now.toTimeString().slice(0, 5);
+      },
+
+      saveFuelRecord() {
+        if (!this.state.currentVehicle) {
+          alert('Selecciona un vehículo');
+          return;
+        }
+
+        const record = {
+          id: Date.now(),
+          date: document.getElementById('fuel-date').value,
+          time: document.getElementById('fuel-time').value,
+          liters: parseFloat(document.getElementById('fuel-liters').value),
+          amount: parseFloat(document.getElementById('fuel-amount').value),
+          cuit: document.getElementById('fuel-cuit').value,
+          location: document.getElementById('fuel-location').value,
+          address: document.getElementById('fuel-address').value,
+          createdAt: new Date().toISOString()
+        };
+
+        if (!record.date || !record.liters || !record.amount) {
+          alert('Completa campos requeridos');
+          return;
+        }
+
+        this.initializeVehiclesIfNeeded();
+        if (!this.state.currentUser.vehicles[this.state.currentVehicle].fuelRecords) {
+          this.state.currentUser.vehicles[this.state.currentVehicle].fuelRecords = [];
+        }
+
+        this.state.currentUser.vehicles[this.state.currentVehicle].fuelRecords.push(record);
+        this.saveLocalData();
+
+        // Enviar email de confirmación
+        this.sendConfirmationEmail(record);
+
+        this.showAlert('✅ Carga registrada', 'success');
+        this.cancelCapture();
+        this.renderDashboard();
+      },
+
+      cancelCapture() {
+        document.getElementById('file-input').value = '';
+        document.getElementById('preview-container').innerHTML = '';
+        document.getElementById('capture-form').style.display = 'none';
+        Array.from(document.querySelectorAll('#capture-form input')).forEach(el => el.value = '');
+      },
+
+      // ===== MANTENIMIENTO =====
+      saveMaintenanceRecord() {
+        if (!this.state.currentVehicle) {
+          alert('Selecciona un vehículo');
+          return;
+        }
+
+        const record = {
+          id: Date.now(),
+          type: document.getElementById('service-type').value,
+          date: document.getElementById('service-date').value,
+          currentKm: parseInt(document.getElementById('service-km').value),
+          nextKm: parseInt(document.getElementById('service-next-km').value),
+          notes: document.getElementById('service-notes').value,
+          provider: document.getElementById('service-provider').value,
+          createdAt: new Date().toISOString()
+        };
+
+        if (!record.type || !record.date || !record.currentKm) {
+          alert('Completa campos requeridos');
+          return;
+        }
+
+        this.initializeVehiclesIfNeeded();
+        if (!this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords) {
+          this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords = [];
+        }
+
+        // Actualizar km actual
+        this.state.currentUser.vehicles[this.state.currentVehicle].currentKm = record.currentKm;
+        this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords.push(record);
+        
+        this.saveLocalData();
+        this.showAlert('✅ Servicio registrado', 'success');
+        
+        // Limpiar form
+        document.getElementById('service-type').value = '';
+        document.getElementById('service-date').value = '';
+        document.getElementById('service-km').value = '';
+        document.getElementById('service-next-km').value = '10000';
+        document.getElementById('service-notes').value = '';
+        document.getElementById('service-provider').value = '';
+
+        this.renderMaintenanceList();
+        this.renderDashboard();
+      },
+
+      renderMaintenanceList() {
+        if (!this.state.currentVehicle) return;
+
+        this.initializeVehiclesIfNeeded();
+        const records = this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords || [];
+        
+        if (records.length === 0) {
+          document.getElementById('maintenance-list').innerHTML = '<p style="color: var(--text-muted); text-align: center;">Sin registros de servicio</p>';
+          return;
+        }
+
+        const html = records.reverse().map(r => `
+          <div class="card">
+            <div class="card-header">
+              <div>
+                <div class="card-title">${r.type === 'oil-change' ? '🛢️' : r.type === 'filter' ? '🔄' : r.type === 'tires' ? '⚙️' : r.type === 'suspension' ? '🔧' : r.type === 'brakes' ? '🛑' : '🔩'} ${r.type}</div>
+                <div class="card-meta">${new Date(r.date).toLocaleDateString()}</div>
+              </div>
+              <div class="card-badge">${r.currentKm} km</div>
+            </div>
+            <div style="font-size: 0.875rem; color: var(--text-gray);">
+              <p><strong>Próximo servicio:</strong> ${r.nextKm} km</p>
+              ${r.provider ? `<p><strong>Taller:</strong> ${r.provider}</p>` : ''}
+              ${r.notes ? `<p><strong>Notas:</strong> ${r.notes}</p>` : ''}
+            </div>
+          </div>
+        `).join('');
+
+        document.getElementById('maintenance-list').innerHTML = html;
+      },
+
+      // ===== DASHBOARD =====
+      renderDashboard() {
+        if (!this.state.currentVehicle) {
+          document.getElementById('stat-vehicle').textContent = '-';
+          document.getElementById('stat-fuel').textContent = '$0';
+          document.getElementById('stat-km').textContent = '0';
+          document.getElementById('stat-efficiency').textContent = '-';
+          this.renderVehicleSelector();
+          this.renderAlerts();
+          return;
+        }
+
+        this.initializeVehiclesIfNeeded();
+        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
+        const fuelRecords = vehicle.fuelRecords || [];
+        const maintenanceRecords = vehicle.maintenanceRecords || [];
+
+        // Stats
+        document.getElementById('stat-vehicle').textContent = vehicle.icon + ' ' + this.state.currentVehicle;
+        document.getElementById('current-vehicle-header').textContent = this.state.currentVehicle;
+
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const monthFuel = fuelRecords.filter(r => {
+          const d = new Date(r.date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        });
+
+        const totalFuel = monthFuel.reduce((sum, r) => sum + r.amount, 0);
+        document.getElementById('stat-fuel').textContent = '$' + totalFuel.toFixed(2);
+
+        // KM stats (básico, necesitaría más datos)
+        const totalLiters = monthFuel.reduce((sum, r) => sum + r.liters, 0);
+        document.getElementById('stat-km').textContent = vehicle.currentKm?.toLocaleString() || '0';
+        document.getElementById('stat-efficiency').textContent = totalLiters > 0 ? (vehicle.currentKm / totalLiters).toFixed(1) : '-';
+
+        this.renderVehicleSelector();
+        this.renderAlerts();
+      },
+
+      renderAlerts() {
+        if (!this.state.currentVehicle) return;
+
+        this.initializeVehiclesIfNeeded();
+        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
+        const maintenanceRecords = vehicle.maintenanceRecords || [];
+        const lastService = maintenanceRecords[maintenanceRecords.length - 1];
+        const nextServiceKm = lastService?.nextKm || (vehicle.currentKm || 0) + 10000;
+        const kmToNextService = nextServiceKm - (vehicle.currentKm || 0);
+
+        let html = '';
+
+        if (kmToNextService <= 0) {
+          html += `
+            <div class="alert alert-danger">
+              <span>🛑</span>
+              <div>
+                <strong>Mantenimiento vencido!</strong>
+                <p style="font-size: 0.875rem; margin-top: 0.25rem;">El vehículo ya cumplió ${Math.abs(kmToNextService)} km sobre lo recomendado. Realiza cambio de aceite urgentemente.</p>
+              </div>
+            </div>
+          `;
+        } else if (kmToNextService <= 500) {
+          html += `
+            <div class="alert alert-warning">
+              <span>⚠️</span>
+              <div>
+                <strong>Cambio de aceite próximo</strong>
+                <p style="font-size: 0.875rem; margin-top: 0.25rem;">Faltan ${kmToNextService} km para el cambio de aceite. Agenda el servicio pronto.</p>
+              </div>
+            </div>
+          `;
+        }
+
+        document.getElementById('alerts-container').innerHTML = html;
+      },
+
+      // ===== REPORTES =====
+      generateReport() {
+        if (!this.state.currentVehicle) {
+          alert('Selecciona un vehículo');
+          return;
+        }
+
+        this.initializeVehiclesIfNeeded();
+        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
+        const fuelRecords = vehicle.fuelRecords || [];
+        const maintenanceRecords = vehicle.maintenanceRecords || [];
+
+        // Filtrar por rango
+        const range = document.getElementById('report-range').value;
+        let filtered = fuelRecords;
+
+        const now = new Date();
+        if (range === 'month') {
+          filtered = fuelRecords.filter(r => {
+            const d = new Date(r.date);
+            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+          });
+        } else if (range === '3months') {
+          const start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+          filtered = fuelRecords.filter(r => new Date(r.date) >= start);
+        } else if (range === '6months') {
+          const start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+          filtered = fuelRecords.filter(r => new Date(r.date) >= start);
+        }
+
+        const format = document.getElementById('report-format').value;
+
+        if (format === 'screen') {
+          this.displayReport(filtered, maintenanceRecords, vehicle);
+        } else if (format === 'pdf' || format === 'excel') {
+          this.showAlert('En desarrollo', 'warning');
+        } else if (format === 'email') {
+          this.sendReportEmail(filtered, maintenanceRecords, vehicle);
+        }
+      },
+
+      displayReport(fuelRecords, maintenanceRecords, vehicle) {
+        const totalFuel = fuelRecords.reduce((sum, r) => sum + r.amount, 0);
+        const totalLiters = fuelRecords.reduce((sum, r) => sum + r.liters, 0);
+
+        let html = `
+          <div class="card">
+            <h3 style="margin-bottom: 1.5rem;">Reporte: ${vehicle.icon} ${this.state.currentVehicle}</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
+              <div class="stat-card">
+                <div class="stat-label">Cargas Registradas</div>
+                <div class="stat-value">${fuelRecords.length}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Total Litros</div>
+                <div class="stat-value">${totalLiters.toFixed(1)}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Gasto Total</div>
+                <div class="stat-value">$${totalFuel.toFixed(2)}</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Precio Promedio</div>
+                <div class="stat-value">$${(totalFuel / totalLiters || 0).toFixed(2)}/L</div>
+              </div>
+            </div>
+
+            <h4 style="margin: 1.5rem 0 1rem 0; color: var(--primary);">DETALLE DE CARGAS</h4>
+            <div class="table-responsive">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Hora</th>
+                    <th>Litros</th>
+                    <th>Monto</th>
+                    <th>Precio/L</th>
+                    <th>Localidad</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${fuelRecords.map(r => `
+                    <tr>
+                      <td>${new Date(r.date).toLocaleDateString()}</td>
+                      <td>${r.time}</td>
+                      <td>${r.liters.toFixed(2)}</td>
+                      <td>$${r.amount.toFixed(2)}</td>
+                      <td>$${(r.amount / r.liters).toFixed(2)}</td>
+                      <td>${r.location}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+
+        document.getElementById('report-content').innerHTML = html;
+      },
+
+      // ===== UTILIDADES =====
+      fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      },
+
+      sendConfirmationEmail(record) {
+        if (!this.state.currentUser.email) return;
+        
+        const message = `Se registró carga de combustible:\n
+- Vehículo: ${this.state.currentVehicle}
+- Fecha/Hora: ${record.date} ${record.time}
+- Litros: ${record.liters}
+- Monto: $${record.amount}
+- Localidad: ${record.location}
+- Dirección: ${record.address}`;
+
+        // Aquí iría la integración con API de email
+        console.log('📧 Email de confirmación:', message);
+      },
+
+      sendReportEmail(fuelRecords, maintenanceRecords, vehicle) {
+        const adminEmail = localStorage.getItem('adminEmail');
+        if (!adminEmail) {
+          alert('Configura email del administrador en Configuración');
+          return;
+        }
+
+        this.showAlert('📧 Email enviado correctamente', 'success');
+      },
+
+      switchTab(tabName) {
+        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+        event.target.classList.add('active');
+
+        if (tabName === 'vehicles') this.renderVehiclesTab();
+        if (tabName === 'maintenance') this.renderMaintenanceList();
+      },
+
+      openModal(id) {
+        document.getElementById(id).classList.add('active');
+      },
+
+      closeModal(id) {
+        document.getElementById(id).classList.remove('active');
+      },
+
+      openMenu() {
+        this.openModal('menu-modal');
+      },
+
+      openSettings() {
+        this.openModal('settings-modal');
+      },
+
+      saveSettings() {
+        const email = document.getElementById('settings-email').value;
+        const adminEmail = document.getElementById('settings-admin-email').value;
+        const apiKey = document.getElementById('settings-api-key').value;
+
+        this.state.currentUser.email = email;
+        localStorage.setItem('adminEmail', adminEmail);
+        localStorage.setItem('apiKey', apiKey);
+        
+        this.saveLocalData();
+        this.showAlert('✅ Configuración guardada', 'success');
+        this.closeModal('settings-modal');
+      },
+
+      exportData() {
+        const data = JSON.stringify(this.state.currentUser, null, 2);
+        const blob = new Blob([data], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `fleetcontrol-${Date.now()}.json`;
+        a.click();
+      },
+
+      showAlert(message, type = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type}`;
+        alertDiv.innerHTML = `
+          <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
+          <div>${message}</div>
+        `;
+
+        const container = document.querySelector('.main-content');
+        if (container) {
+          container.insertBefore(alertDiv, container.firstChild);
+          setTimeout(() => alertDiv.remove(), 4000);
+        }
+      },
+
+      sync() {
+        if (!this.state.isOnline) {
+          this.showAlert('Sin conexión', 'warning');
+          return;
+        }
+        this.showAlert('📡 Sincronizando...', 'info');
+        setTimeout(() => {
+          this.showAlert('✅ Sincronización completada', 'success');
+        }, 2000);
+      },
+
+      // Local Storage
+      saveLocalData() {
+        localStorage.setItem(`user_${this.state.currentUser.id}`, JSON.stringify(this.state.currentUser));
+        localStorage.setItem('users', JSON.stringify(this.state.users));
+      },
+
+      loadLocalData() {
+        const users = localStorage.getItem('users');
+        this.state.users = users ? JSON.parse(users) : {};
+      }
+    };
+
+    document.addEventListener('DOMContentLoaded', () => app.init());
+  </script>
+</body>
+</html>

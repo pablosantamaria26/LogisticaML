@@ -1,0 +1,139 @@
+{
+  "version": "1.0",
+  "schema": {
+    "fecha": {
+      "type": "date",
+      "format": "YYYY-MM-DD",
+      "required": true,
+      "description": "Fecha del recibo"
+    },
+    "hora": {
+      "type": "time",
+      "format": "HH:MM",
+      "required": false,
+      "description": "Hora de la transacción"
+    },
+    "surtidor": {
+      "cuit": {
+        "type": "string",
+        "pattern": "^\\d{2}-\\d{8}-\\d{1}$",
+        "required": true,
+        "description": "CUIT del surtidor (XX-XXXXXXXX-X)"
+      },
+      "razonSocial": {
+        "type": "string",
+        "required": true,
+        "description": "Razón social de la estación de servicio"
+      },
+      "ubicacion": {
+        "type": "string",
+        "required": false,
+        "description": "Dirección y localidad"
+      }
+    },
+    "receptor": {
+      "cuit": {
+        "type": "string",
+        "pattern": "^\\d{2}-\\d{8}-\\d{1}$",
+        "required": true,
+        "description": "CUIT del receptor (tu empresa)"
+      },
+      "dominio": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}\\d{3}[A-Z]{2}$|^\\d{2}-\\d{6}$",
+        "required": false,
+        "description": "Dominio del vehículo (XXX000XX o viejo formato) - Opcional, se puede agregar después"
+      }
+    },
+    "combustible": {
+      "tipo": {
+        "type": "enum",
+        "values": ["Nafta Premium", "Nafta Super", "Nafta Normal", "Diésel", "GNC"],
+        "required": true
+      },
+      "litros": {
+        "type": "decimal",
+        "min": 0.1,
+        "max": 200,
+        "required": true,
+        "description": "Litros cargados"
+      },
+      "precioUnitario": {
+        "type": "decimal",
+        "min": 0.01,
+        "required": true,
+        "description": "Precio por litro"
+      }
+    },
+    "monto": {
+      "subtotal": {
+        "type": "decimal",
+        "required": true,
+        "description": "Subtotal sin IVA"
+      },
+      "iva": {
+        "type": "decimal",
+        "required": true,
+        "description": "IVA (21%)"
+      },
+      "total": {
+        "type": "decimal",
+        "required": true,
+        "description": "Total a pagar"
+      },
+      "moneda": {
+        "type": "enum",
+        "values": ["ARS", "USD"],
+        "default": "ARS",
+        "required": true
+      }
+    },
+    "metodoPago": {
+      "type": "enum",
+      "values": ["Efectivo", "Tarjeta Débito", "Tarjeta Crédito", "Transferencia", "Cheque"],
+      "required": true
+    },
+    "numeroComprobante": {
+      "type": "string",
+      "required": false,
+      "description": "Número de comprobante o recibo"
+    },
+    "kmActual": {
+      "type": "integer",
+      "required": false,
+      "description": "Kilómetros del vehículo (si figura en ticket)"
+    },
+    "chofer": {
+      "nombre": {
+        "type": "string",
+        "required": false
+      },
+      "dni": {
+        "type": "string",
+        "required": false
+      }
+    },
+    "validaciones": {
+      "iva_creditable": {
+        "type": "boolean",
+        "description": "¿Es posible usar como crédito fiscal?"
+      },
+      "confidencia_ocr": {
+        "type": "number",
+        "min": 0,
+        "max": 100,
+        "description": "Porcentaje de confianza del OCR"
+      },
+      "campos_faltantes": {
+        "type": "array",
+        "description": "Campos que faltan o requieren validación manual"
+      }
+    }
+  },
+  "instrucciones_ia": {
+    "instruccion_principal": "Extrae TODOS estos datos del ticket de nafta. Sé preciso. Si no ves un dato, marca como null.",
+    "validacion": "Verifica que CUIT sea formato correcto y dominio sea válido",
+    "respuesta_formato": "JSON válido, estructura exacta según schema",
+    "prioridad": "Precisión sobre velocidad. Si algo no está claro, marca confidencia baja"
+  }
+}

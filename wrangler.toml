@@ -1,0 +1,33 @@
+name = "gastos-nafta-worker"
+main = "worker.js"
+compatibility_date = "2024-03-12"
+compatibility_flags = ["nodejs_compat"]
+
+# Rutas que maneja este worker
+routes = [
+  { pattern = "api.tu-dominio.com/api/*", zone_name = "tu-dominio.com" }
+]
+
+# Bindings (variables de entorno)
+[env.production]
+vars = {
+  ENVIRONMENT = "production"
+}
+
+# Secrets (guardadas en Cloudflare)
+# wrangler secret put CLAUDE_API_KEY
+# wrangler secret put FIREBASE_CREDENTIALS
+# wrangler secret put SENDGRID_API_KEY
+
+# CORS y seguridad
+[build]
+command = "npm run build"
+
+# KV Store (opcional, para caché)
+[[kv_namespaces]]
+binding = "CACHE"
+id = "tu-kv-namespace-id"
+
+# Cron job (opcional, para sincronización automática)
+[[triggers.crons]]
+crons = ["0 */4 * * *"]  # Cada 4 horas
