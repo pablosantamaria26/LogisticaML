@@ -643,17 +643,20 @@ const OfflineQueue = {
     let synced = 0;
     for (const item of q) {
       try {
+        // Solo sincronizar datos (sync-record) — no reenviar emails viejos
         if (item.type === 'sync-record') {
-          const res = await fetch(`${API}/api/sync-record`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item.data)});
+          const res = await fetch(`${API}/api/sync-record`, {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify(item.data)
+          });
           if (res.ok) { this.remove(item.id); synced++; }
+        } else {
+          // Descartar items que no sean sync-record (emails, etc.)
+          this.remove(item.id);
         }
-        if (item.type === 'send-confirmation') {
-          const res = await fetch(`${API}/api/send-confirmation`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item.data)});
-          if (res.ok) { this.remove(item.id); synced++; }
-        }
-      } catch(e) { /* stay in queue */ }
+      } catch(e) { /* mantener en cola si falla */ }
     }
-    if (synced > 0) toast(`✅ ${synced} carga(s) sincronizada(s)`, 'success');
+    if (synced > 0) toast(`✅ ${synced} registro(s) sincronizado(s)`, 'success');
     this.updateUI();
   }
 };
@@ -842,6 +845,9 @@ const App = {
     document.getElementById('sc-login').classList.remove('on');
     document.getElementById('sc-app').classList.add('on');
     document.getElementById('menu-uname').textContent=S.user.name;
+    // Limpiar emails viejos de la cola (solo mantener sync-record)
+    const q = DB.queue().filter(x => x.type === 'sync-record');
+    DB.saveQueue(q);
     OfflineQueue.updateUI();
     if (navigator.onLine) setTimeout(()=>OfflineQueue.flush(), 2000);
     this.openVPicker();
@@ -1029,24 +1035,27 @@ const App = {
   },
 
   async _sendConfirmEmail(record){
-    const userEmail = S.user.email?.trim() || '';
-    const fleetEmail = localStorage.getItem('fml_fleet_email') || FLEET_DEF;
-    const to = userEmail || fleetEmail;
-    if (!to || !to.includes('@')) return;
+    // Siempre enviar a distribuidoramercadolimpio@gmail.com (+ email del chofer si configuró)
+    const fleetEmail = FLEET_DEF; // distribuidoramercadolimpio@gmail.com — fijo
+    const userEmail  = S.user.email?.trim() || '';
     const v = VEHICLES[S.vid];
-    const body = {to, userName:S.user.name, vehicleName:v.name, vehicleIcon:v.emoji,
-      fuelRecord:record, location:record.location, address:record.address};
-    if (fleetEmail && fleetEmail !== to && fleetEmail.includes('@')) body.cc = fleetEmail;
+    const body = {
+      to: fleetEmail,
+      userName:S.user.name, vehicleName:v.name, vehicleIcon:v.emoji,
+      fuelRecord:record, location:record.location, address:record.address
+    };
+    // CC al chofer si tiene email configurado y es distinto
+    if (userEmail && userEmail.includes('@') && userEmail !== fleetEmail) body.cc = userEmail;
     try {
       const res = await fetch(`${API}/api/send-confirmation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
       const data = await res.json().catch(()=>({}));
       if (res.ok) toast('📧 Email enviado','info',3000);
-      else {
-        console.error('Email error:',data);
-        OfflineQueue.add({type:'send-confirmation',data:body});
-      }
+      else console.warn('Email no enviado:', data?.error || res.status);
+      // No encolar — si hay conexión es error del servidor, no de red
     } catch(err) {
-      OfflineQueue.add({type:'send-confirmation',data:body});
+      // Solo encolar si realmente no hay red — no por errores del servidor
+      if (!navigator.onLine) OfflineQueue.add({type:'send-confirmation',data:body});
+      else console.warn('Email falló (servidor):', err);
     }
   },
 
