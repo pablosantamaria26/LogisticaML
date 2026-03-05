@@ -15,7 +15,7 @@ vars = {
 }
 
 # Secrets (guardadas en Cloudflare)
-# wrangler secret put CLAUDE_API_KEY
+# wrangler secret put GEMINI_API_KEY
 # wrangler secret put FIREBASE_CREDENTIALS
 # wrangler secret put SENDGRID_API_KEY
 
