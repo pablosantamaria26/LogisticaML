@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gastos-nafta-v4';
+const CACHE_NAME = 'gastos-nafta-v5';
 const URLS_TO_CACHE = [
   '/',
   '/index.html',
