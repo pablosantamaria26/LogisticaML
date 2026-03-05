@@ -1,1576 +1,1055 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
-  <meta name="description" content="Gestión integral de combustible y mantenimiento de flota vehicular">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <link rel="manifest" href="/manifest.json">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%230f172a' width='192' height='192'/><text x='96' y='110' font-size='80' font-weight='bold' fill='%2306b6d4' text-anchor='middle'>🚗</text></svg>">
-  <title>Fleet Control - Gestión de Flota</title>
-  
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FleetOS — Control de Flota</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;--border:#2a2a3a;--border2:#3a3a50;--text:#e8e8f0;--muted:#7070a0;--dim:#404060;--acc:#7c6bff;--acc2:#5b4dcc;--acc-glow:rgba(124,107,255,0.22);--green:#2ecc71;--orange:#f39c12;--red:#e74c3c;--mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow-x:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.7}
 
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+/* SCREENS */
+.screen{display:none;min-height:100vh}
+.screen.on{display:flex}
 
-    :root {
-      --primary: #06b6d4;
-      --primary-dark: #0891b2;
-      --primary-light: #cffafe;
-      --bg-dark: #0f172a;
-      --bg-darker: #0a0e27;
-      --bg-card: #1e293b;
-      --text-light: #f1f5f9;
-      --text-gray: #cbd5e1;
-      --text-muted: #94a3b8;
-      --border: #334155;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --shadow: 0 4px 16px rgba(0,0,0,0.4);
-      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
+/* ── LOGIN ── */
+#sc-login{flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;background:radial-gradient(ellipse 90% 55% at 50% -10%,rgba(124,107,255,.13) 0%,transparent 65%);position:relative;overflow:hidden}
+#sc-login::after{content:'FLEET OS';position:absolute;bottom:-3rem;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:clamp(5rem,22vw,16rem);font-weight:700;color:transparent;-webkit-text-stroke:1px rgba(124,107,255,.07);white-space:nowrap;pointer-events:none;letter-spacing:-.04em}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:2.5rem 2rem;width:100%;max-width:380px;position:relative;z-index:1;box-shadow:0 0 60px rgba(124,107,255,.07),0 24px 48px rgba(0,0,0,.55);animation:lboxIn .55s cubic-bezier(.16,1,.3,1) both}
+@keyframes lboxIn{from{opacity:0;transform:translateY(22px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.login-brand{text-align:center;margin-bottom:2rem}
+.logo-mark{display:inline-flex;align-items:center;justify-content:center;width:58px;height:58px;background:linear-gradient(135deg,var(--acc),var(--acc2));border-radius:18px;font-size:1.85rem;margin-bottom:.875rem;box-shadow:0 0 28px var(--acc-glow)}
+.login-brand h1{font-family:var(--mono);font-size:1.6rem;font-weight:700;letter-spacing:-.02em}
+.login-brand p{color:var(--muted);font-size:.75rem;margin-top:.2rem;letter-spacing:.07em;text-transform:uppercase}
+.lfield{margin-bottom:1.125rem}
+.lfield label{display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.45rem}
+.lfield input{width:100%;padding:.875rem 1rem;background:var(--bg);border:1px solid var(--border);border-radius:11px;color:var(--text);font-family:var(--sans);font-size:1rem;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+.lfield input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-glow)}
+.lfield input::placeholder{color:var(--dim)}
+.pin-f{font-family:var(--mono);font-size:1.6rem;letter-spacing:.55em;text-align:center;padding-left:1.5em !important}
+.toggle-link{text-align:center;margin-top:1.125rem;color:var(--muted);font-size:.85rem}
+.link-btn{background:none;border:none;color:var(--acc);font-family:var(--sans);font-size:.85rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px}
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-darker) 100%);
-      color: var(--text-light);
-      line-height: 1.6;
-      overflow-x: hidden;
-      min-height: 100vh;
-    }
+/* BUTTONS */
+.btn{width:100%;padding:.875rem 1.25rem;border:none;border-radius:11px;font-family:var(--sans);font-size:.95rem;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 4px 18px var(--acc-glow)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 26px var(--acc-glow)}
+.btn-primary:active{transform:translateY(0)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-danger{background:rgba(231,76,60,.11);color:var(--red);border:1px solid rgba(231,76,60,.25)}
+.btn-danger:hover{background:rgba(231,76,60,.2)}
+.btn-sm{padding:.55rem 1rem;font-size:.85rem;border-radius:9px}
 
-    /* LOGIN */
-    .login-screen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 2rem;
-      background: linear-gradient(135deg, #0f172a 0%, #1a1f35 100%);
-    }
+/* TOAST */
+.toast-stack{position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:10000;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 2rem);max-width:400px;pointer-events:none}
+.toast{padding:.8rem 1.125rem;border-radius:13px;font-size:.85rem;font-weight:500;display:flex;align-items:center;gap:.6rem;animation:tIn .32s cubic-bezier(.16,1,.3,1) both;pointer-events:auto;backdrop-filter:blur(12px)}
+@keyframes tIn{from{opacity:0;transform:translateY(-10px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes tOut{to{opacity:0;transform:translateY(-7px) scale(.96)}}
+.toast.bye{animation:tOut .22s ease forwards}
+.t-success{background:rgba(46,204,113,.14);border:1px solid rgba(46,204,113,.28);color:var(--green)}
+.t-error{background:rgba(231,76,60,.14);border:1px solid rgba(231,76,60,.28);color:var(--red)}
+.t-warning{background:rgba(243,156,18,.14);border:1px solid rgba(243,156,18,.28);color:var(--orange)}
+.t-info{background:rgba(124,107,255,.14);border:1px solid rgba(124,107,255,.28);color:var(--acc)}
 
-    .login-container {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 2.5rem;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: var(--shadow);
-      animation: slideUp 0.5s ease;
-    }
+/* ── APP SHELL ── */
+#sc-app{flex-direction:column}
+.topnav{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:0 1.125rem;height:58px;display:flex;align-items:center;justify-content:space-between;gap:.875rem}
+.nav-brand{font-family:var(--mono);font-size:.95rem;font-weight:700;display:flex;align-items:center;gap:.5rem;flex-shrink:0}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.8)}}
+.nav-vbadge{display:flex;align-items:center;gap:.45rem;padding:.35rem .75rem;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:.78rem;color:var(--muted);flex:1;min-width:0;overflow:hidden}
+.nav-vbadge .vname{font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:38px;height:38px;border-radius:10px;border:1px solid var(--border);background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .2s;font-size:1.1rem;display:flex;align-items:center;justify-content:center}
+.icon-btn:hover{border-color:var(--border2);color:var(--text)}
 
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+/* TABBAR */
+.tabbar{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{flex:1;min-width:72px;padding:.8rem .4rem;border:none;background:none;color:var(--dim);cursor:pointer;font-family:var(--sans);font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.22rem;border-bottom:2px solid transparent;white-space:nowrap}
+.tab .ti{font-size:1.1rem}
+.tab:hover{color:var(--muted)}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
 
-    .login-header { text-align: center; margin-bottom: 2rem; }
-    .login-logo { font-size: 3rem; margin-bottom: 1rem; }
-    .login-header h1 {
-      font-size: 1.75rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      background: linear-gradient(135deg, var(--primary) 0%, #06b6d4 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .login-header p { color: var(--text-muted); font-size: 0.875rem; }
+/* MAIN */
+.main{flex:1;overflow-y:auto;padding:1.125rem}
+.panel{display:none;animation:pIn .22s ease both}
+.panel.on{display:block}
+@keyframes pIn{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 
-    .form-group { margin-bottom: 1.5rem; }
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-      font-size: 0.875rem;
-      color: var(--text-light);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 0.875rem;
-      background: rgba(15, 23, 42, 0.5);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text-light);
-      font-family: 'Inter', sans-serif;
-      font-size: 1rem;
-      transition: var(--transition);
-    }
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.1);
-      background: rgba(15, 23, 42, 0.8);
-    }
+/* SECTION LABEL */
+.slabel{font-family:var(--mono);font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.875rem;display:flex;align-items:center;gap:.5rem}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
 
-    .pin-input { display: flex; gap: 0.75rem; justify-content: center; }
-    .pin-digit {
-      width: 50px !important;
-      height: 50px;
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      text-align: center;
-      font-size: 1.5rem;
-      font-weight: 700;
-      background: rgba(15, 23, 42, 0.5);
-      color: var(--text-light);
-      font-family: 'JetBrains Mono', monospace;
-      transition: var(--transition);
-      padding: 0 !important;
-    }
-    .pin-digit:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
-      background: rgba(6, 182, 212, 0.05);
-    }
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.125rem;margin-bottom:.875rem;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.875rem}
 
-    .btn {
-      width: 100%;
-      padding: 0.875rem;
-      border: none;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: var(--transition);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.75rem;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
-      color: var(--bg-dark);
-    }
-    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3); }
-    .btn-primary:active { transform: translateY(0); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .btn-secondary {
-      background: var(--bg-dark);
-      color: var(--primary);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover { background: rgba(6, 182, 212, 0.1); border-color: var(--primary); }
+/* STATS */
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1.125rem}
+@media(min-width:560px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+.sc{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.125rem 1rem;text-align:center;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent);opacity:.55}
+.sv{font-family:var(--mono);font-size:1.5rem;font-weight:700;color:var(--acc);line-height:1.1;margin-bottom:.35rem}
+.sl{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
 
-    /* APP */
-    .app-container { display: flex; flex-direction: column; min-height: 100vh; }
+/* VEHICLE HERO */
+.vhero{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:1.5rem 1.25rem;margin-bottom:1.125rem;position:relative;overflow:hidden;display:flex;align-items:center;gap:1.25rem}
+.vhero::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;background:radial-gradient(circle,var(--acc-glow) 0%,transparent 70%);pointer-events:none}
+.vhero .emoji-big{font-size:3.25rem;line-height:1;flex-shrink:0}
+.vhero-info h2{font-family:var(--mono);font-size:1.15rem;font-weight:700;margin-bottom:.2rem}
+.vhero-info p{color:var(--muted);font-size:.82rem}
+.vhero-km{margin-left:auto;text-align:right;flex-shrink:0}
+.km-val{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--acc)}
+.km-lbl{font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 
-    .header {
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-    .header-left { display: flex; align-items: center; gap: 1rem; }
-    .header-logo { font-size: 1.5rem; }
-    .header-title h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
-    .header-title p { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .header-actions { display: flex; gap: 0.75rem; align-items: center; }
+/* ALERTS */
+.abanner{border-radius:12px;padding:.875rem 1.125rem;margin-bottom:.875rem;display:flex;align-items:flex-start;gap:.75rem;font-size:.85rem}
+.abanner .ai{font-size:1.2rem;flex-shrink:0;margin-top:1px}
+.abanner strong{display:block;font-weight:700;margin-bottom:.15rem}
+.abanner p{opacity:.85;font-size:.78rem}
+.a-red{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.28);color:var(--red)}
+.a-orange{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.28);color:var(--orange)}
 
-    .icon-btn {
-      background: rgba(6, 182, 212, 0.1);
-      border: 1px solid var(--border);
-      color: var(--primary);
-      width: 40px;
-      height: 40px;
-      border-radius: 8px;
-      font-size: 1.25rem;
-      cursor: pointer;
-      transition: var(--transition);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .icon-btn:hover { background: rgba(6, 182, 212, 0.2); border-color: var(--primary); }
+/* FORM */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:.8rem}
+@media(max-width:480px){.fgrid{grid-template-columns:1fr}}
+.ffull{grid-column:1/-1}
+.fl label{display:block;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+.fl input,.fl select,.fl textarea{width:100%;padding:.7rem .85rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:var(--sans);font-size:.9rem;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none}
+.fl input:focus,.fl select:focus,.fl textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-glow)}
+.fl textarea{resize:vertical;min-height:75px}
+select option{background:var(--bg2)}
 
-    .user-info { font-size: 0.875rem; text-align: right; }
-    .user-info strong { color: var(--primary); display: block; }
-    .user-info small { color: var(--text-muted); }
+/* SCAN BUTTON */
+.scan-btn{width:100%;padding:1.5rem;background:var(--bg2);border:2px dashed var(--border2);border-radius:14px;color:var(--muted);cursor:pointer;transition:all .2s;font-family:var(--sans);display:flex;flex-direction:column;align-items:center;gap:.45rem;margin-bottom:1.125rem}
+.scan-btn:hover{border-color:var(--acc);color:var(--acc);background:rgba(124,107,255,.05)}
+.scan-btn .si{font-size:2.2rem}
+.scan-btn .st{font-size:.9rem;font-weight:700}
+.scan-btn .ss{font-size:.75rem;opacity:.7}
 
-    /* TABS */
-    .tabs {
-      display: flex;
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .tab-btn {
-      flex-shrink: 0;
-      padding: 1rem 1.5rem;
-      border: none;
-      background: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.875rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      transition: var(--transition);
-      border-bottom: 2px solid transparent;
-    }
-    .tab-btn:hover { color: var(--text-light); }
-    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+/* TICKET PREVIEW */
+.tprev{position:relative;border-radius:12px;overflow:hidden;margin-bottom:1rem;border:1px solid var(--border)}
+.tprev img{width:100%;max-height:240px;object-fit:cover;display:block}
+.tprev-badge{position:absolute;top:.6rem;right:.6rem;background:rgba(10,10,15,.82);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:8px;padding:.3rem .6rem;font-size:.68rem;font-weight:700;color:var(--acc);display:flex;align-items:center;gap:.3rem}
 
-    /* CONTENT */
-    .main-content { flex: 1; padding: 1.5rem; overflow-y: auto; }
-    .tab-panel { display: none; animation: fadeIn 0.3s ease; }
-    .tab-panel.active { display: block; }
+/* TABLE */
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:var(--bg3);padding:.7rem 1rem;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+td{padding:.8rem 1rem;border-top:1px solid var(--border);color:var(--text);white-space:nowrap}
+tr:hover td{background:rgba(124,107,255,.04)}
+.tmono{font-family:var(--mono);font-size:.78rem}
 
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+/* CHIP */
+.chip{display:inline-flex;align-items:center;gap:.25rem;padding:.22rem .6rem;border-radius:20px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.c-green{background:rgba(46,204,113,.14);color:var(--green)}
+.c-orange{background:rgba(243,156,18,.14);color:var(--orange)}
+.c-red{background:rgba(231,76,60,.14);color:var(--red)}
+.c-purple{background:rgba(124,107,255,.14);color:var(--acc)}
 
-    /* CARDS */
-    .card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-      transition: var(--transition);
-    }
-    .card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(6, 182, 212, 0.1); }
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-    .card-title { font-size: 1.125rem; font-weight: 700; }
-    .card-meta { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .card-badge {
-      display: inline-block;
-      padding: 0.25rem 0.75rem;
-      border-radius: 20px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      background: rgba(6, 182, 212, 0.1);
-      color: var(--primary);
-    }
+/* MODAL */
+.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(7px);z-index:500;align-items:center;justify-content:center;padding:1rem}
+.mbk.on{display:flex;animation:mfade .2s ease}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:1.75rem;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.62);animation:mIn .28s cubic-bezier(.16,1,.3,1) both}
+@keyframes mIn{from{opacity:0;transform:scale(.93) translateY(14px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.375rem}
+.mtitle{font-family:var(--mono);font-size:1.05rem;font-weight:700}
+.mclose{background:none;border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:.95rem;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.mclose:hover{color:var(--text);border-color:var(--border2)}
 
-    /* VEHICLE */
-    .vehicle-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1.5rem;
-      margin-bottom: 2rem;
-    }
-    .vehicle-card {
-      background: var(--bg-card);
-      border: 2px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      cursor: pointer;
-      transition: var(--transition);
-      position: relative;
-      overflow: hidden;
-    }
-    .vehicle-card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, var(--primary), var(--primary-dark));
-      transform: scaleX(0);
-      transform-origin: left;
-      transition: var(--transition);
-    }
-    .vehicle-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(6, 182, 212, 0.2); }
-    .vehicle-card:hover::before { transform: scaleX(1); }
-    .vehicle-icon { font-size: 2.5rem; margin-bottom: 1rem; }
-    .vehicle-name { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; }
-    .vehicle-info { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.25rem; }
+/* VEHICLE SELECT CARD */
+.vcard{display:flex;align-items:center;gap:1.125rem;padding:1.125rem;background:var(--bg3);border:2px solid var(--border);border-radius:14px;cursor:pointer;transition:all .2s;margin-bottom:.625rem}
+.vcard:hover,.vcard.sel{border-color:var(--acc);background:rgba(124,107,255,.07)}
+.vcard .ve{font-size:2.4rem}
+.vcard .vi h3{font-weight:700;font-size:.95rem;margin-bottom:.18rem}
+.vcard .vi p{color:var(--muted);font-size:.78rem}
+.vcard .vb{margin-left:auto;flex-shrink:0}
 
-    /* STATS */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 2rem;
-    }
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      text-align: center;
-    }
-    .stat-value {
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 0.5rem;
-      font-family: 'JetBrains Mono', monospace;
-    }
-    .stat-label { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+/* SPINNER */
+.spin{display:inline-block;width:14px;height:14px;border:2px solid rgba(124,107,255,.3);border-top-color:var(--acc);border-radius:50%;animation:rot .55s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
 
-    /* FORMS */
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .form-group textarea {
-      resize: vertical;
-      min-height: 80px;
-      font-family: 'Inter', sans-serif;
-    }
-    .form-actions { display: flex; gap: 1rem; margin-top: 2rem; }
-
-    /* ALERTS */
-    .alert {
-      padding: 1rem;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      display: flex;
-      gap: 0.75rem;
-      align-items: start;
-      animation: slideIn 0.3s ease;
-    }
-    @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .alert-success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
-    .alert-error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); }
-    .alert-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--warning); }
-    .alert-info { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--primary); }
-
-    /* MODAL */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(4px);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-    .modal.active { display: flex; animation: fadeIn 0.3s ease; }
-    .modal-content {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 2rem;
-      max-width: 500px;
-      width: 100%;
-      max-height: 80vh;
-      overflow-y: auto;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-    }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-    .modal-header h2 { font-size: 1.5rem; font-weight: 700; }
-    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: var(--transition); }
-    .modal-close:hover { color: var(--text-light); }
-
-    /* TABLE */
-    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
-    th {
-      background: rgba(6, 182, 212, 0.05);
-      border: 1px solid var(--border);
-      padding: 1rem;
-      text-align: left;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--primary);
-    }
-    td { border: 1px solid var(--border); padding: 1rem; }
-    tr:hover { background: rgba(6, 182, 212, 0.05); }
-
-    /* RESPONSIVE */
-    @media (max-width: 768px) {
-      .main-content { padding: 1rem; }
-      .header { flex-direction: column; gap: 1rem; text-align: center; }
-      .header-actions { width: 100%; }
-      .vehicle-grid { grid-template-columns: 1fr; }
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
-      .form-row { grid-template-columns: 1fr; }
-      .login-container { padding: 2rem 1.5rem; }
-    }
-
-    /* UTILITIES */
-    .text-center { text-align: center; }
-    .mt-2 { margin-top: 1rem; }
-    .mb-2 { margin-bottom: 1rem; }
-    .hidden { display: none; }
-    .spinner {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(6, 182, 212, 0.3);
-      border-top-color: var(--primary);
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
+/* UTILS */
+.div{height:1px;background:var(--border);margin:1.125rem 0}
+.muted{color:var(--muted);font-size:.82rem}
+.tc{text-align:center}
+.mb1{margin-bottom:.5rem}
+.mb2{margin-bottom:1rem}
+.mt2{margin-top:1rem}
+.gap{display:flex;flex-direction:column;gap:.5rem}
+</style>
 </head>
 <body>
 
-  <!-- LOGIN -->
-  <div id="login-screen" class="login-screen">
-    <div class="login-container">
-      <div class="login-header">
-        <div class="login-logo">🚗</div>
-        <h1>Fleet Control</h1>
-        <p>Gestión integral de flota</p>
-      </div>
+<div class="toast-stack" id="toasts"></div>
 
-      <div id="login-form">
-        <div class="form-group">
-          <label>Usuario</label>
-          <input type="text" id="login-user" placeholder="Tu nombre de usuario" autofocus>
-        </div>
-        <div class="form-group">
-          <label>PIN (4 dígitos)</label>
-          <!-- Campo real oculto donde se escribe -->
-          <input type="password" id="login-pin-real" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-            placeholder="····" autocomplete="current-password"
-            style="width:100%; padding:0.875rem; background:rgba(15,23,42,0.5); border:1px solid var(--border);
-                   border-radius:8px; color:var(--text-light); font-size:2rem; letter-spacing:0.5rem;
-                   text-align:center; font-family:monospace; transition:var(--transition);"
-            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
-            onfocus="this.style.borderColor='var(--primary)'"
-            onblur="this.style.borderColor='var(--border)'"
-            onkeydown="if(event.key==='Enter') app.login()">
-          <!-- Inputs ocultos para compatibilidad con el resto del código -->
-          <div style="display:none">
-            <input class="login-pin" id="lpin-1"><input class="login-pin" id="lpin-2">
-            <input class="login-pin" id="lpin-3"><input class="login-pin" id="lpin-4">
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="app.login()">
-          <span>🔓</span> Iniciar Sesión
-        </button>
-        <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.875rem;">
-          ¿No tenés cuenta? <a href="#" onclick="app.showRegister(); return false;" style="color: var(--primary); text-decoration: none;">Registrate aquí</a>
-        </p>
-      </div>
+<!-- ═══════════════════════════
+  LOGIN
+═══════════════════════════ -->
+<div id="sc-login" class="screen on">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="logo-mark">🚛</div>
+      <h1>FleetOS</h1>
+      <p>Control de Flota</p>
+    </div>
 
-      <div id="register-form" style="display: none;">
-        <h3 style="margin-bottom: 1.5rem; text-align: center;">Crear Nueva Cuenta</h3>
-        <div class="form-group">
-          <label>Tu Nombre</label>
-          <input type="text" id="register-name" placeholder="Juan Pérez">
+    <div id="f-login">
+      <div class="lfield">
+        <label>Usuario</label>
+        <input type="text" id="lu" placeholder="tu usuario" autocomplete="username"
+               onkeydown="if(event.key==='Enter') document.getElementById('lp').focus()">
+      </div>
+      <div class="lfield">
+        <label>PIN</label>
+        <input type="password" id="lp" class="pin-f" maxlength="4"
+               inputmode="numeric" pattern="[0-9]*" placeholder="••••"
+               autocomplete="current-password"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
+               onkeydown="if(event.key==='Enter') App.login()">
+      </div>
+      <button class="btn btn-primary" onclick="App.login()" style="margin-top:.25rem">Ingresar →</button>
+      <div class="toggle-link">¿Primera vez? <button class="link-btn" onclick="App.showReg()">Crear cuenta</button></div>
+    </div>
+
+    <div id="f-reg" style="display:none">
+      <div class="lfield">
+        <label>Nombre completo</label>
+        <input type="text" id="rn" placeholder="Juan García" autocomplete="name">
+      </div>
+      <div class="lfield">
+        <label>Usuario</label>
+        <input type="text" id="ru" placeholder="juangarcia" autocomplete="username">
+      </div>
+      <div class="lfield">
+        <label>PIN (4 números)</label>
+        <input type="password" id="rp" class="pin-f" maxlength="4"
+               inputmode="numeric" pattern="[0-9]*" placeholder="••••"
+               autocomplete="new-password"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
+               onkeydown="if(event.key==='Enter') App.register()">
+      </div>
+      <button class="btn btn-primary" onclick="App.register()" style="margin-bottom:.6rem">Crear cuenta</button>
+      <button class="btn btn-ghost" onclick="App.showLogin()">← Volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════
+  APP
+═══════════════════════════ -->
+<div id="sc-app" class="screen" style="flex-direction:column">
+  <nav class="topnav">
+    <div class="nav-brand"><div class="dot-live"></div>FleetOS</div>
+    <div class="nav-vbadge" id="nav-vb">
+      <span id="nav-vemoji">🚛</span>
+      <span class="vname" id="nav-vname">Sin vehículo</span>
+    </div>
+    <button class="icon-btn" onclick="App.openMenu()">⋮</button>
+  </nav>
+
+  <div class="tabbar">
+    <button class="tab on" onclick="App.tab('dash',this)"><span class="ti">📊</span>Panel</button>
+    <button class="tab" onclick="App.tab('fuel',this)"><span class="ti">⛽</span>Combustible</button>
+    <button class="tab" onclick="App.tab('maint',this)"><span class="ti">🔧</span>Servicio</button>
+    <button class="tab" onclick="App.tab('rep',this)"><span class="ti">📈</span>Reportes</button>
+  </div>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <div id="panel-dash" class="panel on">
+      <div id="dash-alerts"></div>
+      <div class="vhero">
+        <div class="emoji-big" id="h-emoji">🚛</div>
+        <div class="vhero-info">
+          <h2 id="h-name">—</h2>
+          <p id="h-desc">Seleccioná un vehículo</p>
         </div>
-        <div class="form-group">
-          <label>Usuario</label>
-          <input type="text" id="register-user" placeholder="juanperez">
+        <div class="vhero-km">
+          <div class="km-val" id="h-km">—</div>
+          <div class="km-lbl">km</div>
         </div>
-        <div class="form-group">
-          <label>PIN (4 dígitos)</label>
-          <input type="password" id="register-pin-real" maxlength="4" inputmode="numeric" pattern="[0-9]*"
-            placeholder="····" autocomplete="new-password"
-            style="width:100%; padding:0.875rem; background:rgba(15,23,42,0.5); border:1px solid var(--border);
-                   border-radius:8px; color:var(--text-light); font-size:2rem; letter-spacing:0.5rem;
-                   text-align:center; font-family:monospace; transition:var(--transition);"
-            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
-            onfocus="this.style.borderColor='var(--primary)'"
-            onblur="this.style.borderColor='var(--border)'"
-            onkeydown="if(event.key==='Enter') app.register()">
-          <!-- Inputs ocultos para compatibilidad -->
-          <div style="display:none">
-            <input class="register-pin" id="rpin-1"><input class="register-pin" id="rpin-2">
-            <input class="register-pin" id="rpin-3"><input class="register-pin" id="rpin-4">
-          </div>
-          <small style="color:var(--text-muted); margin-top:0.5rem; display:block;">Elegí 4 números que puedas recordar</small>
+      </div>
+      <div class="sgrid">
+        <div class="sc"><div class="sv" id="st-fuel">$0</div><div class="sl">Gasto mes</div></div>
+        <div class="sc"><div class="sv" id="st-lit">0</div><div class="sl">Litros mes</div></div>
+        <div class="sc"><div class="sv" id="st-n">0</div><div class="sl">Cargas</div></div>
+        <div class="sc"><div class="sv" id="st-avg">—</div><div class="sl">$/litro prom.</div></div>
+      </div>
+      <div class="slabel">Últimas cargas</div>
+      <div id="dash-recent"></div>
+    </div>
+
+    <!-- FUEL -->
+    <div id="panel-fuel" class="panel">
+      <input type="file" id="file-in" accept="image/*" capture="environment" style="display:none"
+             onchange="App.handlePhoto(event)">
+      <button class="scan-btn" onclick="document.getElementById('file-in').click()">
+        <span class="si">📷</span>
+        <span class="st">Fotografiar ticket</span>
+        <span class="ss">La IA extrae los datos automáticamente</span>
+      </button>
+      <div id="tprev-wrap" style="display:none"></div>
+      <div id="fuel-form" style="display:none">
+        <div class="slabel">Datos del ticket</div>
+        <div class="fgrid">
+          <div class="fl"><label>Fecha</label><input type="date" id="ff-date"></div>
+          <div class="fl"><label>Hora</label><input type="time" id="ff-time"></div>
+          <div class="fl"><label>Litros</label><input type="number" id="ff-lit" step="0.01" placeholder="0.00"></div>
+          <div class="fl"><label>Monto total ($)</label><input type="number" id="ff-amt" step="0.01" placeholder="0.00"></div>
+          <div class="fl"><label>IVA ($)</label><input type="number" id="ff-iva" step="0.01" placeholder="0.00"></div>
+          <div class="fl"><label>CUIT surtidor</label><input type="text" id="ff-cuit" placeholder="XX-XXXXXXXX-X"></div>
+          <div class="fl ffull"><label>Localidad</label><input type="text" id="ff-loc" placeholder="Buenos Aires"></div>
+          <div class="fl ffull"><label>Dirección</label><input type="text" id="ff-addr" placeholder="Av. Corrientes 1000"></div>
+          <div class="fl ffull"><label>KM actuales del vehículo</label><input type="number" id="ff-km" placeholder="150000"></div>
         </div>
-        <div class="form-actions">
-          <button class="btn btn-primary" onclick="app.register()">Registrarse</button>
-          <button class="btn btn-secondary" onclick="app.showLogin()">Volver</button>
+        <div style="display:flex;gap:.75rem;margin-top:.25rem">
+          <button class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
+          <button class="btn btn-ghost" onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
         </div>
       </div>
     </div>
-  </div>
 
-  <!-- APP -->
-  <div id="app-screen" class="app-container" style="display: none;">
-    <header class="header">
-      <div class="header-left">
-        <div class="header-logo">🚗</div>
-        <div class="header-title">
-          <h2>Fleet Control</h2>
-          <p id="current-vehicle-header">Selecciona un vehículo</p>
+    <!-- MAINTENANCE -->
+    <div id="panel-maint" class="panel">
+      <div class="card mb2">
+        <div class="slabel" style="margin-bottom:1rem">Nuevo servicio</div>
+        <div class="fgrid">
+          <div class="fl">
+            <label>Tipo</label>
+            <select id="sv-type">
+              <option value="">Elegir...</option>
+              <option value="oil-change">🛢️ Cambio aceite</option>
+              <option value="filter">🔄 Filtros</option>
+              <option value="tires">⚙️ Neumáticos</option>
+              <option value="suspension">🔧 Suspensión</option>
+              <option value="brakes">🛑 Frenos</option>
+              <option value="other">🔩 Otro</option>
+            </select>
+          </div>
+          <div class="fl"><label>Fecha</label><input type="date" id="sv-date"></div>
+          <div class="fl"><label>KM actual</label><input type="number" id="sv-km" placeholder="150000"></div>
+          <div class="fl"><label>Próximo en (km)</label><input type="number" id="sv-next" placeholder="10000" value="10000"></div>
+          <div class="fl ffull"><label>Taller / mecánico</label><input type="text" id="sv-prov" placeholder="Nombre del taller"></div>
+          <div class="fl ffull"><label>Notas</label><textarea id="sv-notes" placeholder="Detalles..."></textarea></div>
         </div>
+        <button class="btn btn-primary" onclick="App.saveMaint()">Registrar servicio</button>
       </div>
-      <div class="header-actions">
-        <button class="icon-btn" title="Sincronizar" onclick="app.sync()">🔄</button>
-        <button class="icon-btn" title="Más opciones" onclick="app.openMenu()">⋮</button>
-      </div>
-      <div class="user-info">
-        <strong id="user-name">Usuario</strong>
-        <small id="current-user-email">-</small>
-      </div>
-    </header>
-
-    <!-- FIX #4: switchTab recibe el evento como parámetro -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="app.switchTab('dashboard', event)">📊 Dashboard</button>
-      <button class="tab-btn" onclick="app.switchTab('capture', event)">📷 Cargar Combustible</button>
-      <button class="tab-btn" onclick="app.switchTab('vehicles', event)">🚗 Vehículos</button>
-      <button class="tab-btn" onclick="app.switchTab('maintenance', event)">🔧 Mantenimiento</button>
-      <button class="tab-btn" onclick="app.switchTab('reports', event)">📈 Reportes</button>
+      <div class="slabel">Historial</div>
+      <div id="maint-list"></div>
     </div>
 
-    <main class="main-content">
-      <!-- Dashboard -->
-      <div id="tab-dashboard" class="tab-panel active">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-          <div class="stat-card">
-            <div class="stat-label">🚗 Vehículo Activo</div>
-            <div class="stat-value" id="stat-vehicle">-</div>
-            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Selecciona uno para comenzar</div>
+    <!-- REPORTS -->
+    <div id="panel-rep" class="panel">
+      <div class="card mb2">
+        <div class="slabel" style="margin-bottom:1rem">Generar reporte</div>
+        <div class="fgrid">
+          <div class="fl">
+            <label>Período</label>
+            <select id="rp-range">
+              <option value="month">Mes actual</option>
+              <option value="3m">Últimos 3 meses</option>
+              <option value="6m">Últimos 6 meses</option>
+              <option value="all">Todo el historial</option>
+            </select>
           </div>
-          <div class="stat-card">
-            <div class="stat-label">⛽ Gasto Mes Actual</div>
-            <div class="stat-value" id="stat-fuel">$0</div>
-            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Total de cargas</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">📏 Odómetro Actual</div>
-            <div class="stat-value" id="stat-km">0</div>
-            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">km registrados</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">⚡ Precio Promedio</div>
-            <div class="stat-value" id="stat-efficiency">-</div>
-            <!-- FIX #6: Cambiado a precio promedio que sí es calculable -->
-            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">$/litro este mes</div>
+          <div class="fl">
+            <label>Formato</label>
+            <select id="rp-fmt">
+              <option value="screen">Ver en pantalla</option>
+              <option value="email">Enviar por email</option>
+            </select>
           </div>
         </div>
-
-        <h3 style="margin-bottom: 1rem; color: var(--primary);">SELECCIONAR VEHÍCULO</h3>
-        <div class="vehicle-grid" id="vehicle-selector"></div>
-        <div id="alerts-container"></div>
+        <button class="btn btn-primary" onclick="App.genReport()">Generar</button>
       </div>
+      <div id="rep-out"></div>
+    </div>
+  </main>
+</div>
 
-      <!-- Capture -->
-      <div id="tab-capture" class="tab-panel">
-        <div class="card">
-          <h3 style="margin-bottom: 1.5rem;">Registrar Carga de Combustible</h3>
-          <input type="file" id="file-input" accept="image/*" capture="environment" style="display: none;">
-          
-          <button class="btn btn-primary" style="margin-bottom: 1.5rem; width: 100%;" onclick="document.getElementById('file-input').click()">
-            <span>📷</span> Tomar Foto del Ticket
-          </button>
+<!-- ═══════════════════════════
+  MODALS
+═══════════════════════════ -->
 
-          <div id="preview-container" style="margin-bottom: 1.5rem;"></div>
-          <div id="capture-form" style="display: none;">
-            <div class="form-row">
-              <div class="form-group">
-                <label>Fecha</label>
-                <input type="date" id="fuel-date">
-              </div>
-              <div class="form-group">
-                <label>Hora</label>
-                <input type="time" id="fuel-time">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Litros</label>
-                <input type="number" id="fuel-liters" step="0.01" placeholder="0.00">
-              </div>
-              <div class="form-group">
-                <label>Monto Total ($)</label>
-                <input type="number" id="fuel-amount" step="0.01" placeholder="0.00">
-              </div>
-            </div>
-            <div class="form-row">
-              <div class="form-group">
-                <label>Surtidor (CUIT)</label>
-                <input type="text" id="fuel-cuit" placeholder="XX-XXXXXXXX-X">
-              </div>
-              <div class="form-group">
-                <label>Localidad</label>
-                <input type="text" id="fuel-location" placeholder="Buenos Aires">
-              </div>
-            </div>
-            <div class="form-group">
-              <label>Dirección</label>
-              <input type="text" id="fuel-address" placeholder="Av. Corrientes 1000">
-            </div>
-            <div class="form-actions">
-              <button class="btn btn-primary" onclick="app.saveFuelRecord()">Guardar Registro</button>
-              <button class="btn btn-secondary" onclick="app.cancelCapture()">Cancelar</button>
-            </div>
-          </div>
-          <div id="capture-alerts"></div>
-        </div>
-      </div>
-
-      <!-- Vehicles -->
-      <div id="tab-vehicles" class="tab-panel">
-        <div id="vehicles-list"></div>
-      </div>
-
-      <!-- Maintenance -->
-      <div id="tab-maintenance" class="tab-panel">
-        <div class="card">
-          <h3 style="margin-bottom: 1.5rem;">Registro de Mantenimiento</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Tipo de Servicio</label>
-              <select id="service-type">
-                <option value="">Selecciona...</option>
-                <option value="oil-change">Cambio de Aceite</option>
-                <option value="filter">Cambio de Filtros</option>
-                <option value="tires">Revisión de Neumáticos</option>
-                <option value="suspension">Revisión Suspensión</option>
-                <option value="brakes">Revisión Frenos</option>
-                <option value="other">Otro</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Fecha del Servicio</label>
-              <input type="date" id="service-date">
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Km al Momento del Servicio</label>
-              <input type="number" id="service-km" placeholder="0">
-            </div>
-            <div class="form-group">
-              <label>Próximo Servicio en (Km adicionales)</label>
-              <input type="number" id="service-next-km" placeholder="10000">
-            </div>
-          </div>
-          <div class="form-group">
-            <label>Notas</label>
-            <textarea id="service-notes" placeholder="Detalles del servicio realizado..."></textarea>
-          </div>
-          <div class="form-group">
-            <label>Taller / Técnico</label>
-            <input type="text" id="service-provider" placeholder="Nombre del taller">
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.saveMaintenanceRecord()">Guardar Servicio</button>
-          </div>
-        </div>
-
-        <h3 style="margin-bottom: 1.5rem; margin-top: 2rem; color: var(--primary);">HISTORIAL DE SERVICIOS</h3>
-        <div id="maintenance-list"></div>
-      </div>
-
-      <!-- Reports -->
-      <div id="tab-reports" class="tab-panel">
-        <div class="card">
-          <h3 style="margin-bottom: 1.5rem;">Generar Reportes</h3>
-          <div class="form-row">
-            <div class="form-group">
-              <label>Rango de Fechas</label>
-              <select id="report-range">
-                <option value="month">Mes Actual</option>
-                <option value="3months">Últimos 3 Meses</option>
-                <option value="6months">Últimos 6 Meses</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label>Formato</label>
-              <select id="report-format">
-                <option value="screen">Ver en Pantalla</option>
-                <option value="email">Enviar por Email</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.generateReport()">Generar Reporte</button>
-          </div>
-        </div>
-        <div id="report-content"></div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Menu Modal -->
-  <div id="menu-modal" class="modal">
-    <div class="modal-content" style="max-width: 300px;">
-      <div class="modal-header">
-        <h2>Opciones</h2>
-        <button class="modal-close" onclick="app.closeModal('menu-modal')">✕</button>
-      </div>
-      <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button class="btn btn-secondary" onclick="app.closeModal('menu-modal'); app.openSettings();">⚙️ Configuración</button>
-        <button class="btn btn-secondary" onclick="app.exportData()">📥 Exportar Datos</button>
-        <button class="btn btn-secondary" onclick="app.logout()" style="color: var(--danger);">🚪 Cerrar Sesión</button>
-      </div>
+<!-- VEHICLE PICKER -->
+<div class="mbk" id="m-veh">
+  <div class="modal" style="max-width:420px">
+    <div class="mhdr"><span class="mtitle">¿Qué vehículo usás hoy?</span></div>
+    <p class="muted mb2">Seleccioná el vehículo con el que salís.</p>
+    <div id="vcards"></div>
+    <div id="override-info" style="display:none;margin-top:.875rem">
+      <div class="div" style="margin-top:0"></div>
+      <p class="muted mb1" style="font-size:.76rem">⚙️ El administrador asignó un vehículo especial para hoy:</p>
+      <span class="chip c-orange" id="override-chip"></span>
     </div>
   </div>
+</div>
 
-  <!-- Settings Modal -->
-  <div id="settings-modal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>Configuración</h2>
-        <button class="modal-close" onclick="app.closeModal('settings-modal')">✕</button>
-      </div>
-      <div id="settings-body">
-        <div class="form-group">
-          <label>Email para Notificaciones</label>
-          <input type="email" id="settings-email" placeholder="tu@email.com">
-        </div>
-        <div class="form-group">
-          <label>Email Administrador</label>
-          <input type="email" id="settings-admin-email" placeholder="admin@empresa.com">
-        </div>
-        <div class="form-group">
-          <label>API Key Gemini</label>
-          <input type="password" id="settings-api-key" placeholder="AIza...">
-        </div>
-        <div class="form-actions">
-          <button class="btn btn-primary" onclick="app.saveSettings()">Guardar</button>
-          <button class="btn btn-secondary" onclick="app.closeModal('settings-modal')">Cancelar</button>
-        </div>
-      </div>
+<!-- MENU -->
+<div class="mbk" id="m-menu">
+  <div class="modal" style="max-width:310px">
+    <div class="mhdr">
+      <span class="mtitle" id="menu-uname">Opciones</span>
+      <button class="mclose" onclick="App.close('m-menu')">✕</button>
+    </div>
+    <div class="gap">
+      <button class="btn btn-ghost" onclick="App.openVPicker()">🚗 Cambiar vehículo del día</button>
+      <button class="btn btn-ghost" onclick="App.openSettings()">⚙️ Configuración</button>
+      <button class="btn btn-ghost" onclick="App.exportData()">📥 Exportar mis datos</button>
+      <div class="div" style="margin:0"></div>
+      <button class="btn btn-danger" onclick="App.logout()">🚪 Cerrar sesión</button>
     </div>
   </div>
+</div>
 
-  <!-- FIX #3: Modal separado para KM inicial (no destruye el de settings) -->
-  <div id="km-modal" class="modal">
-    <div class="modal-content" style="max-width: 400px;">
-      <div class="modal-header">
-        <h2>📍 KM Iniciales</h2>
-      </div>
-      <div class="form-group">
-        <label id="km-modal-label">Km Actuales del Vehículo</label>
-        <input type="number" id="initial-km" placeholder="123456">
-        <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
-          Este dato se usa para calcular alertas de mantenimiento
-        </small>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-primary" onclick="app.confirmInitialKm()">Confirmar</button>
+<!-- SETTINGS -->
+<div class="mbk" id="m-cfg">
+  <div class="modal">
+    <div class="mhdr">
+      <span class="mtitle">Configuración</span>
+      <button class="mclose" onclick="App.close('m-cfg')">✕</button>
+    </div>
+    <div class="slabel">Mi cuenta</div>
+    <div class="fl mb2">
+      <label>Mi email (recibo confirmaciones de carga)</label>
+      <input type="email" id="cfg-email" placeholder="tu@email.com">
+    </div>
+    <div class="div"></div>
+    <div class="slabel">Administrador</div>
+    <div class="fl mb2">
+      <label>Clave de administrador</label>
+      <input type="password" id="cfg-akey" placeholder="Clave para desbloquear panel admin"
+             oninput="App.checkAdminKey()">
+    </div>
+    <div id="admin-panel" style="display:none">
+      <div class="card" style="border-color:var(--orange);margin-bottom:1rem">
+        <p style="font-size:.76rem;color:var(--orange);font-weight:700;margin-bottom:1rem">⚡ PANEL ADMINISTRADOR</p>
+        <div class="fl mb2">
+          <label>Email admin / contador (recibe todos los reportes)</label>
+          <input type="email" id="cfg-adm-email" placeholder="admin@empresa.com">
+        </div>
+        <div class="fl mb2">
+          <label>API Key Gemini (OCR de tickets)</label>
+          <input type="password" id="cfg-apikey" placeholder="AIza...">
+        </div>
+        <div class="slabel" style="margin-bottom:.75rem">Asignación de vehículos para hoy</div>
+        <div id="adm-assigns" style="display:flex;flex-direction:column;gap:.625rem"></div>
       </div>
     </div>
+    <div style="display:flex;gap:.75rem">
+      <button class="btn btn-primary" onclick="App.saveSettings()" style="flex:2">Guardar</button>
+      <button class="btn btn-ghost" onclick="App.close('m-cfg')" style="flex:1">Cancelar</button>
+    </div>
   </div>
+</div>
 
-  <script>
-    const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev";
+<!-- KM MODAL -->
+<div class="mbk" id="m-km">
+  <div class="modal" style="max-width:360px">
+    <div class="mhdr"><span class="mtitle">📍 KM del vehículo</span></div>
+    <p class="muted mb2">Primera vez que usás este vehículo. ¿Cuántos km tiene actualmente?</p>
+    <div class="fl mb2">
+      <label id="km-lbl">Kilómetros actuales</label>
+      <input type="number" id="km-in" placeholder="150000"
+             onkeydown="if(event.key==='Enter') App.confirmKm()">
+    </div>
+    <button class="btn btn-primary" onclick="App.confirmKm()">Confirmar</button>
+  </div>
+</div>
 
-    const app = {
-      state: {
-        currentUser: null,
-        currentVehicle: null,
-        users: {},
-        pendingKmVehicle: null,    // Para el modal de KM inicial
-        isOnline: navigator.onLine
-      },
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────
+const API = "https://logisticaml.santamariapablodaniel.workers.dev";
+const ADMIN_KEY = "admin2024";
 
-      async init() {
-        console.log('🚀 Iniciando Fleet Control');
+const VEHICLES = {
+  hiace:   { id:'hiace',   name:'Toyota Hiace',  emoji:'🚐', desc:'Furgón de carga',  fixedUser:'nicolas' },
+  saveiro: { id:'saveiro', name:'VW Saveiro',     emoji:'🚙', desc:'Camioneta pickup', fixedUser:'martin'  },
+  fiat:    { id:'fiat',    name:'Fiat Uno Cargo', emoji:'🚗', desc:'Auto comercial',   fixedUser:'ramiro'  },
+};
 
-        if ('serviceWorker' in navigator) {
-          try {
-            await navigator.serviceWorker.register('/service-worker.js');
-          } catch (err) {
-            console.warn('Service Worker no disponible:', err);
-          }
-        }
+// Username (lowercase) → default vehicle id
+const USER_V = { martin:'saveiro', ramiro:'fiat', nicolas:'hiace' };
 
-        this.loadLocalData();
+// ─── STATE ───────────────────────────────────────────────────
+let S = { user:null, vid:null, pendingKmV:null };
 
-        // Los PINs ahora usan campos únicos con oninput inline, no necesitan listeners aquí
+// ─── STORAGE ─────────────────────────────────────────────────
+const DB = {
+  save(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)) }catch(e){} },
+  load(k,d=null){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):d }catch(e){ return d } },
+  users(){ return this.load('fc2_users',{}) },
+  saveUsers(u){ this.save('fc2_users',u) },
+  overrides(){ return this.load('fc2_ov',{}) },
+  saveOverrides(o){ this.save('fc2_ov',o) },
+};
 
-        document.getElementById('file-input').addEventListener('change', (e) => this.handleFileCapture(e));
+// ─── TOAST ───────────────────────────────────────────────────
+function toast(msg, type='info', ms=4000){
+  const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  const el=document.createElement('div');
+  el.className=`toast t-${type}`;
+  el.innerHTML=`<span>${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(()=>{ el.classList.add('bye'); setTimeout(()=>el.remove(),250); }, ms);
+}
 
-        window.addEventListener('online', () => {
-          this.state.isOnline = true;
-          this.showAlert('Conexión restaurada', 'success');
-        });
-        window.addEventListener('offline', () => {
-          this.state.isOnline = false;
-          this.showAlert('Modo offline activado', 'warning');
-        });
+// ─── APP ─────────────────────────────────────────────────────
+const App = {
 
-        console.log('✅ Fleet Control listo');
-      },
+  // AUTH
+  showLogin(){
+    document.getElementById('f-login').style.display='';
+    document.getElementById('f-reg').style.display='none';
+    setTimeout(()=>document.getElementById('lu').focus(),50);
+  },
+  showReg(){
+    document.getElementById('f-login').style.display='none';
+    document.getElementById('f-reg').style.display='';
+    setTimeout(()=>document.getElementById('rn').focus(),50);
+  },
 
-      // ===== AUTH =====
-      showLogin() {
-        document.getElementById('login-form').style.display = 'block';
-        document.getElementById('register-form').style.display = 'none';
-      },
+  login(){
+    const u=document.getElementById('lu').value.trim().toLowerCase();
+    const p=document.getElementById('lp').value.trim();
+    if(!u){ alert('Ingresá tu usuario'); return; }
+    if(p.length!==4){ alert('El PIN debe tener 4 dígitos'); return; }
+    const users=DB.users();
+    const user=Object.values(users).find(x=>x.username===u);
+    if(!user){ alert('Usuario no encontrado. ¿Ya te registraste?'); return; }
+    if(user.pin!==p){ alert('PIN incorrecto'); document.getElementById('lp').value=''; return; }
+    S.user=user;
+    this._enterApp();
+  },
 
-      showRegister() {
-        document.getElementById('login-form').style.display = 'none';
-        document.getElementById('register-form').style.display = 'block';
-        document.getElementById('register-name').focus();
-      },
+  register(){
+    const name=document.getElementById('rn').value.trim();
+    const u=document.getElementById('ru').value.trim().toLowerCase();
+    const p=document.getElementById('rp').value.trim();
+    if(!name){ alert('Ingresá tu nombre'); return; }
+    if(!u){ alert('Ingresá un usuario'); return; }
+    if(p.length!==4||!/^\d{4}$/.test(p)){ alert('El PIN debe ser 4 dígitos numéricos'); return; }
+    const users=DB.users();
+    if(Object.values(users).find(x=>x.username===u)){ alert('Ese usuario ya existe'); return; }
+    const id=Date.now().toString();
+    users[id]={id,name,username:u,pin:p,email:'',vehicles:{},createdAt:new Date().toISOString()};
+    DB.saveUsers(users);
+    alert(`✅ Cuenta creada. Iniciá sesión con "${u}".`);
+    document.getElementById('rn').value='';
+    document.getElementById('ru').value='';
+    document.getElementById('rp').value='';
+    this.showLogin();
+    document.getElementById('lu').value=u;
+    document.getElementById('lp').focus();
+  },
 
-      login() {
-        const username = document.getElementById('login-user').value.trim();
-        // Leer del campo único (más confiable en móviles)
-        const pin = (document.getElementById('login-pin-real').value || '').trim();
+  logout(){
+    S={user:null,vid:null,pendingKmV:null};
+    document.getElementById('sc-app').classList.remove('on');
+    document.getElementById('sc-login').classList.add('on');
+    this.close('m-menu');
+    document.getElementById('lu').value='';
+    document.getElementById('lp').value='';
+  },
 
-        console.log('Login - usuario:', username, '| PIN length:', pin.length, '| usuarios guardados:', Object.keys(this.state.users).length);
+  _enterApp(){
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent=S.user.name;
+    this.openVPicker();
+  },
 
-        if (!username) {
-          alert('Ingresa tu nombre de usuario');
-          document.getElementById('login-user').focus();
-          return;
-        }
+  // VEHICLE PICKER
+  openVPicker(){
+    this.close('m-menu');
+    const today=new Date().toISOString().split('T')[0];
+    const ovr=DB.overrides();
+    const uOvr=ovr[S.user.username];
+    const hasOvr=uOvr&&uOvr.expires>=today;
+    const assignedId=hasOvr?uOvr.vehicleId:(USER_V[S.user.username]||null);
+    const isAdmin=localStorage.getItem('fc2_adm')==='1';
 
-        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-          alert('Ingresa los 4 digitos del PIN (uno por casilla)');
-          document.getElementById('login-pin-real').focus();
-          return;
-        }
+    const cont=document.getElementById('vcards');
+    cont.innerHTML='';
 
-        const user = Object.values(this.state.users).find(u => u.username === username);
+    Object.values(VEHICLES).forEach(v=>{
+      const isAssigned=v.id===assignedId;
+      // Non-admin users only see their assigned vehicle
+      if(!isAdmin&&!isAssigned) return;
+      const card=document.createElement('div');
+      card.className='vcard'+(isAssigned?' sel':'');
+      const badge=hasOvr&&isAssigned?'<span class="chip c-orange">Asignado hoy</span>':
+                  isAssigned?'<span class="chip c-purple">Tu vehículo</span>':'';
+      card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb">${badge}</div>`;
+      card.onclick=()=>this.selectV(v.id);
+      cont.appendChild(card);
+    });
 
-        if (!user) {
-          alert('Usuario no encontrado. ¿Ya te registraste?');
-          return;
-        }
+    // Show override info if applicable
+    const ovrInfo=document.getElementById('override-info');
+    if(hasOvr){
+      ovrInfo.style.display='';
+      document.getElementById('override-chip').textContent=VEHICLES[assignedId]?.emoji+' '+VEHICLES[assignedId]?.name+' (asignado por admin)';
+    } else {
+      ovrInfo.style.display='none';
+    }
 
-        if (user.pin !== pin) {
-          alert('PIN incorrecto. Intenta de nuevo.');
-          document.getElementById('login-pin-real').value = '';
-          document.getElementById('login-pin-real').focus();
-          return;
-        }
+    document.getElementById('m-veh').classList.add('on');
+  },
 
-        this.state.currentUser = user;
-        this.showApp();
-        this.renderDashboard();
-      },
+  selectV(vid){
+    S.vid=vid;
+    this.close('m-veh');
+    // Ensure vehicle record exists
+    const users=DB.users();
+    if(!users[S.user.id].vehicles) users[S.user.id].vehicles={};
+    if(!users[S.user.id].vehicles[vid]){
+      users[S.user.id].vehicles[vid]={currentKm:null,fuelRecords:[],maintenanceRecords:[]};
+      DB.saveUsers(users);
+    }
+    S.user=users[S.user.id];
+    const v=VEHICLES[vid];
+    document.getElementById('nav-vemoji').textContent=v.emoji;
+    document.getElementById('nav-vname').textContent=v.name;
+    if(!S.user.vehicles[vid].currentKm){
+      S.pendingKmV=vid;
+      document.getElementById('km-lbl').textContent=`KM actuales del ${v.name}`;
+      document.getElementById('km-in').value='';
+      document.getElementById('m-km').classList.add('on');
+      setTimeout(()=>document.getElementById('km-in').focus(),200);
+    } else {
+      this.renderDash();
+    }
+  },
 
-      register() {
-        const name = document.getElementById('register-name').value.trim();
-        const username = document.getElementById('register-user').value.trim();
-        // Leer del campo único
-        const pin = (document.getElementById('register-pin-real').value || '').trim();
+  confirmKm(){
+    const km=parseInt(document.getElementById('km-in').value);
+    if(!km||km<0){ alert('Ingresá un valor válido'); return; }
+    const users=DB.users();
+    users[S.user.id].vehicles[S.pendingKmV].currentKm=km;
+    DB.saveUsers(users);
+    S.user=users[S.user.id];
+    S.pendingKmV=null;
+    this.close('m-km');
+    this.renderDash();
+    toast('KM inicial registrado ✅','success');
+  },
 
-        console.log('Register - nombre:', name, '| usuario:', username, '| PIN length:', pin.length);
+  // TABS
+  tab(name,btn){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('panel-'+name).classList.add('on');
+    if(name==='maint') this.renderMaintList();
+    if(name==='dash')  this.renderDash();
+  },
 
-        if (!name) { alert('Ingresa tu nombre completo'); return; }
-        if (!username) { alert('Ingresa un nombre de usuario'); return; }
-        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-          alert('El PIN debe ser exactamente 4 numeros. Completa las 4 casillas.');
-          return;
-        }
+  // DASHBOARD
+  renderDash(){
+    if(!S.vid) return;
+    const vd=S.user.vehicles[S.vid];
+    const v=VEHICLES[S.vid];
+    const fuel=vd.fuelRecords||[];
+    const maint=vd.maintenanceRecords||[];
 
-        if (Object.values(this.state.users).find(u => u.username === username)) {
-          alert('Ese nombre de usuario ya existe, elige otro');
-          return;
-        }
+    document.getElementById('h-emoji').textContent=v.emoji;
+    document.getElementById('h-name').textContent=v.name;
+    document.getElementById('h-desc').textContent=v.desc;
+    document.getElementById('h-km').textContent=vd.currentKm?vd.currentKm.toLocaleString('es-AR'):'—';
 
-        const userId = Date.now().toString();
-        this.state.users[userId] = {
-          id: userId,
-          name,
-          username,
-          pin,
-          email: null,
-          vehicles: {},
-          createdAt: new Date().toISOString()
-        };
+    const now=new Date();
+    const mo=fuel.filter(r=>{ const d=new Date(r.date); return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear(); });
+    const amt=mo.reduce((s,r)=>s+r.amount,0);
+    const lit=mo.reduce((s,r)=>s+r.liters,0);
+    const avg=lit>0?amt/lit:0;
 
-        this.saveLocalData();
-        console.log('Usuario registrado:', this.state.users[userId]);
+    document.getElementById('st-fuel').textContent='$'+amt.toLocaleString('es-AR',{maximumFractionDigits:0});
+    document.getElementById('st-lit').textContent=lit.toFixed(1);
+    document.getElementById('st-n').textContent=mo.length;
+    document.getElementById('st-avg').textContent=avg>0?'$'+avg.toFixed(2):'—';
 
-        alert('Cuenta creada! Ahora inicia sesion con tu usuario y PIN.');
-        this.showLogin();
+    this._renderAlerts(vd,maint);
 
-        // Limpiar form de registro
-        document.getElementById('register-name').value = '';
-        document.getElementById('register-user').value = '';
-        document.getElementById('register-pin-real').value = '';
-
-        // Pre-completar el username en el login
-        document.getElementById('login-user').value = username;
-        document.getElementById('lpin-1').focus();
-      },
-
-      logout() {
-        this.state.currentUser = null;
-        this.state.currentVehicle = null;
-        document.getElementById('app-screen').style.display = 'none';
-        document.getElementById('login-screen').style.display = 'flex';
-        this.closeModal('menu-modal');
-        document.getElementById('login-user').value = '';
-        document.getElementById('login-pin-real').value = '';
-      },
-
-      showApp() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('app-screen').style.display = 'flex';
-        document.getElementById('user-name').textContent = this.state.currentUser.name;
-        document.getElementById('current-user-email').textContent = this.state.currentUser.email || '';
-      },
-
-      // ===== VEHÍCULOS =====
-      initializeVehiclesIfNeeded() {
-        if (!this.state.currentUser.vehicles) {
-          this.state.currentUser.vehicles = {};
-        }
-      },
-
-      selectVehicle(vehicleName) {
-        this.initializeVehiclesIfNeeded();
-
-        if (!this.state.currentUser.vehicles[vehicleName]) {
-          const icons = { 'Toyota Hiace': '🚐', 'Volkswagen Saveiro': '🚙', 'Fiat Uno Cargo': '🚗' };
-          this.state.currentUser.vehicles[vehicleName] = {
-            name: vehicleName,
-            icon: icons[vehicleName] || '🚗',
-            currentKm: null,
-            createdAt: new Date().toISOString(),
-            fuelRecords: [],
-            maintenanceRecords: []
-          };
-        }
-
-        this.state.currentVehicle = vehicleName;
-        this.saveLocalData();
-
-        if (!this.state.currentUser.vehicles[vehicleName].currentKm) {
-          // FIX #3: Modal separado para KM inicial
-          this.state.pendingKmVehicle = vehicleName;
-          document.getElementById('km-modal-label').textContent = `Km Actuales del ${vehicleName}`;
-          document.getElementById('initial-km').value = '';
-          this.openModal('km-modal');
-        } else {
-          this.renderDashboard();
-          this.switchTab('capture');
-        }
-      },
-
-      // FIX #3: Función separada para confirmar KM
-      confirmInitialKm() {
-        const km = parseInt(document.getElementById('initial-km').value);
-        const vehicleName = this.state.pendingKmVehicle;
-
-        if (!km || km < 0) {
-          alert('Ingresá un valor válido de km');
-          return;
-        }
-
-        this.state.currentUser.vehicles[vehicleName].currentKm = km;
-        this.state.currentUser.vehicles[vehicleName].lastServiceKm = km;
-        this.saveLocalData();
-        this.closeModal('km-modal');
-        this.state.pendingKmVehicle = null;
-        this.renderDashboard();
-      },
-
-      renderVehicleSelector() {
-        const vehicles = [
-          { name: 'Toyota Hiace', icon: '🚐', desc: 'Furgón de carga' },
-          { name: 'Volkswagen Saveiro', icon: '🚙', desc: 'Camioneta pickup' },
-          { name: 'Fiat Uno Cargo', icon: '🚗', desc: 'Auto comercial' }
-        ];
-
-        const html = vehicles.map(v => `
-          <div class="vehicle-card ${this.state.currentVehicle === v.name ? 'selected' : ''}" 
-               onclick="app.selectVehicle('${v.name}')"
-               style="${this.state.currentVehicle === v.name ? 'border-color: var(--primary);' : ''}">
-            <div class="vehicle-icon">${v.icon}</div>
-            <div class="vehicle-name">${v.name}</div>
-            <div class="vehicle-info">${v.desc}</div>
-            ${this.state.currentVehicle === v.name ? '<div class="card-badge" style="margin-top: 0.5rem;">✓ Activo</div>' : ''}
-          </div>
-        `).join('');
-
-        document.getElementById('vehicle-selector').innerHTML = html;
-      },
-
-      renderVehiclesTab() {
-        this.initializeVehiclesIfNeeded();
-        const vehicles = this.state.currentUser.vehicles;
-        let html = '';
-
-        Object.entries(vehicles).forEach(([name, data]) => {
-          const records = data.maintenanceRecords || [];
-          const lastService = records[records.length - 1];
-          const nextServiceKm = lastService
-            ? lastService.currentKm + lastService.nextKm
-            : (data.currentKm || 0) + 10000;
-          const kmToNextService = nextServiceKm - (data.currentKm || 0);
-
-          html += `
-            <div class="card" style="cursor:pointer" onclick="app.state.currentVehicle='${name}'; app.switchTab('dashboard')">
-              <div class="card-header">
-                <div>
-                  <div class="card-title">${data.icon} ${name}</div>
-                  <div class="card-meta">Toca para activar</div>
-                </div>
-                <div class="card-badge">${data.currentKm?.toLocaleString() || '0'} km</div>
-              </div>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                <div>
-                  <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Próximo Servicio</div>
-                  <div style="font-weight: 700; color: ${kmToNextService <= 0 ? 'var(--danger)' : kmToNextService <= 500 ? 'var(--warning)' : 'var(--primary)'};">
-                    ${kmToNextService > 0 ? kmToNextService.toLocaleString() + ' km restantes' : '⚠️ VENCIDO'}
-                  </div>
-                </div>
-                <div>
-                  <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Último Servicio</div>
-                  <div style="font-weight: 700;">${lastService ? new Date(lastService.date).toLocaleDateString('es-AR') : 'No registrado'}</div>
-                </div>
-              </div>
+    const recent=[...fuel].reverse().slice(0,5);
+    document.getElementById('dash-recent').innerHTML=recent.length===0
+      ?'<p class="muted tc" style="padding:2rem 0">Sin cargas registradas aún</p>'
+      :recent.map(r=>`
+        <div class="card" style="margin-bottom:.6rem">
+          <div class="card-row">
+            <div>
+              <div style="font-weight:600;margin-bottom:.2rem">${new Date(r.date).toLocaleDateString('es-AR')} ${r.time||''}</div>
+              <div class="muted" style="font-size:.78rem">${r.location||'Sin localidad'} · ${r.liters.toFixed(2)} L</div>
             </div>
-          `;
-        });
-
-        document.getElementById('vehicles-list').innerHTML = html || '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">No hay vehículos registrados aún</p>';
-      },
-
-      // ===== COMBUSTIBLE =====
-      async handleFileCapture(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const base64 = await this.fileToBase64(file);
-
-        document.getElementById('preview-container').innerHTML = `
-          <img src="${base64}" style="width:100%; max-height:300px; border-radius:8px; margin-bottom:1rem; border:1px solid var(--border);">
-        `;
-        document.getElementById('capture-form').style.display = 'block';
-
-        // Defaults
-        const now = new Date();
-        document.getElementById('fuel-date').value = now.toISOString().split('T')[0];
-        document.getElementById('fuel-time').value = now.toTimeString().slice(0, 5);
-
-        this.showAlert('🧠 Analizando ticket con IA...', 'info');
-
-        try {
-          const apiKey = localStorage.getItem('apiKey');
-          const response = await fetch(`${API_URL}/api/process-ticket`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ image: base64, apiKey })
-          });
-
-          if (!response.ok) throw new Error('Error del servidor');
-
-          const data = await response.json();
-
-          if (data.ticket) {
-            const t = data.ticket;
-            if (t.fecha) document.getElementById('fuel-date').value = t.fecha;
-            if (t.hora) document.getElementById('fuel-time').value = t.hora.slice(0, 5);
-            if (t.combustible?.litros) document.getElementById('fuel-liters').value = t.combustible.litros;
-            if (t.combustible?.liters) document.getElementById('fuel-liters').value = t.combustible.liters;
-            if (t.monto?.total) document.getElementById('fuel-amount').value = t.monto.total;
-            if (t.surtidor?.cuit) document.getElementById('fuel-cuit').value = t.surtidor.cuit;
-            if (t.surtidor?.localidad) document.getElementById('fuel-location').value = t.surtidor.localidad;
-            if (t.surtidor?.direccion) document.getElementById('fuel-address').value = t.surtidor.direccion;
-            this.showAlert('✅ Datos extraídos automáticamente. Verificá antes de guardar.', 'success');
-          }
-        } catch (err) {
-          console.error('Error IA:', err);
-          this.showAlert('⚠️ No se pudo conectar con la IA. Cargá los datos manualmente.', 'warning');
-        }
-      },
-
-      async saveFuelRecord() {
-        if (!this.state.currentVehicle) {
-          this.showAlert('Seleccioná un vehículo primero', 'error');
-          return;
-        }
-
-        const liters = parseFloat(document.getElementById('fuel-liters').value);
-        const amount = parseFloat(document.getElementById('fuel-amount').value);
-
-        if (!document.getElementById('fuel-date').value || !liters || !amount) {
-          this.showAlert('Completá al menos: Fecha, Litros y Monto', 'error');
-          return;
-        }
-
-        this.initializeVehiclesIfNeeded();
-        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        if (!vehicle.fuelRecords) vehicle.fuelRecords = [];
-
-        const record = {
-          id: Date.now(),
-          date: document.getElementById('fuel-date').value,
-          time: document.getElementById('fuel-time').value,
-          liters,
-          amount,
-          cuit: document.getElementById('fuel-cuit').value,
-          location: document.getElementById('fuel-location').value,
-          address: document.getElementById('fuel-address').value,
-          createdAt: new Date().toISOString()
-        };
-
-        vehicle.fuelRecords.push(record);
-        this.saveLocalData();
-
-        // FIX #2: Solo llamamos a la versión correcta (la que usa el Worker)
-        this.sendFuelConfirmationEmail(record);
-
-        this.showAlert('✅ Carga registrada correctamente', 'success');
-        this.cancelCapture();
-        this.renderDashboard();
-      },
-
-      // FIX #2: Renombrada para evitar duplicado, solo existe esta versión
-      async sendFuelConfirmationEmail(record) {
-        if (!this.state.currentUser.email) return;
-
-        try {
-          await fetch(`${API_URL}/api/send-confirmation`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: this.state.currentUser.email,
-              userName: this.state.currentUser.name,
-              vehicleName: this.state.currentVehicle,
-              vehicleIcon: this.state.currentUser.vehicles[this.state.currentVehicle].icon,
-              fuelRecord: record,
-              location: record.location,
-              address: record.address
-            })
-          });
-          console.log('📧 Email de confirmación enviado');
-        } catch (err) {
-          console.error('Error al enviar email:', err);
-        }
-      },
-
-      cancelCapture() {
-        document.getElementById('file-input').value = '';
-        document.getElementById('preview-container').innerHTML = '';
-        document.getElementById('capture-form').style.display = 'none';
-        ['fuel-date','fuel-time','fuel-liters','fuel-amount','fuel-cuit','fuel-location','fuel-address']
-          .forEach(id => { document.getElementById(id).value = ''; });
-      },
-
-      // ===== MANTENIMIENTO =====
-      saveMaintenanceRecord() {
-        if (!this.state.currentVehicle) {
-          this.showAlert('Seleccioná un vehículo primero', 'error');
-          return;
-        }
-
-        const type = document.getElementById('service-type').value;
-        const date = document.getElementById('service-date').value;
-        const currentKm = parseInt(document.getElementById('service-km').value);
-        const nextKmInterval = parseInt(document.getElementById('service-next-km').value) || 10000;
-
-        if (!type || !date || !currentKm) {
-          this.showAlert('Completá Tipo, Fecha y Km actuales', 'error');
-          return;
-        }
-
-        this.initializeVehiclesIfNeeded();
-        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        if (!vehicle.maintenanceRecords) vehicle.maintenanceRecords = [];
-
-        const record = {
-          id: Date.now(),
-          type,
-          date,
-          currentKm,
-          nextKm: nextKmInterval,   // Km adicionales hasta próximo servicio
-          notes: document.getElementById('service-notes').value,
-          provider: document.getElementById('service-provider').value,
-          createdAt: new Date().toISOString()
-        };
-
-        vehicle.currentKm = currentKm;
-        vehicle.maintenanceRecords.push(record);
-        this.saveLocalData();
-
-        this.showAlert('✅ Servicio registrado', 'success');
-
-        ['service-type','service-date','service-km','service-notes','service-provider'].forEach(id => {
-          document.getElementById(id).value = '';
-        });
-        document.getElementById('service-next-km').value = '10000';
-
-        this.renderMaintenanceList();
-        this.renderDashboard();
-      },
-
-      renderMaintenanceList() {
-        if (!this.state.currentVehicle) return;
-
-        this.initializeVehiclesIfNeeded();
-        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        // FIX #5: .slice() para no mutar el array original
-        const records = [...(vehicle.maintenanceRecords || [])].reverse();
-
-        if (records.length === 0) {
-          document.getElementById('maintenance-list').innerHTML =
-            '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">Sin registros de servicio</p>';
-          return;
-        }
-
-        const typeIcons = {
-          'oil-change': '🛢️', 'filter': '🔄', 'tires': '⚙️',
-          'suspension': '🔧', 'brakes': '🛑', 'other': '🔩'
-        };
-        const typeNames = {
-          'oil-change': 'Cambio de Aceite', 'filter': 'Cambio de Filtros',
-          'tires': 'Revisión de Neumáticos', 'suspension': 'Revisión Suspensión',
-          'brakes': 'Revisión Frenos', 'other': 'Otro'
-        };
-
-        const html = records.map(r => `
-          <div class="card">
-            <div class="card-header">
-              <div>
-                <div class="card-title">${typeIcons[r.type] || '🔧'} ${typeNames[r.type] || r.type}</div>
-                <div class="card-meta">${new Date(r.date).toLocaleDateString('es-AR')}</div>
-              </div>
-              <div class="card-badge">${r.currentKm.toLocaleString()} km</div>
-            </div>
-            <div style="font-size: 0.875rem; color: var(--text-gray);">
-              <p><strong>Próximo servicio:</strong> a los ${(r.currentKm + r.nextKm).toLocaleString()} km</p>
-              ${r.provider ? `<p><strong>Taller:</strong> ${r.provider}</p>` : ''}
-              ${r.notes ? `<p><strong>Notas:</strong> ${r.notes}</p>` : ''}
+            <div style="text-align:right">
+              <div class="tmono" style="font-size:.95rem;color:var(--acc)">$${r.amount.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+              <div class="muted" style="font-size:.72rem">$${(r.amount/r.liters).toFixed(2)}/L</div>
             </div>
           </div>
-        `).join('');
+        </div>`).join('');
+  },
 
-        document.getElementById('maintenance-list').innerHTML = html;
-      },
+  _renderAlerts(vd,maint){
+    const last=maint[maint.length-1];
+    const nextKm=last?(last.currentKm+last.nextKm):((vd.currentKm||0)+10000);
+    const toNext=nextKm-(vd.currentKm||0);
+    let html='';
+    if(toNext<=0)
+      html=`<div class="abanner a-red"><span class="ai">🛑</span><div><strong>Mantenimiento vencido</strong><p>El vehículo superó ${Math.abs(toNext).toLocaleString()} km del servicio recomendado. Agendá urgente.</p></div></div>`;
+    else if(toNext<=500)
+      html=`<div class="abanner a-orange"><span class="ai">⚠️</span><div><strong>Próximo servicio en ${toNext.toLocaleString()} km</strong><p>Agendá el cambio de aceite pronto.</p></div></div>`;
+    document.getElementById('dash-alerts').innerHTML=html;
+  },
 
-      // ===== DASHBOARD =====
-      renderDashboard() {
-        if (!this.state.currentVehicle) {
-          document.getElementById('stat-vehicle').textContent = '-';
-          document.getElementById('stat-fuel').textContent = '$0';
-          document.getElementById('stat-km').textContent = '0';
-          document.getElementById('stat-efficiency').textContent = '-';
-          this.renderVehicleSelector();
-          return;
-        }
+  // FUEL
+  async handlePhoto(e){
+    const file=e.target.files[0];
+    if(!file) return;
+    const b64=await this._b64(file);
 
-        this.initializeVehiclesIfNeeded();
-        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        const fuelRecords = vehicle.fuelRecords || [];
+    document.getElementById('tprev-wrap').style.display='';
+    document.getElementById('tprev-wrap').innerHTML=`<div class="tprev"><img src="${b64}" alt="Ticket"><div class="tprev-badge"><span class="spin"></span> Analizando...</div></div>`;
+    document.getElementById('fuel-form').style.display='';
 
-        document.getElementById('stat-vehicle').textContent = vehicle.icon + ' ' + this.state.currentVehicle;
-        document.getElementById('current-vehicle-header').textContent = this.state.currentVehicle;
+    const now=new Date();
+    document.getElementById('ff-date').value=now.toISOString().split('T')[0];
+    document.getElementById('ff-time').value=now.toTimeString().slice(0,5);
+    const ckm=S.user.vehicles[S.vid]?.currentKm;
+    if(ckm) document.getElementById('ff-km').value=ckm;
 
-        const now = new Date();
-        const monthRecords = fuelRecords.filter(r => {
-          const d = new Date(r.date);
-          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-        });
-
-        const totalAmount = monthRecords.reduce((s, r) => s + r.amount, 0);
-        const totalLiters = monthRecords.reduce((s, r) => s + r.liters, 0);
-
-        document.getElementById('stat-fuel').textContent = '$' + totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        document.getElementById('stat-km').textContent = vehicle.currentKm?.toLocaleString('es-AR') || '0';
-
-        // FIX #6: Precio promedio por litro (calculable sin historial de km)
-        const avgPrice = totalLiters > 0 ? (totalAmount / totalLiters) : 0;
-        document.getElementById('stat-efficiency').textContent = avgPrice > 0
-          ? '$' + avgPrice.toFixed(2)
-          : '-';
-
-        this.renderVehicleSelector();
-        this.renderAlerts();
-      },
-
-      renderAlerts() {
-        if (!this.state.currentVehicle) return;
-
-        this.initializeVehiclesIfNeeded();
-        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        const records = vehicle.maintenanceRecords || [];
-        const lastService = records[records.length - 1];
-
-        let nextServiceKm;
-        if (lastService) {
-          nextServiceKm = lastService.currentKm + lastService.nextKm;
-        } else {
-          nextServiceKm = (vehicle.currentKm || 0) + 10000;
-        }
-
-        const kmToNextService = nextServiceKm - (vehicle.currentKm || 0);
-        let html = '';
-
-        if (kmToNextService <= 0) {
-          html = `
-            <div class="alert alert-error">
-              <span>🛑</span>
-              <div>
-                <strong>Mantenimiento vencido!</strong>
-                <p style="font-size:0.875rem;margin-top:0.25rem;">El vehículo ya pasó ${Math.abs(kmToNextService).toLocaleString()} km sobre lo recomendado. Realizá el servicio urgentemente.</p>
-              </div>
-            </div>`;
-        } else if (kmToNextService <= 500) {
-          html = `
-            <div class="alert alert-warning">
-              <span>⚠️</span>
-              <div>
-                <strong>Próximo cambio de aceite</strong>
-                <p style="font-size:0.875rem;margin-top:0.25rem;">Faltan ${kmToNextService.toLocaleString()} km. Agendá el servicio pronto.</p>
-              </div>
-            </div>`;
-        }
-
-        document.getElementById('alerts-container').innerHTML = html;
-      },
-
-      // ===== REPORTES =====
-      generateReport() {
-        if (!this.state.currentVehicle) {
-          this.showAlert('Seleccioná un vehículo primero', 'error');
-          return;
-        }
-
-        this.initializeVehiclesIfNeeded();
-        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        const fuelRecords = vehicle.fuelRecords || [];
-        const maintenanceRecords = vehicle.maintenanceRecords || [];
-
-        const range = document.getElementById('report-range').value;
-        const now = new Date();
-        let filtered = fuelRecords;
-
-        if (range === 'month') {
-          filtered = fuelRecords.filter(r => {
-            const d = new Date(r.date);
-            return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-          });
-        } else if (range === '3months') {
-          const start = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
-          filtered = fuelRecords.filter(r => new Date(r.date) >= start);
-        } else if (range === '6months') {
-          const start = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-          filtered = fuelRecords.filter(r => new Date(r.date) >= start);
-        }
-
-        const format = document.getElementById('report-format').value;
-        if (format === 'screen') {
-          this.displayReport(filtered, maintenanceRecords, vehicle);
-        } else if (format === 'email') {
-          this.sendReportEmail(filtered, maintenanceRecords, vehicle);
-        }
-      },
-
-      displayReport(fuelRecords, maintenanceRecords, vehicle) {
-        const totalAmount = fuelRecords.reduce((s, r) => s + r.amount, 0);
-        const totalLiters = fuelRecords.reduce((s, r) => s + r.liters, 0);
-        const avgPrice = totalLiters > 0 ? totalAmount / totalLiters : 0;
-
-        const html = `
-          <div class="card">
-            <h3 style="margin-bottom: 1.5rem;">📊 Reporte: ${vehicle.icon} ${this.state.currentVehicle}</h3>
-            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
-              <div class="stat-card"><div class="stat-label">Cargas</div><div class="stat-value">${fuelRecords.length}</div></div>
-              <div class="stat-card"><div class="stat-label">Litros</div><div class="stat-value">${totalLiters.toFixed(1)}</div></div>
-              <div class="stat-card"><div class="stat-label">Gasto Total</div><div class="stat-value">$${totalAmount.toFixed(0)}</div></div>
-              <div class="stat-card"><div class="stat-label">Precio Prom.</div><div class="stat-value">$${avgPrice.toFixed(2)}</div></div>
-            </div>
-
-            <h4 style="margin: 1.5rem 0 1rem; color: var(--primary);">DETALLE DE CARGAS</h4>
-            <div class="table-responsive">
-              <table>
-                <thead>
-                  <tr><th>Fecha</th><th>Hora</th><th>Litros</th><th>Monto</th><th>$/L</th><th>Localidad</th></tr>
-                </thead>
-                <tbody>
-                  ${fuelRecords.length === 0
-                    ? '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Sin registros en este período</td></tr>'
-                    : fuelRecords.map(r => `
-                    <tr>
-                      <td>${new Date(r.date).toLocaleDateString('es-AR')}</td>
-                      <td>${r.time || '-'}</td>
-                      <td>${r.liters.toFixed(2)}</td>
-                      <td>$${r.amount.toFixed(2)}</td>
-                      <td>$${(r.amount / r.liters).toFixed(2)}</td>
-                      <td>${r.location || '-'}</td>
-                    </tr>`).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-
-        document.getElementById('report-content').innerHTML = html;
-      },
-
-      async sendReportEmail(fuelRecords, maintenanceRecords, vehicle) {
-        const adminEmail = localStorage.getItem('adminEmail');
-        if (!adminEmail) {
-          this.showAlert('Configurá el email del administrador en ⚙️ Configuración', 'warning');
-          return;
-        }
-
-        const totalAmount = fuelRecords.reduce((s, r) => s + r.amount, 0);
-        const totalLiters = fuelRecords.reduce((s, r) => s + r.liters, 0);
-
-        try {
-          await fetch(`${API_URL}/api/send-report`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              to: adminEmail,
-              userName: this.state.currentUser.name,
-              vehicleName: this.state.currentVehicle,
-              fuelRecords,
-              maintenanceRecords,
-              summary: {
-                count: fuelRecords.length,
-                totalLiters,
-                totalAmount,
-                avgPrice: totalLiters > 0 ? totalAmount / totalLiters : 0
-              }
-            })
-          });
-          this.showAlert('📧 Reporte enviado a ' + adminEmail, 'success');
-        } catch (err) {
-          this.showAlert('Error al enviar el reporte', 'error');
-        }
-      },
-
-      // ===== UTILIDADES =====
-      fileToBase64(file) {
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
-      },
-
-      // FIX #4: switchTab recibe 'e' como parámetro en lugar de usar 'event' global
-      switchTab(tabName, e) {
-        document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
-        document.getElementById(`tab-${tabName}`).classList.add('active');
-
-        // Buscar el botón correcto por data o por el evento
-        if (e && e.target) {
-          e.target.classList.add('active');
-        } else {
-          // Fallback: buscar el botón que corresponde a este tab
-          document.querySelectorAll('.tab-btn').forEach(b => {
-            if (b.getAttribute('onclick')?.includes(`'${tabName}'`)) {
-              b.classList.add('active');
-            }
-          });
-        }
-
-        if (tabName === 'vehicles') this.renderVehiclesTab();
-        if (tabName === 'maintenance') this.renderMaintenanceList();
-        if (tabName === 'dashboard') this.renderDashboard();
-      },
-
-      openModal(id) { document.getElementById(id).classList.add('active'); },
-      closeModal(id) { document.getElementById(id).classList.remove('active'); },
-      openMenu() { this.openModal('menu-modal'); },
-
-      openSettings() {
-        // Rellenar con valores actuales
-        document.getElementById('settings-email').value = this.state.currentUser.email || '';
-        document.getElementById('settings-admin-email').value = localStorage.getItem('adminEmail') || '';
-        document.getElementById('settings-api-key').value = localStorage.getItem('apiKey') || '';
-        this.openModal('settings-modal');
-      },
-
-      saveSettings() {
-        const email = document.getElementById('settings-email').value.trim();
-        const adminEmail = document.getElementById('settings-admin-email').value.trim();
-        const apiKey = document.getElementById('settings-api-key').value.trim();
-
-        this.state.currentUser.email = email;
-        if (adminEmail) localStorage.setItem('adminEmail', adminEmail);
-        if (apiKey) localStorage.setItem('apiKey', apiKey);
-
-        document.getElementById('current-user-email').textContent = email;
-
-        this.saveLocalData();
-        this.showAlert('✅ Configuración guardada', 'success');
-        this.closeModal('settings-modal');
-      },
-
-      exportData() {
-        const data = JSON.stringify(this.state.currentUser, null, 2);
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `fleetcontrol-${this.state.currentUser.username}-${Date.now()}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-      },
-
-      showAlert(message, type = 'info') {
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert alert-${type}`;
-        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
-        alertDiv.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><div>${message}</div>`;
-
-        // Buscar el primer contenedor VISIBLE
-        const loginContainer = document.querySelector('.login-container');
-        const mainContent = document.querySelector('.main-content');
-        const loginVisible = loginContainer && document.getElementById('login-screen').style.display !== 'none';
-        const container = loginVisible ? loginContainer : mainContent;
-
-        if (container) {
-          // Eliminar alertas anteriores del mismo tipo para no acumular
-          container.querySelectorAll(`.alert-${type}`).forEach(el => el.remove());
-          container.insertBefore(alertDiv, container.firstChild);
-          setTimeout(() => alertDiv.remove(), 4000);
-        }
-      },
-
-      sync() {
-        if (!this.state.isOnline) {
-          this.showAlert('Sin conexión a internet', 'warning');
-          return;
-        }
-        this.showAlert('📡 Sincronizando...', 'info');
-        setTimeout(() => this.showAlert('✅ Datos sincronizados', 'success'), 1500);
-      },
-
-      saveLocalData() {
-        try {
-          localStorage.setItem('users', JSON.stringify(this.state.users));
-          if (this.state.currentUser) {
-            // Actualizar el usuario en el mapa de users también
-            this.state.users[this.state.currentUser.id] = this.state.currentUser;
-            localStorage.setItem('users', JSON.stringify(this.state.users));
-          }
-        } catch (e) {
-          console.error('Error guardando datos:', e);
-        }
-      },
-
-      loadLocalData() {
-        try {
-          const users = localStorage.getItem('users');
-          this.state.users = users ? JSON.parse(users) : {};
-        } catch (e) {
-          this.state.users = {};
-        }
+    try{
+      const apiKey=localStorage.getItem('fc2_akey')||'';
+      const res=await fetch(`${API}/api/process-ticket`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image:b64,apiKey})
+      });
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(data.ticket){
+        const t=data.ticket;
+        if(t.fecha) document.getElementById('ff-date').value=t.fecha;
+        if(t.hora)  document.getElementById('ff-time').value=t.hora.slice(0,5);
+        if(t.combustible?.litros||t.combustible?.liters)
+          document.getElementById('ff-lit').value=t.combustible.litros||t.combustible.liters;
+        if(t.monto?.total) document.getElementById('ff-amt').value=t.monto.total;
+        if(t.monto?.iva)   document.getElementById('ff-iva').value=t.monto.iva;
+        if(t.surtidor?.cuit)     document.getElementById('ff-cuit').value=t.surtidor.cuit;
+        if(t.surtidor?.localidad) document.getElementById('ff-loc').value=t.surtidor.localidad;
+        if(t.surtidor?.direccion) document.getElementById('ff-addr').value=t.surtidor.direccion;
+        document.querySelector('.tprev-badge').innerHTML='✅ Datos extraídos';
+        document.querySelector('.tprev-badge').style.color='var(--green)';
+        toast('Datos extraídos por IA. Verificá antes de guardar.','success');
       }
-    };
+    }catch(err){
+      console.error('AI error:',err);
+      document.querySelector('.tprev-badge').innerHTML='⚠️ Carga manual';
+      toast('No se pudo conectar con la IA. Completá los datos manualmente.','warning');
+    }
+  },
 
-    document.addEventListener('DOMContentLoaded', () => app.init());
-  </script>
+  async saveFuel(){
+    if(!S.vid){ alert('Seleccioná un vehículo'); return; }
+    const liters=parseFloat(document.getElementById('ff-lit').value);
+    const amount=parseFloat(document.getElementById('ff-amt').value);
+    const date=document.getElementById('ff-date').value;
+    if(!date||!liters||!amount){ alert('Completá al menos: Fecha, Litros y Monto'); return; }
+    const km=parseInt(document.getElementById('ff-km').value)||null;
+    const record={
+      id:Date.now(), date,
+      time:document.getElementById('ff-time').value,
+      liters, amount,
+      iva:parseFloat(document.getElementById('ff-iva').value)||0,
+      cuit:document.getElementById('ff-cuit').value,
+      location:document.getElementById('ff-loc').value,
+      address:document.getElementById('ff-addr').value,
+      km, createdAt:new Date().toISOString()
+    };
+    const users=DB.users();
+    const vd=users[S.user.id].vehicles[S.vid];
+    if(!vd.fuelRecords) vd.fuelRecords=[];
+    vd.fuelRecords.push(record);
+    if(km) vd.currentKm=km;
+    DB.saveUsers(users);
+    S.user=users[S.user.id];
+    this.cancelFuel();
+    this.renderDash();
+    toast('✅ Carga registrada','success');
+    // Send email in background
+    this._sendConfirmEmail(record).catch(console.error);
+  },
+
+  // ── EMAIL CONFIRMATION (fixed) ──
+  async _sendConfirmEmail(record){
+    const userEmail=S.user.email||'';
+    const adminEmail=localStorage.getItem('fc2_adm_email')||'';
+    const emails=[userEmail,adminEmail].filter(e=>e&&e.includes('@'));
+    if(emails.length===0){
+      console.log('📧 No hay emails configurados, omitiendo confirmación');
+      return;
+    }
+    const v=VEHICLES[S.vid];
+    const body={
+      to: emails[0],
+      userName: S.user.name,
+      vehicleName: v.name,
+      vehicleIcon: v.emoji,
+      fuelRecord: record,
+      location: record.location,
+      address: record.address,
+    };
+    // Add CC if second email exists
+    if(emails[1]) body.cc=emails[1];
+
+    console.log('📧 Enviando confirmación a:',emails);
+    try{
+      const res=await fetch(`${API}/api/send-confirmation`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify(body)
+      });
+      const data=await res.json().catch(()=>({}));
+      if(res.ok&&(data.success||data.message)){
+        console.log('✅ Email enviado');
+        toast('📧 Confirmación enviada por email','info',3000);
+      } else {
+        console.warn('⚠️ Email respondió con error:',data);
+        toast('⚠️ Email: '+( data.error||'error desconocido'),'warning',6000);
+      }
+    }catch(err){
+      console.error('❌ Fetch error al enviar email:',err);
+      toast('Sin conexión para enviar email','warning',4000);
+    }
+  },
+
+  cancelFuel(){
+    document.getElementById('file-in').value='';
+    document.getElementById('tprev-wrap').style.display='none';
+    document.getElementById('tprev-wrap').innerHTML='';
+    document.getElementById('fuel-form').style.display='none';
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','ff-km']
+      .forEach(id=>document.getElementById(id).value='');
+  },
+
+  // MAINTENANCE
+  saveMaint(){
+    if(!S.vid){ alert('Seleccioná un vehículo'); return; }
+    const type=document.getElementById('sv-type').value;
+    const date=document.getElementById('sv-date').value;
+    const km=parseInt(document.getElementById('sv-km').value);
+    const next=parseInt(document.getElementById('sv-next').value)||10000;
+    if(!type||!date||!km){ alert('Completá Tipo, Fecha y KM'); return; }
+    const record={id:Date.now(),type,date,currentKm:km,nextKm:next,
+      notes:document.getElementById('sv-notes').value,
+      provider:document.getElementById('sv-prov').value,
+      createdAt:new Date().toISOString()};
+    const users=DB.users();
+    const vd=users[S.user.id].vehicles[S.vid];
+    if(!vd.maintenanceRecords) vd.maintenanceRecords=[];
+    vd.maintenanceRecords.push(record);
+    vd.currentKm=km;
+    DB.saveUsers(users);
+    S.user=users[S.user.id];
+    toast('✅ Servicio registrado','success');
+    ['sv-type','sv-date','sv-km','sv-notes','sv-prov'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('sv-next').value='10000';
+    this.renderMaintList();
+    this.renderDash();
+  },
+
+  renderMaintList(){
+    if(!S.vid) return;
+    const records=[...(S.user.vehicles[S.vid]?.maintenanceRecords||[])].reverse();
+    const nm={'oil-change':'Cambio de aceite','filter':'Filtros','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
+    const ic={'oil-change':'🛢️','filter':'🔄','tires':'⚙️','suspension':'🔧','brakes':'🛑','other':'🔩'};
+    document.getElementById('maint-list').innerHTML=records.length===0
+      ?'<p class="muted tc" style="padding:2rem 0">Sin servicios registrados</p>'
+      :records.map(r=>`
+        <div class="card" style="margin-bottom:.75rem">
+          <div class="card-row" style="margin-bottom:.625rem">
+            <div>
+              <div style="font-weight:700;margin-bottom:.2rem">${ic[r.type]||'🔧'} ${nm[r.type]||r.type}</div>
+              <div class="muted" style="font-size:.78rem">${new Date(r.date).toLocaleDateString('es-AR')}</div>
+            </div>
+            <div class="chip c-purple">${r.currentKm.toLocaleString()} km</div>
+          </div>
+          <div class="muted" style="font-size:.78rem;display:flex;flex-direction:column;gap:.2rem">
+            <span>📅 Próximo: ${(r.currentKm+r.nextKm).toLocaleString()} km</span>
+            ${r.provider?`<span>🏪 ${r.provider}</span>`:''}
+            ${r.notes?`<span>📝 ${r.notes}</span>`:''}
+          </div>
+        </div>`).join('');
+  },
+
+  // REPORTS
+  genReport(){
+    if(!S.vid){ alert('Seleccioná un vehículo'); return; }
+    const fuel=S.user.vehicles[S.vid].fuelRecords||[];
+    const maint=S.user.vehicles[S.vid].maintenanceRecords||[];
+    const range=document.getElementById('rp-range').value;
+    const now=new Date();
+    let filtered=fuel;
+    if(range==='month') filtered=fuel.filter(r=>{const d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});
+    else if(range==='3m'){const s=new Date(now.getFullYear(),now.getMonth()-3,now.getDate());filtered=fuel.filter(r=>new Date(r.date)>=s);}
+    else if(range==='6m'){const s=new Date(now.getFullYear(),now.getMonth()-6,now.getDate());filtered=fuel.filter(r=>new Date(r.date)>=s);}
+    const fmt=document.getElementById('rp-fmt').value;
+    if(fmt==='screen') this._showReport(filtered,maint);
+    else this._emailReport(filtered,maint);
+  },
+
+  _showReport(fuel,maint){
+    const v=VEHICLES[S.vid];
+    const amt=fuel.reduce((s,r)=>s+r.amount,0);
+    const lit=fuel.reduce((s,r)=>s+r.liters,0);
+    const avg=lit>0?amt/lit:0;
+    document.getElementById('rep-out').innerHTML=`
+      <div class="slabel">${v.emoji} ${v.name} — Resultados</div>
+      <div class="sgrid" style="margin-bottom:1rem">
+        <div class="sc"><div class="sv">${fuel.length}</div><div class="sl">Cargas</div></div>
+        <div class="sc"><div class="sv">${lit.toFixed(1)}</div><div class="sl">Litros</div></div>
+        <div class="sc"><div class="sv">$${amt.toLocaleString('es-AR',{maximumFractionDigits:0})}</div><div class="sl">Gasto total</div></div>
+        <div class="sc"><div class="sv">${avg>0?'$'+avg.toFixed(2):'—'}</div><div class="sl">$/litro</div></div>
+      </div>
+      <div class="twrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Litros</th><th>Monto</th><th>$/L</th><th>IVA</th><th>Localidad</th></tr></thead>
+          <tbody>
+            ${fuel.length===0
+              ?'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.5rem">Sin cargas en este período</td></tr>'
+              :fuel.map(r=>`<tr>
+                <td>${new Date(r.date).toLocaleDateString('es-AR')}</td>
+                <td class="tmono">${r.liters.toFixed(2)}</td>
+                <td class="tmono">$${r.amount.toFixed(2)}</td>
+                <td class="tmono">$${(r.amount/r.liters).toFixed(2)}</td>
+                <td class="tmono">${r.iva?'$'+r.iva.toFixed(2):'—'}</td>
+                <td>${r.location||'—'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  async _emailReport(fuel,maint){
+    const dest=localStorage.getItem('fc2_adm_email')||S.user.email||'';
+    if(!dest){ alert('Configurá un email en ⚙️ Configuración primero'); return; }
+    const v=VEHICLES[S.vid];
+    const amt=fuel.reduce((s,r)=>s+r.amount,0);
+    const lit=fuel.reduce((s,r)=>s+r.liters,0);
+    try{
+      await fetch(`${API}/api/send-report`,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({to:dest,userName:S.user.name,vehicleName:v.name,fuelRecords:fuel,maintenanceRecords:maint,
+          summary:{count:fuel.length,totalLiters:lit,totalAmount:amt,avgPrice:lit>0?amt/lit:0}})});
+      toast('📧 Reporte enviado a '+dest,'success');
+    }catch(err){ toast('Error al enviar el reporte','error'); }
+  },
+
+  // SETTINGS
+  openSettings(){
+    this.close('m-menu');
+    document.getElementById('cfg-email').value=S.user.email||'';
+    document.getElementById('cfg-adm-email').value=localStorage.getItem('fc2_adm_email')||'';
+    document.getElementById('cfg-apikey').value=localStorage.getItem('fc2_akey')||'';
+    document.getElementById('cfg-akey').value='';
+    document.getElementById('admin-panel').style.display='none';
+    if(localStorage.getItem('fc2_adm')==='1'){
+      document.getElementById('admin-panel').style.display='';
+      this._buildAssigns();
+    }
+    document.getElementById('m-cfg').classList.add('on');
+  },
+
+  checkAdminKey(){
+    if(document.getElementById('cfg-akey').value===ADMIN_KEY){
+      document.getElementById('admin-panel').style.display='';
+      localStorage.setItem('fc2_adm','1');
+      this._buildAssigns();
+      toast('🔓 Panel admin desbloqueado','success');
+    }
+  },
+
+  _buildAssigns(){
+    const users=DB.users();
+    const ovr=DB.overrides();
+    const today=new Date().toISOString().split('T')[0];
+    const c=document.getElementById('adm-assigns');
+    c.innerHTML='';
+    Object.values(users).forEach(u=>{
+      const defV=USER_V[u.username]||null;
+      const uOvr=ovr[u.username];
+      const hasOvr=uOvr&&uOvr.expires>=today;
+      const curV=hasOvr?uOvr.vehicleId:defV;
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:.5rem;flex-wrap:wrap';
+      row.innerHTML=`
+        <span style="font-size:.78rem;color:var(--muted);min-width:90px">${u.name}</span>
+        <select data-uid="${u.username}" style="flex:1;padding:.4rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.8rem">
+          ${Object.values(VEHICLES).map(v=>`<option value="${v.id}" ${curV===v.id?'selected':''}>${v.emoji} ${v.name}${defV===v.id?' ✓':''}</option>`).join('')}
+        </select>
+        <span style="font-size:.68rem;color:${hasOvr?'var(--orange)':'var(--dim)'}">${hasOvr?'Hoy especial':'Por defecto'}</span>`;
+      c.appendChild(row);
+    });
+  },
+
+  saveSettings(){
+    const users=DB.users();
+    users[S.user.id].email=document.getElementById('cfg-email').value.trim();
+    DB.saveUsers(users);
+    S.user=users[S.user.id];
+    const ae=document.getElementById('cfg-adm-email').value.trim();
+    const ak=document.getElementById('cfg-apikey').value.trim();
+    if(ae) localStorage.setItem('fc2_adm_email',ae);
+    if(ak) localStorage.setItem('fc2_akey',ak);
+    // Save overrides if admin
+    if(localStorage.getItem('fc2_adm')==='1'){
+      const ovr=DB.overrides();
+      const today=new Date().toISOString().split('T')[0];
+      document.querySelectorAll('#adm-assigns select').forEach(sel=>{
+        const uname=sel.dataset.uid;
+        const vid=sel.value;
+        const def=USER_V[uname];
+        if(vid!==def) ovr[uname]={vehicleId:vid,expires:today};
+        else delete ovr[uname];
+      });
+      DB.saveOverrides(ovr);
+    }
+    this.close('m-cfg');
+    toast('✅ Configuración guardada','success');
+  },
+
+  openMenu(){ document.getElementById('m-menu').classList.add('on'); },
+  close(id){ document.getElementById(id).classList.remove('on'); },
+
+  exportData(){
+    const blob=new Blob([JSON.stringify({user:S.user,at:new Date().toISOString()},null,2)],{type:'application/json'});
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);
+    a.download=`fleetos-${S.user.username}-${Date.now()}.json`;
+    a.click();
+  },
+
+  _b64(file){
+    return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
+  },
+};
+
+// Close backdrop on click outside modal
+document.querySelectorAll('.mbk').forEach(bk=>{
+  bk.addEventListener('click',e=>{
+    if(e.target===bk && bk.id!=='m-veh' && bk.id!=='m-km') bk.classList.remove('on');
+  });
+});
+</script>
 </body>
 </html>
