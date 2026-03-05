@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Flota ML</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET & ROOT ────────────────────────────────── */
+:root{
+  --bg:#0a0a0f;--bg2:#111118;--bg3:#1a1a24;
+  --border:#2a2a3a;--border2:#3d3d55;
+  --text:#eeeef5;--muted:#7070a0;--dim:#3a3a55;
+  --acc:#7c6bff;--acc2:#5b4dcc;--acc-g:rgba(124,107,255,.2);
+  --green:#2ecc71;--orange:#f39c12;--red:#e74c3c;
+  --mono:'Space Mono',monospace;--sans:'DM Sans',sans-serif;
+  /* safe area */
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  /* touch target */
+  --touch: 52px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;overflow:hidden}
+body{
+  font-family:var(--sans);background:var(--bg);color:var(--text);
+  height:100%;overflow:hidden;
+  /* prevent rubber-band scroll on iOS */
+  position:fixed;width:100%;
+  -webkit-overflow-scrolling:touch;
+}
+
+/* ── NOISE OVERLAY ────────────────────────────────── */
+body::before{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:.7}
+
+/* ── SCREENS ────────────────────────────────────── */
+.screen{
+  display:none;flex-direction:column;
+  position:fixed;inset:0;
+  /* respect safe areas */
+  padding-top:var(--sat);
+  padding-bottom:var(--sab);
+  padding-left:var(--sal);
+  padding-right:var(--sar);
+}
+.screen.on{display:flex}
+
+/* ── LOGIN ──────────────────────────────────────── */
+#sc-login{
+  align-items:center;justify-content:center;
+  padding:calc(var(--sat) + 2rem) 1.5rem 2rem;
+  background:radial-gradient(ellipse 90% 50% at 50% 0%,rgba(124,107,255,.12) 0%,transparent 65%);
+  overflow-y:auto;
+}
+#sc-login::after{
+  content:'FLOTA ML';position:fixed;bottom:-2rem;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:clamp(4rem,20vw,14rem);font-weight:700;
+  color:transparent;-webkit-text-stroke:1px rgba(124,107,255,.06);
+  white-space:nowrap;pointer-events:none;letter-spacing:-.04em;z-index:0;
+}
+.login-box{
+  background:var(--bg2);border:1px solid var(--border);border-radius:22px;
+  padding:2rem 1.75rem;width:100%;max-width:400px;position:relative;z-index:1;
+  box-shadow:0 0 60px rgba(124,107,255,.07),0 24px 48px rgba(0,0,0,.55);
+  animation:lbIn .5s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes lbIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+.login-brand{text-align:center;margin-bottom:1.75rem}
+.logo-mark{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:64px;height:64px;background:linear-gradient(135deg,var(--acc),var(--acc2));
+  border-radius:20px;font-size:2rem;margin-bottom:.875rem;
+  box-shadow:0 0 30px var(--acc-g);
+}
+.login-brand h1{font-family:var(--mono);font-size:1.6rem;font-weight:700;letter-spacing:-.02em}
+.login-brand p{color:var(--muted);font-size:.72rem;margin-top:.2rem;letter-spacing:.07em;text-transform:uppercase}
+
+/* ── FORM FIELDS ─────────────────────────────────── */
+.lf{margin-bottom:1rem}
+.lf label{display:block;font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);margin-bottom:.45rem}
+.lf input{
+  width:100%;padding:1rem;background:var(--bg);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-family:var(--sans);font-size:1.05rem;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;
+  min-height:var(--touch);
+}
+.lf input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
+.lf input::placeholder{color:var(--dim)}
+.pin-f{font-family:var(--mono);font-size:1.75rem;letter-spacing:.6em;text-align:center;padding-left:1.5em !important}
+.toggle-link{text-align:center;margin-top:1rem;color:var(--muted);font-size:.875rem}
+.link-btn{background:none;border:none;color:var(--acc);font-size:.875rem;cursor:pointer;
+  padding:0;text-decoration:underline;text-underline-offset:3px;font-family:var(--sans)}
+
+/* ── BUTTONS ─────────────────────────────────────── */
+.btn{
+  width:100%;padding:1rem 1.25rem;border:none;border-radius:12px;
+  font-family:var(--sans);font-size:1rem;font-weight:600;cursor:pointer;
+  transition:all .2s;display:flex;align-items:center;justify-content:center;
+  gap:.5rem;min-height:var(--touch);-webkit-appearance:none;
+  user-select:none;-webkit-user-select:none;
+}
+.btn-primary{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#fff;box-shadow:0 4px 18px var(--acc-g)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 8px 26px var(--acc-g)}
+.btn-primary:active{transform:scale(.98)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{border-color:var(--border2);color:var(--text)}
+.btn-ghost:active{transform:scale(.98)}
+.btn-danger{background:rgba(231,76,60,.11);color:var(--red);border:1px solid rgba(231,76,60,.25)}
+.btn-danger:active{transform:scale(.98)}
+
+/* ── TOAST ───────────────────────────────────────── */
+.toast-stack{
+  position:fixed;top:calc(var(--sat) + .75rem);left:50%;transform:translateX(-50%);
+  z-index:10000;display:flex;flex-direction:column;gap:.5rem;
+  width:calc(100% - 2rem);max-width:400px;pointer-events:none;
+}
+.toast{
+  padding:.875rem 1.125rem;border-radius:14px;font-size:.875rem;font-weight:600;
+  display:flex;align-items:center;gap:.6rem;
+  animation:tIn .3s cubic-bezier(.16,1,.3,1) both;
+  pointer-events:auto;backdrop-filter:blur(12px);
+}
+@keyframes tIn{from{opacity:0;transform:translateY(-10px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes tOut{to{opacity:0;transform:translateY(-7px) scale(.96)}}
+.toast.bye{animation:tOut .22s ease forwards}
+.t-success{background:rgba(46,204,113,.16);border:1px solid rgba(46,204,113,.3);color:#2ecc71}
+.t-error{background:rgba(231,76,60,.16);border:1px solid rgba(231,76,60,.3);color:#e74c3c}
+.t-warning{background:rgba(243,156,18,.16);border:1px solid rgba(243,156,18,.3);color:#f39c12}
+.t-info{background:rgba(124,107,255,.16);border:1px solid rgba(124,107,255,.3);color:var(--acc)}
+
+/* ── APP LAYOUT ──────────────────────────────────── */
+#sc-app{overflow:hidden}
+
+/* TOP NAV — fixed height with safe area */
+.topnav{
+  flex-shrink:0;
+  background:rgba(10,10,15,.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  padding:0 1.125rem;height:58px;
+  display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+}
+.nav-brand{
+  font-family:var(--mono);font-size:1rem;font-weight:700;
+  display:flex;align-items:center;gap:.5rem;flex-shrink:0;
+}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--acc);
+  box-shadow:0 0 8px var(--acc);animation:blink 2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+.nav-vbadge{
+  display:flex;align-items:center;gap:.4rem;padding:.4rem .875rem;
+  background:var(--bg3);border:1px solid var(--border);border-radius:20px;
+  font-size:.8rem;color:var(--muted);flex:1;min-width:0;overflow:hidden;
+}
+.nav-vbadge .vn{font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{
+  width:var(--touch);height:var(--touch);border-radius:12px;border:1px solid var(--border);
+  background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .2s;
+  font-size:1.2rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.icon-btn:hover{border-color:var(--border2);color:var(--text)}
+.icon-btn:active{transform:scale(.93)}
+
+/* TAB BAR */
+.tabbar{
+  flex-shrink:0;display:flex;background:var(--bg2);
+  border-bottom:1px solid var(--border);overflow-x:auto;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+}
+.tabbar::-webkit-scrollbar{display:none}
+.tab{
+  flex:1;min-width:70px;padding:.875rem .4rem;border:none;background:none;
+  color:var(--dim);cursor:pointer;font-family:var(--sans);font-size:.65rem;
+  font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+  transition:all .2s;display:flex;flex-direction:column;align-items:center;
+  gap:.25rem;border-bottom:2px solid transparent;
+  min-height:56px;-webkit-appearance:none;
+}
+.tab .ti{font-size:1.25rem;line-height:1}
+.tab:hover{color:var(--muted)}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.tab:active{transform:scale(.93)}
+
+/* SCROLL AREA */
+.main{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  -webkit-overflow-scrolling:touch;
+  padding:1.25rem;
+  /* bottom padding for safe area */
+  padding-bottom:calc(1.25rem + var(--sab));
+}
+.panel{display:none;animation:pIn .2s ease both}
+.panel.on{display:block}
+@keyframes pIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SECTION LABEL ───────────────────────────────── */
+.slabel{
+  font-family:var(--mono);font-size:.62rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.12em;color:var(--muted);margin-bottom:.875rem;
+  display:flex;align-items:center;gap:.5rem;
+}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── CARDS ───────────────────────────────────────── */
+.card{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:1.25rem;margin-bottom:.875rem;transition:border-color .2s;
+}
+.card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.875rem}
+
+/* ── STATS ───────────────────────────────────────── */
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1.125rem}
+@media(min-width:560px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+.sc{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  padding:1.125rem .875rem;text-align:center;position:relative;overflow:hidden;
+}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--acc),transparent);opacity:.5}
+.sv{font-family:var(--mono);font-size:1.4rem;font-weight:700;color:var(--acc);
+  line-height:1.1;margin-bottom:.35rem}
+.sl{font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+
+/* ── VEHICLE HERO ────────────────────────────────── */
+.vhero{
+  background:var(--bg2);border:1px solid var(--border);border-radius:18px;
+  padding:1.5rem 1.25rem;margin-bottom:1.125rem;position:relative;overflow:hidden;
+  display:flex;align-items:center;gap:1.25rem;
+}
+.vhero::before{content:'';position:absolute;top:-50px;right:-50px;width:180px;height:180px;
+  background:radial-gradient(circle,var(--acc-g) 0%,transparent 70%);pointer-events:none}
+.vhero .eb{font-size:3.25rem;line-height:1;flex-shrink:0}
+.vhero-i h2{font-family:var(--mono);font-size:1.15rem;font-weight:700;margin-bottom:.2rem}
+.vhero-i p{color:var(--muted);font-size:.82rem}
+.vhero-k{margin-left:auto;text-align:right;flex-shrink:0}
+.kv{font-family:var(--mono);font-size:1.35rem;font-weight:700;color:var(--acc)}
+.kl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+
+/* ── ALERTS ──────────────────────────────────────── */
+.aban{border-radius:14px;padding:1rem 1.125rem;margin-bottom:.875rem;
+  display:flex;align-items:flex-start;gap:.75rem;font-size:.875rem}
+.aban .ai{font-size:1.25rem;flex-shrink:0;margin-top:1px}
+.aban strong{display:block;font-weight:700;margin-bottom:.15rem}
+.aban p{opacity:.85;font-size:.8rem;line-height:1.4}
+.a-red{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.28);color:var(--red)}
+.a-orange{background:rgba(243,156,18,.1);border:1px solid rgba(243,156,18,.28);color:var(--orange)}
+
+/* ── FORM GRIDS ──────────────────────────────────── */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:.875rem}
+@media(max-width:420px){.fgrid{grid-template-columns:1fr}}
+.ffull{grid-column:1/-1}
+.fl label{display:block;font-size:.63rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+.fl input,.fl select,.fl textarea{
+  width:100%;padding:.875rem;background:var(--bg);border:1px solid var(--border);
+  border-radius:12px;color:var(--text);font-family:var(--sans);font-size:.95rem;
+  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;
+  min-height:var(--touch);
+}
+.fl input:focus,.fl select:focus,.fl textarea:focus{
+  outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
+.fl textarea{resize:vertical;min-height:90px}
+select option{background:var(--bg2)}
+
+/* ── SCAN BUTTON ─────────────────────────────────── */
+.scan-btn{
+  width:100%;padding:2rem 1.25rem;background:var(--bg2);border:2px dashed var(--border2);
+  border-radius:16px;color:var(--muted);cursor:pointer;transition:all .2s;
+  font-family:var(--sans);display:flex;flex-direction:column;align-items:center;
+  gap:.5rem;margin-bottom:1.25rem;-webkit-appearance:none;
+}
+.scan-btn:hover,.scan-btn:active{border-color:var(--acc);color:var(--acc);background:rgba(124,107,255,.05)}
+.scan-btn .si{font-size:2.5rem;line-height:1}
+.scan-btn .st{font-size:1rem;font-weight:700}
+.scan-btn .ss{font-size:.8rem;opacity:.7}
+
+/* ── TICKET PREVIEW ──────────────────────────────── */
+.tprev{position:relative;border-radius:14px;overflow:hidden;margin-bottom:1rem;border:1px solid var(--border)}
+.tprev img{width:100%;max-height:220px;object-fit:cover;display:block}
+.tprev-badge{
+  position:absolute;top:.75rem;right:.75rem;background:rgba(10,10,15,.85);
+  backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;
+  padding:.35rem .7rem;font-size:.7rem;font-weight:700;color:var(--acc);
+  display:flex;align-items:center;gap:.3rem;
+}
+
+/* ── TABLE ───────────────────────────────────────── */
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:14px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.825rem}
+th{background:var(--bg3);padding:.8rem 1rem;text-align:left;font-size:.62rem;
+  font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+td{padding:.875rem 1rem;border-top:1px solid var(--border);white-space:nowrap}
+tr:hover td{background:rgba(124,107,255,.04)}
+.tm{font-family:var(--mono);font-size:.8rem}
+
+/* ── CHIPS ───────────────────────────────────────── */
+.chip{display:inline-flex;align-items:center;gap:.25rem;padding:.25rem .7rem;
+  border-radius:20px;font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.c-green{background:rgba(46,204,113,.14);color:var(--green)}
+.c-orange{background:rgba(243,156,18,.14);color:var(--orange)}
+.c-red{background:rgba(231,76,60,.14);color:var(--red)}
+.c-purple{background:rgba(124,107,255,.14);color:var(--acc)}
+
+/* ── MODALS ──────────────────────────────────────── */
+.mbk{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(8px);
+  z-index:500;align-items:flex-end;justify-content:center;
+  padding:0 0 var(--sab) 0;
+}
+/* On larger screens, center the modal */
+@media(min-width:600px){.mbk{align-items:center;padding:1rem}}
+.mbk.on{display:flex;animation:mfade .2s ease}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+.modal{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:22px 22px 0 0;
+  padding:1.5rem 1.5rem calc(1.5rem + var(--sab));
+  width:100%;max-width:520px;max-height:88vh;overflow-y:auto;
+  box-shadow:0 -12px 40px rgba(0,0,0,.5);
+  animation:mUp .3s cubic-bezier(.16,1,.3,1) both;
+}
+@media(min-width:600px){
+  .modal{border-radius:22px;padding:1.75rem;animation:mIn .28s cubic-bezier(.16,1,.3,1) both}
+  @keyframes mIn{from{opacity:0;transform:scale(.94) translateY(14px)}to{opacity:1;transform:scale(1) translateY(0)}}
+}
+@keyframes mUp{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:translateY(0)}}
+/* Handle bar */
+.modal::before{
+  content:'';display:block;width:40px;height:4px;background:var(--border2);
+  border-radius:2px;margin:0 auto 1.25rem;
+}
+@media(min-width:600px){.modal::before{display:none}}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.mtitle{font-family:var(--mono);font-size:1.05rem;font-weight:700}
+.mclose{
+  background:none;border:1px solid var(--border);color:var(--muted);
+  width:34px;height:34px;border-radius:10px;cursor:pointer;
+  font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.mclose:hover{color:var(--text);border-color:var(--border2)}
+
+/* ── VEHICLE SELECT ──────────────────────────────── */
+.vcard{
+  display:flex;align-items:center;gap:1.125rem;padding:1.25rem;
+  background:var(--bg3);border:2px solid var(--border);border-radius:16px;
+  cursor:pointer;transition:all .2s;margin-bottom:.75rem;
+  min-height:80px;
+}
+.vcard:hover,.vcard.sel{border-color:var(--acc);background:rgba(124,107,255,.07)}
+.vcard:active{transform:scale(.98)}
+.vcard .ve{font-size:2.75rem;line-height:1;flex-shrink:0}
+.vcard .vi h3{font-weight:700;font-size:1rem;margin-bottom:.2rem}
+.vcard .vi p{color:var(--muted);font-size:.8rem}
+.vcard .vb{margin-left:auto;flex-shrink:0}
+
+/* ── SPINNER ─────────────────────────────────────── */
+.spin{display:inline-block;width:14px;height:14px;
+  border:2px solid rgba(124,107,255,.3);border-top-color:var(--acc);
+  border-radius:50%;animation:rot .55s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* ── UTILS ───────────────────────────────────────── */
+.div{height:1px;background:var(--border);margin:1.125rem 0}
+.muted{color:var(--muted);font-size:.85rem}
+.tc{text-align:center}
+.mb1{margin-bottom:.5rem}
+.mb2{margin-bottom:1rem}
+.mt1{margin-top:.5rem}
+.mt2{margin-top:1rem}
+.gap{display:flex;flex-direction:column;gap:.625rem}
+.row{display:flex;gap:.75rem}
+
+/* ── REPORT CARD ─────────────────────────────────── */
+.rep-insight{
+  background:var(--bg3);border:1px solid var(--border);border-left:3px solid var(--acc);
+  border-radius:14px;padding:1rem 1.25rem;margin-bottom:.75rem;
+}
+.rep-insight h4{font-size:.85rem;font-weight:700;margin-bottom:.35rem;color:var(--acc)}
+.rep-insight p{font-size:.82rem;color:var(--muted);line-height:1.5}
+.rep-insight.warn{border-left-color:var(--orange)}
+.rep-insight.good{border-left-color:var(--green)}
+</style>
+</head>
+<body>
+
+<div class="toast-stack" id="toasts"></div>
+
+<!-- ═══════════════════════════════════
+  LOGIN SCREEN
+═══════════════════════════════════ -->
+<div id="sc-login" class="screen on">
+  <div class="login-box">
+    <div class="login-brand">
+      <div class="logo-mark">🚛</div>
+      <h1>Flota ML</h1>
+      <p>Control de Flota</p>
+    </div>
+
+    <div id="f-login">
+      <div class="lf">
+        <label>Usuario</label>
+        <input type="text" id="lu" placeholder="tu usuario" autocomplete="username"
+               autocorrect="off" autocapitalize="none" spellcheck="false"
+               onkeydown="if(event.key==='Enter') document.getElementById('lp').focus()">
+      </div>
+      <div class="lf">
+        <label>PIN</label>
+        <input type="password" id="lp" class="pin-f" maxlength="4"
+               inputmode="numeric" pattern="[0-9]*" placeholder="••••"
+               autocomplete="current-password"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
+               onkeydown="if(event.key==='Enter') App.login()">
+      </div>
+      <button class="btn btn-primary" onclick="App.login()" style="margin-top:.25rem">
+        Ingresar →
+      </button>
+      <div class="toggle-link">
+        ¿Primera vez? <button class="link-btn" onclick="App.showReg()">Crear cuenta</button>
+      </div>
+    </div>
+
+    <div id="f-reg" style="display:none">
+      <div class="lf">
+        <label>Nombre completo</label>
+        <input type="text" id="rn" placeholder="Juan García" autocomplete="name">
+      </div>
+      <div class="lf">
+        <label>Usuario</label>
+        <input type="text" id="ru" placeholder="juangarcia"
+               autocorrect="off" autocapitalize="none" spellcheck="false" autocomplete="username">
+      </div>
+      <div class="lf">
+        <label>PIN (4 números)</label>
+        <input type="password" id="rp" class="pin-f" maxlength="4"
+               inputmode="numeric" pattern="[0-9]*" placeholder="••••"
+               autocomplete="new-password"
+               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
+               onkeydown="if(event.key==='Enter') App.register()">
+      </div>
+      <button class="btn btn-primary" onclick="App.register()" style="margin-bottom:.625rem">
+        Crear cuenta
+      </button>
+      <button class="btn btn-ghost" onclick="App.showLogin()">← Volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+  APP SCREEN
+═══════════════════════════════════ -->
+<div id="sc-app" class="screen" style="flex-direction:column">
+
+  <nav class="topnav">
+    <div class="nav-brand">
+      <div class="dot-live"></div>
+      Flota ML
+    </div>
+    <div class="nav-vbadge">
+      <span id="nav-ve">🚛</span>
+      <span class="vn" id="nav-vn">Sin vehículo</span>
+    </div>
+    <button class="icon-btn" onclick="App.openMenu()" title="Menú">⋮</button>
+  </nav>
+
+  <div class="tabbar">
+    <button class="tab on" onclick="App.tab('dash',this)">
+      <span class="ti">📊</span>Panel
+    </button>
+    <button class="tab" onclick="App.tab('fuel',this)">
+      <span class="ti">⛽</span>Combustible
+    </button>
+    <button class="tab" onclick="App.tab('maint',this)">
+      <span class="ti">🔧</span>Servicio
+    </button>
+    <button class="tab" onclick="App.tab('rep',this)">
+      <span class="ti">📈</span>Reportes
+    </button>
+  </div>
+
+  <div class="main">
+
+    <!-- ── DASHBOARD ── -->
+    <div id="panel-dash" class="panel on">
+      <div id="dash-alerts"></div>
+      <div class="vhero">
+        <div class="eb" id="h-emoji">🚛</div>
+        <div class="vhero-i">
+          <h2 id="h-name">—</h2>
+          <p id="h-desc">Seleccioná un vehículo</p>
+        </div>
+        <div class="vhero-k">
+          <div class="kv" id="h-km">—</div>
+          <div class="kl">km</div>
+        </div>
+      </div>
+      <div class="sgrid">
+        <div class="sc"><div class="sv" id="st-fuel">$0</div><div class="sl">Gasto mes</div></div>
+        <div class="sc"><div class="sv" id="st-lit">0</div><div class="sl">Litros mes</div></div>
+        <div class="sc"><div class="sv" id="st-n">0</div><div class="sl">Cargas</div></div>
+        <div class="sc"><div class="sv" id="st-avg">—</div><div class="sl">$/litro</div></div>
+      </div>
+      <div class="slabel">Últimas cargas</div>
+      <div id="dash-recent"></div>
+    </div>
+
+    <!-- ── FUEL ── -->
+    <div id="panel-fuel" class="panel">
+      <input type="file" id="file-in" accept="image/*" capture="environment"
+             style="display:none" onchange="App.handlePhoto(event)">
+      <button class="scan-btn" onclick="document.getElementById('file-in').click()">
+        <span class="si">📷</span>
+        <span class="st">Fotografiar ticket</span>
+        <span class="ss">La IA extrae los datos automáticamente</span>
+      </button>
+      <div id="tprev-wrap" style="display:none"></div>
+      <div id="fuel-form" style="display:none">
+        <div class="slabel">Datos del ticket</div>
+        <div class="fgrid">
+          <div class="fl"><label>Fecha</label><input type="date" id="ff-date"></div>
+          <div class="fl"><label>Hora</label><input type="time" id="ff-time"></div>
+          <div class="fl"><label>Litros</label><input type="number" id="ff-lit" step="0.01" placeholder="0.00"></div>
+          <div class="fl"><label>Monto total ($)</label><input type="number" id="ff-amt" step="0.01" placeholder="0.00"></div>
+          <div class="fl"><label>IVA 21% ($)</label><input type="number" id="ff-iva" step="0.01" placeholder="0.00"></div>
+          <div class="fl"><label>CUIT surtidor</label><input type="text" id="ff-cuit" placeholder="XX-XXXXXXXX-X" inputmode="numeric"></div>
+          <div class="fl ffull"><label>Localidad</label><input type="text" id="ff-loc" placeholder="Buenos Aires"></div>
+          <div class="fl ffull"><label>Dirección</label><input type="text" id="ff-addr" placeholder="Av. Corrientes 1000"></div>
+          <div class="fl ffull"><label>KM actuales del vehículo</label><input type="number" id="ff-km" placeholder="150000" inputmode="numeric"></div>
+        </div>
+        <div class="row">
+          <button class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
+          <button class="btn btn-ghost" onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MAINTENANCE ── -->
+    <div id="panel-maint" class="panel">
+      <div class="card mb2">
+        <div class="slabel" style="margin-bottom:1rem">Nuevo servicio</div>
+        <div class="fgrid">
+          <div class="fl">
+            <label>Tipo</label>
+            <select id="sv-type">
+              <option value="">Elegir...</option>
+              <option value="oil-change">🛢️ Cambio aceite</option>
+              <option value="filter">🔄 Filtros</option>
+              <option value="tires">⚙️ Neumáticos</option>
+              <option value="suspension">🔧 Suspensión</option>
+              <option value="brakes">🛑 Frenos</option>
+              <option value="other">🔩 Otro</option>
+            </select>
+          </div>
+          <div class="fl"><label>Fecha</label><input type="date" id="sv-date"></div>
+          <div class="fl"><label>KM actual</label><input type="number" id="sv-km" placeholder="150000" inputmode="numeric"></div>
+          <div class="fl"><label>Próximo cada (km)</label><input type="number" id="sv-next" value="10000" inputmode="numeric"></div>
+          <div class="fl ffull"><label>Taller</label><input type="text" id="sv-prov" placeholder="Nombre del taller"></div>
+          <div class="fl ffull"><label>Notas</label><textarea id="sv-notes" placeholder="Detalles..."></textarea></div>
+        </div>
+        <button class="btn btn-primary" onclick="App.saveMaint()">Registrar servicio</button>
+      </div>
+      <div class="slabel">Historial de servicios</div>
+      <div id="maint-list"></div>
+    </div>
+
+    <!-- ── REPORTS ── -->
+    <div id="panel-rep" class="panel">
+      <div class="card mb2">
+        <div class="slabel" style="margin-bottom:1rem">Generar reporte</div>
+        <div class="fgrid">
+          <div class="fl">
+            <label>Tipo de reporte</label>
+            <select id="rp-type">
+              <option value="vehicle">Este vehículo</option>
+              <option value="fleet">Toda la flota</option>
+            </select>
+          </div>
+          <div class="fl">
+            <label>Período</label>
+            <select id="rp-range">
+              <option value="month">Mes actual</option>
+              <option value="last">Mes anterior</option>
+              <option value="3m">Últimos 3 meses</option>
+              <option value="6m">Últimos 6 meses</option>
+              <option value="all">Todo</option>
+            </select>
+          </div>
+          <div class="fl">
+            <label>Formato</label>
+            <select id="rp-fmt">
+              <option value="screen">Ver en pantalla</option>
+              <option value="email-owner">Email dueño</option>
+              <option value="email-contador">Email contador</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="App.genReport()">Generar reporte</button>
+      </div>
+      <div id="rep-out"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /sc-app -->
+
+<!-- ═══════════════════════════════════
+  MODALS
+═══════════════════════════════════ -->
+
+<!-- VEHICLE PICKER -->
+<div class="mbk" id="m-veh">
+  <div class="modal" style="max-width:440px">
+    <p class="mtitle mb1" style="font-family:var(--mono);font-size:1.1rem">¿Qué vehículo usás hoy?</p>
+    <p class="muted mb2" style="font-size:.85rem">Seleccioná el vehículo con el que salís.</p>
+    <div id="vcards"></div>
+    <div id="ovr-info" style="display:none;margin-top:.875rem">
+      <div class="div" style="margin-top:0"></div>
+      <p class="muted mb1" style="font-size:.78rem">⚙️ Admin asignó un vehículo especial para hoy</p>
+      <span class="chip c-orange" id="ovr-chip"></span>
+    </div>
+  </div>
+</div>
+
+<!-- MENU -->
+<div class="mbk" id="m-menu">
+  <div class="modal" style="max-width:340px">
+    <div class="mhdr">
+      <span class="mtitle" id="menu-uname">Opciones</span>
+      <button class="mclose" onclick="App.close('m-menu')">✕</button>
+    </div>
+    <div class="gap">
+      <button class="btn btn-ghost" onclick="App.openVPicker()">🚗 Cambiar vehículo del día</button>
+      <button class="btn btn-ghost" onclick="App.openSettings()">⚙️ Configuración</button>
+      <button class="btn btn-ghost" onclick="App.exportData()">📥 Exportar mis datos</button>
+      <div class="div" style="margin:0"></div>
+      <button class="btn btn-danger" onclick="App.logout()">🚪 Cerrar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="mbk" id="m-cfg">
+  <div class="modal">
+    <div class="mhdr">
+      <span class="mtitle">⚙️ Configuración</span>
+      <button class="mclose" onclick="App.close('m-cfg')">✕</button>
+    </div>
+    <div class="slabel">Mi cuenta</div>
+    <div class="fl mb2">
+      <label>Mi email (recibo confirmaciones por carga)</label>
+      <input type="email" id="cfg-email" placeholder="tu@email.com" inputmode="email">
+    </div>
+    <div class="div"></div>
+    <div class="slabel">Administrador</div>
+    <div class="fl mb2">
+      <label>Clave de administrador</label>
+      <input type="password" id="cfg-akey" placeholder="Clave admin"
+             oninput="App.checkAdminKey()">
+    </div>
+    <div id="admin-panel" style="display:none">
+      <div class="card" style="border-color:var(--orange);margin-bottom:1rem">
+        <p style="font-size:.75rem;color:var(--orange);font-weight:700;margin-bottom:1rem">⚡ PANEL ADMINISTRADOR</p>
+        <div class="fl mb2">
+          <label>Email del dueño (recibe reporte el 1° de cada mes)</label>
+          <input type="email" id="cfg-owner-email" placeholder="dueno@empresa.com" inputmode="email">
+        </div>
+        <div class="fl mb2">
+          <label>Email contador (recibe resumen el 25 de cada mes)</label>
+          <input type="email" id="cfg-cont-email" placeholder="contador@estudio.com" inputmode="email">
+        </div>
+        <div class="fl mb2">
+          <label>API Key Gemini (OCR de tickets)</label>
+          <input type="password" id="cfg-apikey" placeholder="AIza...">
+        </div>
+        <div class="slabel" style="margin-bottom:.75rem">Asignación de vehículos para hoy</div>
+        <div id="adm-assigns" style="display:flex;flex-direction:column;gap:.75rem"></div>
+      </div>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="App.saveSettings()" style="flex:2">Guardar</button>
+      <button class="btn btn-ghost" onclick="App.close('m-cfg')" style="flex:1">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- KM MODAL -->
+<div class="mbk" id="m-km">
+  <div class="modal" style="max-width:380px">
+    <p class="mtitle mb1" style="font-family:var(--mono);font-size:1.1rem">📍 KM del vehículo</p>
+    <p class="muted mb2" style="font-size:.85rem">Primera vez que usás este vehículo. ¿Cuántos km tiene actualmente?</p>
+    <div class="fl mb2">
+      <label id="km-lbl">Kilómetros actuales</label>
+      <input type="number" id="km-in" placeholder="150000" inputmode="numeric"
+             onkeydown="if(event.key==='Enter') App.confirmKm()">
+    </div>
+    <button class="btn btn-primary" onclick="App.confirmKm()">Confirmar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════
+  SCRIPT
+═══════════════════════════════════ -->
+<script>
+// ─── CONFIG ────────────────────────────────────────────────
+const API = "https://logisticaml.santamariapablodaniel.workers.dev";
+const ADMIN_KEY = "admin2024";
+const TZ = "America/Argentina/Buenos_Aires";
+
+const VEHICLES = {
+  hiace:   { id:'hiace',   name:'Toyota Hiace',  emoji:'🚐', desc:'Furgón de carga',  fixedUser:'nicolas'  },
+  saveiro: { id:'saveiro', name:'VW Saveiro',     emoji:'🚙', desc:'Camioneta pickup', fixedUser:'martin'   },
+  fiat:    { id:'fiat',    name:'Fiat Uno Cargo', emoji:'🚗', desc:'Auto comercial',   fixedUser:'ramiro'   },
+};
+const USER_V = { martin:'saveiro', ramiro:'fiat', nicolas:'hiace' };
+
+const SV_NAMES = {
+  'oil-change':'Cambio de aceite','filter':'Cambio de filtros',
+  'tires':'Revisión neumáticos','suspension':'Suspensión',
+  'brakes':'Frenos','other':'Otro'
+};
+const SV_ICONS = {
+  'oil-change':'🛢️','filter':'🔄','tires':'⚙️',
+  'suspension':'🔧','brakes':'🛑','other':'🔩'
+};
+
+// ─── STATE ──────────────────────────────────────────────────
+let S = { user:null, vid:null, pendingKmV:null };
+
+// ─── STORAGE ────────────────────────────────────────────────
+const DB = {
+  save(k,v){ try{localStorage.setItem(k,JSON.stringify(v))}catch(e){} },
+  load(k,d=null){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d} },
+  users(){ return this.load('fml_users',{}) },
+  saveUsers(u){ this.save('fml_users',u) },
+  overrides(){ return this.load('fml_ov',{}) },
+  saveOverrides(o){ this.save('fml_ov',o) },
+};
+
+// ─── HELPERS ────────────────────────────────────────────────
+
+// FIX: Hora correcta en celular usando timezone de Argentina
+function nowAR() {
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-CA', { timeZone: TZ }); // YYYY-MM-DD
+  const timeStr = now.toLocaleTimeString('es-AR', {
+    timeZone: TZ, hour:'2-digit', minute:'2-digit', hour12: false
+  });
+  return { date: dateStr, time: timeStr };
+}
+
+function fmt$(n){ return '$'+(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2}) }
+function fmtN(n){ return (n||0).toLocaleString('es-AR') }
+
+// Get all fuel records across all users/vehicles for fleet reports
+function getAllFleetData(since = null) {
+  const users = DB.users();
+  const result = [];
+  Object.values(users).forEach(u => {
+    if (!u.vehicles) return;
+    Object.entries(u.vehicles).forEach(([vid, vdata]) => {
+      const v = VEHICLES[vid];
+      if (!v) return;
+      const records = (vdata.fuelRecords || []).filter(r => !since || new Date(r.date) >= since);
+      records.forEach(r => result.push({
+        ...r,
+        vehicleId: vid,
+        vehicleName: v.name,
+        vehicleEmoji: v.emoji,
+        userName: u.name,
+        currentKm: vdata.currentKm,
+      }));
+    });
+  });
+  return result;
+}
+
+// ─── TOAST ──────────────────────────────────────────────────
+function toast(msg, type='info', ms=4500) {
+  const icons = {success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
+  const el = document.createElement('div');
+  el.className = `toast t-${type}`;
+  el.innerHTML = `<span>${icons[type]||'ℹ️'}</span><span style="flex:1">${msg}</span>`;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => { el.classList.add('bye'); setTimeout(()=>el.remove(),250); }, ms);
+}
+
+// ─── APP ────────────────────────────────────────────────────
+const App = {
+
+  // AUTH
+  showLogin() {
+    document.getElementById('f-login').style.display = '';
+    document.getElementById('f-reg').style.display = 'none';
+    setTimeout(() => document.getElementById('lu').focus(), 80);
+  },
+  showReg() {
+    document.getElementById('f-login').style.display = 'none';
+    document.getElementById('f-reg').style.display = '';
+    setTimeout(() => document.getElementById('rn').focus(), 80);
+  },
+
+  login() {
+    const u = document.getElementById('lu').value.trim().toLowerCase();
+    const p = document.getElementById('lp').value.trim();
+    if (!u) { alert('Ingresá tu usuario'); return; }
+    if (p.length !== 4) { alert('El PIN debe tener 4 dígitos'); return; }
+    const users = DB.users();
+    const user = Object.values(users).find(x => x.username === u);
+    if (!user) { alert('Usuario no encontrado. ¿Ya te registraste?'); return; }
+    if (user.pin !== p) { alert('PIN incorrecto'); document.getElementById('lp').value = ''; return; }
+    S.user = user;
+    this._enterApp();
+  },
+
+  register() {
+    const name = document.getElementById('rn').value.trim();
+    const u    = document.getElementById('ru').value.trim().toLowerCase();
+    const p    = document.getElementById('rp').value.trim();
+    if (!name)             { alert('Ingresá tu nombre'); return; }
+    if (!u)                { alert('Ingresá un usuario'); return; }
+    if (!/^\d{4}$/.test(p)){ alert('El PIN debe ser 4 dígitos numéricos'); return; }
+    const users = DB.users();
+    if (Object.values(users).find(x => x.username === u)) { alert('Ese usuario ya existe'); return; }
+    const id = Date.now().toString();
+    users[id] = { id, name, username:u, pin:p, email:'', vehicles:{}, createdAt:new Date().toISOString() };
+    DB.saveUsers(users);
+    alert(`✅ Cuenta creada. Iniciá sesión con "${u}".`);
+    document.getElementById('rn').value = '';
+    document.getElementById('ru').value = '';
+    document.getElementById('rp').value = '';
+    this.showLogin();
+    document.getElementById('lu').value = u;
+    document.getElementById('lp').focus();
+  },
+
+  logout() {
+    S = { user:null, vid:null, pendingKmV:null };
+    document.getElementById('sc-app').classList.remove('on');
+    document.getElementById('sc-login').classList.add('on');
+    this.close('m-menu');
+    document.getElementById('lu').value = '';
+    document.getElementById('lp').value = '';
+  },
+
+  _enterApp() {
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent = S.user.name;
+    this.openVPicker();
+  },
+
+  // VEHICLE PICKER
+  openVPicker() {
+    this.close('m-menu');
+    const today = nowAR().date;
+    const ovr   = DB.overrides();
+    const uOvr  = ovr[S.user.username];
+    const hasOvr = uOvr && uOvr.expires >= today;
+    const assignedId = hasOvr ? uOvr.vehicleId : (USER_V[S.user.username] || null);
+    const isAdmin = localStorage.getItem('fml_adm') === '1';
+
+    const cont = document.getElementById('vcards');
+    cont.innerHTML = '';
+    Object.values(VEHICLES).forEach(v => {
+      const isAssigned = v.id === assignedId;
+      if (!isAdmin && !isAssigned) return;
+      const card = document.createElement('div');
+      card.className = 'vcard' + (isAssigned ? ' sel' : '');
+      const badge = hasOvr && isAssigned
+        ? '<span class="chip c-orange">Asignado hoy</span>'
+        : isAssigned ? '<span class="chip c-purple">Tu vehículo</span>' : '';
+      card.innerHTML = `
+        <div class="ve">${v.emoji}</div>
+        <div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div>
+        <div class="vb">${badge}</div>`;
+      card.onclick = () => this.selectV(v.id);
+      cont.appendChild(card);
+    });
+
+    const ovrEl = document.getElementById('ovr-info');
+    if (hasOvr && VEHICLES[assignedId]) {
+      ovrEl.style.display = '';
+      document.getElementById('ovr-chip').textContent =
+        VEHICLES[assignedId].emoji + ' ' + VEHICLES[assignedId].name;
+    } else {
+      ovrEl.style.display = 'none';
+    }
+    document.getElementById('m-veh').classList.add('on');
+  },
+
+  selectV(vid) {
+    S.vid = vid;
+    this.close('m-veh');
+    const users = DB.users();
+    if (!users[S.user.id].vehicles) users[S.user.id].vehicles = {};
+    if (!users[S.user.id].vehicles[vid]) {
+      users[S.user.id].vehicles[vid] = { currentKm:null, fuelRecords:[], maintenanceRecords:[] };
+      DB.saveUsers(users);
+    }
+    S.user = users[S.user.id];
+    const v = VEHICLES[vid];
+    document.getElementById('nav-ve').textContent = v.emoji;
+    document.getElementById('nav-vn').textContent = v.name;
+    if (!S.user.vehicles[vid].currentKm) {
+      S.pendingKmV = vid;
+      document.getElementById('km-lbl').textContent = `KM actuales del ${v.name}`;
+      document.getElementById('km-in').value = '';
+      document.getElementById('m-km').classList.add('on');
+      setTimeout(() => document.getElementById('km-in').focus(), 300);
+    } else {
+      this.renderDash();
+    }
+  },
+
+  confirmKm() {
+    const km = parseInt(document.getElementById('km-in').value);
+    if (!km || km < 0) { alert('Ingresá un valor válido'); return; }
+    const users = DB.users();
+    users[S.user.id].vehicles[S.pendingKmV].currentKm = km;
+    DB.saveUsers(users);
+    S.user = users[S.user.id];
+    S.pendingKmV = null;
+    this.close('m-km');
+    this.renderDash();
+    toast('KM registrado ✅', 'success');
+  },
+
+  // TABS
+  tab(name, btn) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('panel-' + name).classList.add('on');
+    if (name === 'maint') this.renderMaintList();
+    if (name === 'dash')  this.renderDash();
+  },
+
+  // DASHBOARD
+  renderDash() {
+    if (!S.vid) return;
+    const vd   = S.user.vehicles[S.vid];
+    const v    = VEHICLES[S.vid];
+    const fuel = vd.fuelRecords || [];
+    const maint = vd.maintenanceRecords || [];
+
+    document.getElementById('h-emoji').textContent = v.emoji;
+    document.getElementById('h-name').textContent  = v.name;
+    document.getElementById('h-desc').textContent  = v.desc;
+    document.getElementById('h-km').textContent    = vd.currentKm ? fmtN(vd.currentKm) : '—';
+
+    const now = new Date();
+    const mo  = fuel.filter(r => {
+      const d = new Date(r.date);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const amt = mo.reduce((s,r) => s + r.amount, 0);
+    const lit = mo.reduce((s,r) => s + r.liters, 0);
+    const avg = lit > 0 ? amt / lit : 0;
+
+    document.getElementById('st-fuel').textContent = '$' + Math.round(amt).toLocaleString('es-AR');
+    document.getElementById('st-lit').textContent  = lit.toFixed(1);
+    document.getElementById('st-n').textContent    = mo.length;
+    document.getElementById('st-avg').textContent  = avg > 0 ? '$' + avg.toFixed(2) : '—';
+
+    this._renderAlerts(vd, maint);
+
+    const recent = [...fuel].reverse().slice(0, 5);
+    document.getElementById('dash-recent').innerHTML = recent.length === 0
+      ? '<p class="muted tc" style="padding:2rem 0">Sin cargas registradas aún</p>'
+      : recent.map(r => `
+        <div class="card" style="margin-bottom:.625rem;cursor:default">
+          <div class="card-row">
+            <div>
+              <div style="font-weight:600;margin-bottom:.2rem">
+                ${new Date(r.date).toLocaleDateString('es-AR')}
+                ${r.time ? '· ' + r.time : ''}
+              </div>
+              <div class="muted" style="font-size:.8rem">
+                ${r.location || 'Sin localidad'} · ${r.liters.toFixed(2)} L
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="tm" style="font-size:1rem;color:var(--acc)">${fmt$(r.amount)}</div>
+              <div class="muted" style="font-size:.72rem">$${(r.amount/r.liters).toFixed(2)}/L</div>
+            </div>
+          </div>
+        </div>`).join('');
+  },
+
+  _renderAlerts(vd, maint) {
+    const last   = maint[maint.length - 1];
+    const nextKm = last ? (last.currentKm + last.nextKm) : ((vd.currentKm || 0) + 10000);
+    const toNext = nextKm - (vd.currentKm || 0);
+    let html = '';
+    if (toNext <= 0)
+      html = `<div class="aban a-red"><span class="ai">🛑</span><div><strong>Mantenimiento vencido</strong><p>Superó ${fmtN(Math.abs(toNext))} km del servicio recomendado. Agendá urgente.</p></div></div>`;
+    else if (toNext <= 500)
+      html = `<div class="aban a-orange"><span class="ai">⚠️</span><div><strong>Próximo servicio en ${fmtN(toNext)} km</strong><p>Agendá el cambio de aceite pronto.</p></div></div>`;
+    document.getElementById('dash-alerts').innerHTML = html;
+  },
+
+  // FUEL
+  async handlePhoto(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const b64 = await this._b64(file);
+
+    document.getElementById('tprev-wrap').style.display = '';
+    document.getElementById('tprev-wrap').innerHTML = `
+      <div class="tprev">
+        <img src="${b64}" alt="Ticket">
+        <div class="tprev-badge"><span class="spin"></span> Analizando...</div>
+      </div>`;
+    document.getElementById('fuel-form').style.display = '';
+
+    // FIX: usar timezone Argentina para la hora default
+    const ar = nowAR();
+    document.getElementById('ff-date').value = ar.date;
+    document.getElementById('ff-time').value = ar.time;
+    const ckm = S.user.vehicles[S.vid]?.currentKm;
+    if (ckm) document.getElementById('ff-km').value = ckm;
+
+    try {
+      const apiKey = localStorage.getItem('fml_akey') || '';
+      const res = await fetch(`${API}/api/process-ticket`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: b64, apiKey })
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (data.ticket) {
+        const t = data.ticket;
+        // La IA devuelve la hora que está en el ticket (la correcta)
+        // Si el ticket tiene hora, usarla. Si no, mantener la de AR timezone
+        if (t.fecha) document.getElementById('ff-date').value = t.fecha;
+        if (t.hora)  document.getElementById('ff-time').value = t.hora.slice(0, 5);
+        const lit = t.combustible?.litros || t.combustible?.liters;
+        if (lit) document.getElementById('ff-lit').value = lit;
+        if (t.monto?.total) document.getElementById('ff-amt').value = t.monto.total;
+        if (t.monto?.iva)   document.getElementById('ff-iva').value  = t.monto.iva;
+        if (t.surtidor?.cuit)     document.getElementById('ff-cuit').value = t.surtidor.cuit;
+        if (t.surtidor?.localidad) document.getElementById('ff-loc').value = t.surtidor.localidad;
+        if (t.surtidor?.direccion) document.getElementById('ff-addr').value = t.surtidor.direccion;
+        document.querySelector('.tprev-badge').innerHTML = '✅ Datos extraídos';
+        document.querySelector('.tprev-badge').style.color = 'var(--green)';
+        toast('Datos extraídos por IA. Verificá antes de guardar.', 'success');
+      }
+    } catch(err) {
+      console.error('AI error:', err);
+      document.querySelector('.tprev-badge').innerHTML = '⚠️ Carga manual';
+      toast('No se pudo conectar con la IA. Cargá los datos manualmente.', 'warning');
+    }
+  },
+
+  async saveFuel() {
+    if (!S.vid) { alert('Seleccioná un vehículo'); return; }
+    const liters = parseFloat(document.getElementById('ff-lit').value);
+    const amount = parseFloat(document.getElementById('ff-amt').value);
+    const date   = document.getElementById('ff-date').value;
+    if (!date || !liters || !amount) { alert('Completá: Fecha, Litros y Monto'); return; }
+    const km = parseInt(document.getElementById('ff-km').value) || null;
+    const record = {
+      id: Date.now(), date,
+      time:     document.getElementById('ff-time').value,
+      liters, amount,
+      iva:      parseFloat(document.getElementById('ff-iva').value) || 0,
+      cuit:     document.getElementById('ff-cuit').value,
+      location: document.getElementById('ff-loc').value,
+      address:  document.getElementById('ff-addr').value,
+      km, createdAt: new Date().toISOString(),
+    };
+    const users = DB.users();
+    const vd    = users[S.user.id].vehicles[S.vid];
+    if (!vd.fuelRecords) vd.fuelRecords = [];
+    vd.fuelRecords.push(record);
+    if (km) vd.currentKm = km;
+    DB.saveUsers(users);
+    S.user = users[S.user.id];
+
+    // Also sync to server for cron reports
+    this._syncRecordToServer(record).catch(console.warn);
+
+    this.cancelFuel();
+    this.renderDash();
+    toast('✅ Carga registrada', 'success');
+    this._sendConfirmEmail(record).catch(console.error);
+  },
+
+  // Sync record to server so cron jobs can access it
+  async _syncRecordToServer(record) {
+    const v = VEHICLES[S.vid];
+    try {
+      await fetch(`${API}/api/sync-record`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId:      S.user.id,
+          userName:    S.user.name,
+          vehicleId:   S.vid,
+          vehicleName: v.name,
+          vehicleIcon: v.emoji,
+          record,
+        })
+      });
+    } catch(e) {
+      // Silent — local save already done
+    }
+  },
+
+  // ── EMAIL CONFIRMATION (fixed) ──────────────────────────
+  async _sendConfirmEmail(record) {
+    // Build recipients
+    const userEmail  = S.user.email ? S.user.email.trim() : '';
+    const ownerEmail = localStorage.getItem('fml_owner_email') || '';
+    const to = userEmail || ownerEmail;
+    if (!to || !to.includes('@')) {
+      console.log('📧 Sin email configurado, omitiendo confirmación.');
+      console.log('→ Configurá tu email en ⚙️ Configuración para recibir confirmaciones.');
+      return;
+    }
+    const v = VEHICLES[S.vid];
+    const body = {
+      to,
+      userName:    S.user.name,
+      vehicleName: v.name,
+      vehicleIcon: v.emoji,
+      fuelRecord:  record,
+      location:    record.location,
+      address:     record.address,
+    };
+    // CC owner if different
+    if (ownerEmail && ownerEmail !== to && ownerEmail.includes('@')) {
+      body.cc = ownerEmail;
+    }
+    console.log('📧 Enviando confirmación a:', to, body.cc ? '+ CC: ' + body.cc : '');
+    try {
+      const res  = await fetch(`${API}/api/send-confirmation`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && (data.success || data.message)) {
+        toast('📧 Confirmación enviada', 'info', 3000);
+      } else {
+        const errMsg = data.error || data.details || 'Error desconocido';
+        console.error('❌ Email error:', data);
+        toast('⚠️ Email no enviado: ' + errMsg, 'warning', 7000);
+      }
+    } catch(err) {
+      console.error('❌ Fetch error email:', err);
+      toast('Sin conexión para enviar email', 'warning', 4000);
+    }
+  },
+
+  cancelFuel() {
+    document.getElementById('file-in').value = '';
+    document.getElementById('tprev-wrap').style.display = 'none';
+    document.getElementById('tprev-wrap').innerHTML = '';
+    document.getElementById('fuel-form').style.display = 'none';
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','ff-km']
+      .forEach(id => { document.getElementById(id).value = ''; });
+  },
+
+  // MAINTENANCE
+  saveMaint() {
+    if (!S.vid) { alert('Seleccioná un vehículo'); return; }
+    const type = document.getElementById('sv-type').value;
+    const date = document.getElementById('sv-date').value;
+    const km   = parseInt(document.getElementById('sv-km').value);
+    const next = parseInt(document.getElementById('sv-next').value) || 10000;
+    if (!type || !date || !km) { alert('Completá: Tipo, Fecha y KM'); return; }
+    const record = {
+      id: Date.now(), type, date, currentKm: km, nextKm: next,
+      notes: document.getElementById('sv-notes').value,
+      provider: document.getElementById('sv-prov').value,
+      createdAt: new Date().toISOString(),
+    };
+    const users = DB.users();
+    const vd    = users[S.user.id].vehicles[S.vid];
+    if (!vd.maintenanceRecords) vd.maintenanceRecords = [];
+    vd.maintenanceRecords.push(record);
+    vd.currentKm = km;
+    DB.saveUsers(users);
+    S.user = users[S.user.id];
+    toast('✅ Servicio registrado', 'success');
+    ['sv-type','sv-date','sv-km','sv-notes','sv-prov'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('sv-next').value = '10000';
+    this.renderMaintList();
+    this.renderDash();
+  },
+
+  renderMaintList() {
+    if (!S.vid) return;
+    const records = [...(S.user.vehicles[S.vid]?.maintenanceRecords || [])].reverse();
+    document.getElementById('maint-list').innerHTML = records.length === 0
+      ? '<p class="muted tc" style="padding:2rem 0">Sin servicios registrados</p>'
+      : records.map(r => `
+        <div class="card" style="margin-bottom:.75rem">
+          <div class="card-row" style="margin-bottom:.625rem">
+            <div>
+              <div style="font-weight:700;margin-bottom:.2rem">
+                ${SV_ICONS[r.type]||'🔧'} ${SV_NAMES[r.type]||r.type}
+              </div>
+              <div class="muted" style="font-size:.8rem">
+                ${new Date(r.date).toLocaleDateString('es-AR')}
+              </div>
+            </div>
+            <div class="chip c-purple">${fmtN(r.currentKm)} km</div>
+          </div>
+          <div class="muted" style="font-size:.8rem;display:flex;flex-direction:column;gap:.2rem">
+            <span>📅 Próximo a los ${fmtN(r.currentKm + r.nextKm)} km</span>
+            ${r.provider ? `<span>🏪 ${r.provider}</span>` : ''}
+            ${r.notes    ? `<span>📝 ${r.notes}</span>`    : ''}
+          </div>
+        </div>`).join('');
+  },
+
+  // REPORTS
+  genReport() {
+    if (!S.vid) { alert('Seleccioná un vehículo'); return; }
+    const type  = document.getElementById('rp-type').value;
+    const range = document.getElementById('rp-range').value;
+    const fmt   = document.getElementById('rp-fmt').value;
+    const now   = new Date();
+
+    let since = null;
+    if (range === 'month') {
+      since = new Date(now.getFullYear(), now.getMonth(), 1);
+    } else if (range === 'last') {
+      since = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const until = new Date(now.getFullYear(), now.getMonth(), 1);
+      // Filter by last month specifically
+      if (type === 'vehicle') {
+        const fuel = (S.user.vehicles[S.vid].fuelRecords||[]).filter(r => {
+          const d = new Date(r.date);
+          return d >= since && d < until;
+        });
+        const maint = S.user.vehicles[S.vid].maintenanceRecords || [];
+        if (fmt === 'screen') this._showVehicleReport(fuel, maint);
+        else this._emailReport(type, fuel, maint, fmt);
+        return;
+      }
+    } else if (range === '3m') {
+      since = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+    } else if (range === '6m') {
+      since = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    }
+
+    if (type === 'vehicle') {
+      const fuel = (S.user.vehicles[S.vid].fuelRecords || []).filter(r => !since || new Date(r.date) >= since);
+      const maint = S.user.vehicles[S.vid].maintenanceRecords || [];
+      if (fmt === 'screen') this._showVehicleReport(fuel, maint);
+      else this._emailReport(type, fuel, maint, fmt);
+    } else {
+      const allData = getAllFleetData(since);
+      if (fmt === 'screen') this._showFleetReport(allData);
+      else this._emailReport('fleet', allData, [], fmt);
+    }
+  },
+
+  // ── VEHICLE REPORT ──────────────────────────────────────
+  _showVehicleReport(fuel, maint) {
+    const v    = VEHICLES[S.vid];
+    const vd   = S.user.vehicles[S.vid];
+    const amt  = fuel.reduce((s,r) => s + r.amount, 0);
+    const lit  = fuel.reduce((s,r) => s + r.liters, 0);
+    const iva  = fuel.reduce((s,r) => s + (r.iva||0), 0);
+    const avg  = lit > 0 ? amt / lit : 0;
+
+    // Calculate km traveled (if we have km data on records)
+    const kmRecords = fuel.filter(r => r.km).sort((a,b) => new Date(a.date)-new Date(b.date));
+    let kmTraveled = 0;
+    if (kmRecords.length >= 2) {
+      kmTraveled = kmRecords[kmRecords.length-1].km - kmRecords[0].km;
+    }
+    const kmPerLiter = kmTraveled > 0 && lit > 0 ? kmTraveled / lit : 0;
+
+    // Insights
+    const insights = this._generateInsights(fuel, lit, avg, kmTraveled, kmPerLiter);
+
+    document.getElementById('rep-out').innerHTML = `
+      <div class="slabel">${v.emoji} ${v.name}</div>
+      <div class="sgrid" style="margin-bottom:1rem">
+        <div class="sc"><div class="sv">${fuel.length}</div><div class="sl">Cargas</div></div>
+        <div class="sc"><div class="sv">${lit.toFixed(1)}</div><div class="sl">Litros</div></div>
+        <div class="sc"><div class="sv">$${Math.round(amt).toLocaleString('es-AR')}</div><div class="sl">Gasto total</div></div>
+        <div class="sc"><div class="sv">${avg > 0 ? '$' + avg.toFixed(2) : '—'}</div><div class="sl">$/litro</div></div>
+      </div>
+      ${iva > 0 ? `<div class="card" style="border-color:var(--green);margin-bottom:1rem">
+        <p style="font-size:.8rem;color:var(--green);font-weight:700">💰 CRÉDITO FISCAL IVA</p>
+        <p style="font-family:var(--mono);font-size:1.5rem;font-weight:700;margin:.25rem 0">${fmt$(iva)}</p>
+        <p class="muted" style="font-size:.75rem">IVA 21% acumulado — presentar tickets al contador</p>
+      </div>` : ''}
+      ${kmTraveled > 0 ? `
+      <div class="sgrid" style="margin-bottom:1rem;grid-template-columns:repeat(2,1fr)">
+        <div class="sc"><div class="sv">${fmtN(kmTraveled)}</div><div class="sl">Km recorridos</div></div>
+        <div class="sc"><div class="sv">${kmPerLiter > 0 ? kmPerLiter.toFixed(1) : '—'}</div><div class="sl">km/litro</div></div>
+      </div>` : ''}
+      <div class="slabel">Análisis y consejos</div>
+      ${insights}
+      <div class="slabel" style="margin-top:1rem">Detalle de cargas</div>
+      <div class="twrap">
+        <table>
+          <thead><tr><th>Fecha</th><th>Hora</th><th>Litros</th><th>Monto</th><th>$/L</th><th>IVA</th><th>Localidad</th></tr></thead>
+          <tbody>
+            ${fuel.length === 0
+              ? '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1.5rem">Sin cargas en este período</td></tr>'
+              : fuel.map(r => `<tr>
+                  <td>${new Date(r.date).toLocaleDateString('es-AR')}</td>
+                  <td class="tm">${r.time || '—'}</td>
+                  <td class="tm">${r.liters.toFixed(2)}</td>
+                  <td class="tm">$${r.amount.toFixed(2)}</td>
+                  <td class="tm">$${(r.amount/r.liters).toFixed(2)}</td>
+                  <td class="tm">${r.iva ? '$'+r.iva.toFixed(2) : '—'}</td>
+                  <td>${r.location || '—'}</td>
+                </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  },
+
+  // ── FLEET REPORT (dueño) ────────────────────────────────
+  _showFleetReport(allData) {
+    // Group by vehicle
+    const byVehicle = {};
+    Object.values(VEHICLES).forEach(v => {
+      byVehicle[v.id] = { v, records: [], lit:0, amt:0, iva:0, kmRecords:[] };
+    });
+    allData.forEach(r => {
+      if (byVehicle[r.vehicleId]) {
+        byVehicle[r.vehicleId].records.push(r);
+        byVehicle[r.vehicleId].lit += r.liters;
+        byVehicle[r.vehicleId].amt += r.amount;
+        byVehicle[r.vehicleId].iva += (r.iva || 0);
+        if (r.km) byVehicle[r.vehicleId].kmRecords.push(r);
+      }
+    });
+
+    // Sort by total spend
+    const sorted = Object.values(byVehicle).sort((a,b) => b.amt - a.amt);
+    const totalAmt = sorted.reduce((s,x) => s + x.amt, 0);
+    const totalLit = sorted.reduce((s,x) => s + x.lit, 0);
+    const totalIva = sorted.reduce((s,x) => s + x.iva, 0);
+
+    let html = `
+      <div class="slabel">🚛 Toda la flota</div>
+      <div class="sgrid" style="margin-bottom:1rem">
+        <div class="sc"><div class="sv">${allData.length}</div><div class="sl">Total cargas</div></div>
+        <div class="sc"><div class="sv">${totalLit.toFixed(1)}</div><div class="sl">Total litros</div></div>
+        <div class="sc"><div class="sv">$${Math.round(totalAmt).toLocaleString('es-AR')}</div><div class="sl">Gasto total</div></div>
+        <div class="sc"><div class="sv">${fmt$(totalIva)}</div><div class="sl">IVA a imputar</div></div>
+      </div>`;
+
+    // Comparativa
+    html += `<div class="slabel">Comparativa por vehículo</div>`;
+    sorted.forEach((x, i) => {
+      const pct = totalAmt > 0 ? Math.round(x.amt / totalAmt * 100) : 0;
+      const kmSorted = x.kmRecords.sort((a,b) => new Date(a.date)-new Date(b.date));
+      const km = kmSorted.length >= 2 ? kmSorted[kmSorted.length-1].km - kmSorted[0].km : 0;
+      const efficiency = km > 0 && x.lit > 0 ? (km / x.lit).toFixed(1) : '—';
+      const medal = i === 0 ? '🏆' : i === 1 ? '🥈' : '🥉';
+      html += `
+        <div class="card" style="margin-bottom:.75rem">
+          <div class="card-row" style="margin-bottom:.875rem">
+            <div style="display:flex;align-items:center;gap:.75rem">
+              <span style="font-size:2rem">${x.v.emoji}</span>
+              <div>
+                <div style="font-weight:700">${medal} ${x.v.name}</div>
+                <div class="muted" style="font-size:.78rem">${x.records.length} cargas · ${x.lit.toFixed(1)} L</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="tm" style="color:var(--acc);font-size:1.1rem">$${Math.round(x.amt).toLocaleString('es-AR')}</div>
+              <div class="muted" style="font-size:.72rem">${pct}% del total</div>
+            </div>
+          </div>
+          <div style="background:var(--bg3);border-radius:6px;height:6px;overflow:hidden;margin-bottom:.75rem">
+            <div style="width:${pct}%;height:100%;background:var(--acc);border-radius:6px;transition:width .6s"></div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;font-size:.78rem">
+            <div class="tc"><div style="font-family:var(--mono);font-weight:700;color:var(--acc)">${km > 0 ? fmtN(km) : '—'}</div><div class="muted">km recorr.</div></div>
+            <div class="tc"><div style="font-family:var(--mono);font-weight:700;color:var(--acc)">${efficiency}</div><div class="muted">km/litro</div></div>
+            <div class="tc"><div style="font-family:var(--mono);font-weight:700;color:var(--acc)">${x.iva > 0 ? fmt$(x.iva) : '—'}</div><div class="muted">IVA créd.</div></div>
+          </div>
+        </div>`;
+    });
+
+    // Asesoría
+    html += `<div class="slabel">Asesoría de eficiencia</div>`;
+    html += this._fleetInsights(sorted, totalAmt, totalLit);
+
+    document.getElementById('rep-out').innerHTML = html;
+  },
+
+  // ── INSIGHTS / ASESORÍA ─────────────────────────────────
+  _generateInsights(fuel, lit, avg, kmTraveled, kmPerLiter) {
+    let html = '';
+    if (fuel.length < 2) {
+      html += `<div class="rep-insight"><h4>📊 Pocas cargas registradas</h4><p>Con más registros podremos analizar tendencias y darte recomendaciones más precisas.</p></div>`;
+      return html;
+    }
+    // Price trend
+    const prices = fuel.map(r => r.amount / r.liters);
+    const minP = Math.min(...prices);
+    const maxP = Math.max(...prices);
+    const diffP = maxP - minP;
+    if (diffP > 5) {
+      html += `<div class="rep-insight warn"><h4>💰 Variación de precio detectada</h4>
+        <p>El precio por litro varió entre $${minP.toFixed(2)} y $${maxP.toFixed(2)} (diferencia de $${diffP.toFixed(2)}/L). Buscá siempre las estaciones más económicas de tu ruta habitual.</p></div>`;
+    }
+    // Frequency
+    if (fuel.length > 1) {
+      const sorted = [...fuel].sort((a,b) => new Date(a.date)-new Date(b.date));
+      const days = (new Date(sorted[sorted.length-1].date) - new Date(sorted[0].date)) / 86400000;
+      const freq = days / (fuel.length - 1);
+      html += `<div class="rep-insight"><h4>📅 Frecuencia de carga</h4>
+        <p>Cargás combustible cada ${Math.round(freq)} días en promedio. ${freq < 4 ? 'Las cargas muy frecuentes en pequeñas cantidades son menos eficientes.' : 'Una buena frecuencia de carga.'}</p></div>`;
+    }
+    if (kmPerLiter > 0) {
+      const quality = kmPerLiter > 12 ? 'Excelente' : kmPerLiter > 9 ? 'Bueno' : 'Por mejorar';
+      const cls = kmPerLiter > 12 ? 'good' : kmPerLiter > 9 ? '' : 'warn';
+      html += `<div class="rep-insight ${cls}"><h4>⛽ Rendimiento: ${quality}</h4>
+        <p>${kmPerLiter.toFixed(1)} km/litro. ${kmPerLiter < 9 ? 'Revisá presión de neumáticos, filtro de aire y estilo de manejo para mejorar el rendimiento.' : 'Para mantener este rendimiento: revisá presión de neumáticos cada 15 días y cambio de aceite puntual.'}</p></div>`;
+    }
+    // IVA advice
+    const totalIva = fuel.reduce((s,r) => s + (r.iva||0), 0);
+    if (totalIva > 0) {
+      html += `<div class="rep-insight good"><h4>🧾 Crédito fiscal disponible</h4>
+        <p>Tenés ${fmt$(totalIva)} de IVA acumulado para imputar como crédito fiscal. Guardá todos los tickets físicos además de esta app. Recordá que el CUIT del surtidor es obligatorio.</p></div>`;
+    }
+    return html || '<p class="muted">Sin suficientes datos para generar recomendaciones.</p>';
+  },
+
+  _fleetInsights(sorted, totalAmt, totalLit) {
+    let html = '';
+    const topSpender = sorted[0];
+    const topEfficient = sorted.filter(x => x.kmRecords.length >= 2).sort((a,b) => {
+      const effA = a.kmRecords.length >= 2 ? (a.kmRecords[a.kmRecords.length-1].km - a.kmRecords[0].km) / a.lit : 0;
+      const effB = b.kmRecords.length >= 2 ? (b.kmRecords[b.kmRecords.length-1].km - b.kmRecords[0].km) / b.lit : 0;
+      return effB - effA;
+    })[0];
+
+    if (topSpender && topSpender.amt > 0) {
+      html += `<div class="rep-insight warn"><h4>💸 Mayor gasto: ${topSpender.v.emoji} ${topSpender.v.name}</h4>
+        <p>Concentra el ${Math.round(topSpender.amt/totalAmt*100)}% del gasto total de la flota ($${Math.round(topSpender.amt).toLocaleString('es-AR')}). Si hay picos de consumo, revisá condiciones mecánicas del vehículo.</p></div>`;
+    }
+    if (topEfficient) {
+      const km = topEfficient.kmRecords[topEfficient.kmRecords.length-1].km - topEfficient.kmRecords[0].km;
+      const eff = (km / topEfficient.lit).toFixed(1);
+      html += `<div class="rep-insight good"><h4>🏆 Más eficiente: ${topEfficient.v.emoji} ${topEfficient.v.name}</h4>
+        <p>${eff} km/litro. Usá este vehículo para recorridos largos para maximizar la eficiencia de la flota.</p></div>`;
+    }
+    html += `<div class="rep-insight"><h4>📋 Recomendaciones generales</h4>
+      <ul style="padding-left:1.2rem;font-size:.82rem;color:var(--muted);line-height:2">
+        <li>Cargar combustible a primera hora evita hacer fila y el combustible está más frío (mayor densidad).</li>
+        <li>Mantener los tanques entre 25% y 75% reduce el peso innecesario.</li>
+        <li>Coordinar las cargas con los servicios de mantenimiento ahorra viajes al taller.</li>
+        <li>Registrar el KM en cada carga permite calcular el rendimiento real de cada vehículo.</li>
+      </ul></div>`;
+    return html;
+  },
+
+  async _emailReport(type, data, maint, fmt) {
+    const ownerEmail  = localStorage.getItem('fml_owner_email')  || '';
+    const contEmail   = localStorage.getItem('fml_cont_email')   || '';
+    const userEmail   = S.user.email || '';
+    let to = '';
+    if (fmt === 'email-owner')    to = ownerEmail || userEmail;
+    if (fmt === 'email-contador') to = contEmail  || ownerEmail;
+    if (!to || !to.includes('@')) {
+      alert('Configurá los emails en ⚙️ Configuración → Panel Admin');
+      return;
+    }
+    const v   = VEHICLES[S.vid];
+    const amt = Array.isArray(data) ? data.reduce((s,r) => s + r.amount, 0) : 0;
+    const lit = Array.isArray(data) ? data.reduce((s,r) => s + r.liters, 0) : 0;
+    try {
+      await fetch(`${API}/api/send-report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to,
+          reportType: fmt === 'email-contador' ? 'contador' : 'owner',
+          userName:   S.user.name,
+          vehicleName: type === 'fleet' ? 'Toda la flota' : v.name,
+          fuelRecords:  Array.isArray(data) ? data : [],
+          maintenanceRecords: maint,
+          summary: { count: Array.isArray(data)?data.length:0, totalLiters:lit, totalAmount:amt, avgPrice:lit>0?amt/lit:0 },
+        })
+      });
+      toast('📧 Reporte enviado a ' + to, 'success');
+    } catch(err) {
+      toast('Error al enviar reporte', 'error');
+    }
+  },
+
+  // SETTINGS
+  openSettings() {
+    this.close('m-menu');
+    document.getElementById('cfg-email').value       = S.user.email || '';
+    document.getElementById('cfg-owner-email').value = localStorage.getItem('fml_owner_email') || '';
+    document.getElementById('cfg-cont-email').value  = localStorage.getItem('fml_cont_email')  || '';
+    document.getElementById('cfg-apikey').value      = localStorage.getItem('fml_akey') || '';
+    document.getElementById('cfg-akey').value        = '';
+    document.getElementById('admin-panel').style.display = localStorage.getItem('fml_adm') === '1' ? '' : 'none';
+    if (localStorage.getItem('fml_adm') === '1') this._buildAssigns();
+    document.getElementById('m-cfg').classList.add('on');
+  },
+
+  checkAdminKey() {
+    if (document.getElementById('cfg-akey').value === ADMIN_KEY) {
+      document.getElementById('admin-panel').style.display = '';
+      localStorage.setItem('fml_adm', '1');
+      this._buildAssigns();
+      toast('🔓 Panel admin desbloqueado', 'success');
+    }
+  },
+
+  _buildAssigns() {
+    const users   = DB.users();
+    const ovr     = DB.overrides();
+    const today   = nowAR().date;
+    const cont    = document.getElementById('adm-assigns');
+    cont.innerHTML = '';
+    Object.values(users).forEach(u => {
+      const defV  = USER_V[u.username] || null;
+      const uOvr  = ovr[u.username];
+      const hasOvr = uOvr && uOvr.expires >= today;
+      const curV  = hasOvr ? uOvr.vehicleId : defV;
+      const row   = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:.625rem;flex-wrap:wrap';
+      row.innerHTML = `
+        <span style="font-size:.82rem;color:var(--muted);min-width:90px;font-weight:600">${u.name}</span>
+        <select data-uid="${u.username}" style="flex:1;min-width:130px;padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:.85rem;-webkit-appearance:none">
+          ${Object.values(VEHICLES).map(v =>
+            `<option value="${v.id}" ${curV===v.id?'selected':''}>${v.emoji} ${v.name}${defV===v.id?' ✓':''}</option>`
+          ).join('')}
+        </select>
+        <span style="font-size:.7rem;color:${hasOvr?'var(--orange)':'var(--dim)'}">${hasOvr?'Hoy especial':'Por defecto'}</span>`;
+      cont.appendChild(row);
+    });
+  },
+
+  saveSettings() {
+    const users = DB.users();
+    users[S.user.id].email = document.getElementById('cfg-email').value.trim();
+    DB.saveUsers(users);
+    S.user = users[S.user.id];
+    const oe = document.getElementById('cfg-owner-email').value.trim();
+    const ce = document.getElementById('cfg-cont-email').value.trim();
+    const ak = document.getElementById('cfg-apikey').value.trim();
+    if (oe) localStorage.setItem('fml_owner_email', oe);
+    if (ce) localStorage.setItem('fml_cont_email',  ce);
+    if (ak) localStorage.setItem('fml_akey', ak);
+    if (localStorage.getItem('fml_adm') === '1') {
+      const ovr   = DB.overrides();
+      const today = nowAR().date;
+      document.querySelectorAll('#adm-assigns select').forEach(sel => {
+        const uname = sel.dataset.uid;
+        const vid   = sel.value;
+        const def   = USER_V[uname];
+        if (vid !== def) ovr[uname] = { vehicleId: vid, expires: today };
+        else delete ovr[uname];
+      });
+      DB.saveOverrides(ovr);
+    }
+    this.close('m-cfg');
+    toast('✅ Configuración guardada', 'success');
+  },
+
+  openMenu() { document.getElementById('m-menu').classList.add('on'); },
+  close(id)  { document.getElementById(id).classList.remove('on'); },
+
+  exportData() {
+    const blob = new Blob([JSON.stringify({user:S.user,at:new Date().toISOString()},null,2)],{type:'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `flota-ml-${S.user.username}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  },
+
+  _b64(file) {
+    return new Promise((res,rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+  },
+};
+
+// Close modals on backdrop tap (but not vehicle/km pickers)
+document.querySelectorAll('.mbk').forEach(bk => {
+  bk.addEventListener('click', e => {
+    if (e.target === bk && bk.id !== 'm-veh' && bk.id !== 'm-km') {
+      bk.classList.remove('on');
+    }
+  });
+});
+</script>
+</body>
+</html>

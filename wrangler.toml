@@ -1,0 +1,43 @@
+name = "logisticaml"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ─── CRON TRIGGERS ────────────────────────────────────────────────────────────
+# Día 25 a las 12:00 UTC = 09:00 Argentina → Resumen para el contador (crédito fiscal)
+# Día  1 a las 11:00 UTC = 08:00 Argentina → Reporte para el dueño (mes anterior)
+[triggers]
+crons = [
+  "0 12 25 * *",
+  "0 11 1  * *"
+]
+
+# ─── KV NAMESPACE ─────────────────────────────────────────────────────────────
+# Crear en Cloudflare Dashboard → Workers & Pages → KV
+# Pegar el ID del namespace aquí:
+[[kv_namespaces]]
+binding = "FLEET_KV"
+id      = "REEMPLAZAR_CON_TU_KV_ID"
+# id para preview (desarrollo local):
+# preview_id = "REEMPLAZAR_CON_TU_KV_PREVIEW_ID"
+
+# ─── SECRETS (NO poner valores reales aquí — usar wrangler secret put) ────────
+# Configurar con estos comandos:
+#
+#   wrangler secret put SENDGRID_API_KEY
+#   → Pegar tu API Key de SendGrid (empieza con SG.)
+#
+#   wrangler secret put GEMINI_API_KEY
+#   → Pegar tu API Key de Gemini (empieza con AIza)
+#
+#   wrangler secret put FROM_EMAIL
+#   → santamariapablodaniel@gmail.com  (el email VERIFICADO en SendGrid)
+#
+#   wrangler secret put OWNER_EMAIL
+#   → tu email como dueño (recibe reporte el día 1)
+#
+#   wrangler secret put CONTADOR_EMAIL
+#   → email del contador (recibe resumen el día 25)
+#
+#   wrangler secret put FIREBASE_CREDENTIALS   (OPCIONAL)
+#   → {"projectId":"tu-proyecto","apiKey":"AIza..."}
