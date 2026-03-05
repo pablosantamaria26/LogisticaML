@@ -444,12 +444,20 @@
         </div>
         <div class="form-group">
           <label>PIN (4 dígitos)</label>
-          <!-- FIX #1: IDs únicos para los PIN del login -->
-          <div class="pin-input" id="login-pin-container">
-            <input type="text" class="pin-digit login-pin" id="lpin-1" maxlength="1" inputmode="numeric" pattern="[0-9]">
-            <input type="text" class="pin-digit login-pin" id="lpin-2" maxlength="1" inputmode="numeric" pattern="[0-9]">
-            <input type="text" class="pin-digit login-pin" id="lpin-3" maxlength="1" inputmode="numeric" pattern="[0-9]">
-            <input type="text" class="pin-digit login-pin" id="lpin-4" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <!-- Campo real oculto donde se escribe -->
+          <input type="password" id="login-pin-real" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+            placeholder="····" autocomplete="current-password"
+            style="width:100%; padding:0.875rem; background:rgba(15,23,42,0.5); border:1px solid var(--border);
+                   border-radius:8px; color:var(--text-light); font-size:2rem; letter-spacing:0.5rem;
+                   text-align:center; font-family:monospace; transition:var(--transition);"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
+            onfocus="this.style.borderColor='var(--primary)'"
+            onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter') app.login()">
+          <!-- Inputs ocultos para compatibilidad con el resto del código -->
+          <div style="display:none">
+            <input class="login-pin" id="lpin-1"><input class="login-pin" id="lpin-2">
+            <input class="login-pin" id="lpin-3"><input class="login-pin" id="lpin-4">
           </div>
         </div>
         <button class="btn btn-primary" onclick="app.login()">
@@ -472,13 +480,21 @@
         </div>
         <div class="form-group">
           <label>PIN (4 dígitos)</label>
-          <!-- FIX #1: Clase separada 'register-pin' para no mezclar con login -->
-          <div class="pin-input" id="register-pin-container">
-            <input type="text" class="pin-digit register-pin" id="rpin-1" maxlength="1" inputmode="numeric" pattern="[0-9]">
-            <input type="text" class="pin-digit register-pin" id="rpin-2" maxlength="1" inputmode="numeric" pattern="[0-9]">
-            <input type="text" class="pin-digit register-pin" id="rpin-3" maxlength="1" inputmode="numeric" pattern="[0-9]">
-            <input type="text" class="pin-digit register-pin" id="rpin-4" maxlength="1" inputmode="numeric" pattern="[0-9]">
+          <input type="password" id="register-pin-real" maxlength="4" inputmode="numeric" pattern="[0-9]*"
+            placeholder="····" autocomplete="new-password"
+            style="width:100%; padding:0.875rem; background:rgba(15,23,42,0.5); border:1px solid var(--border);
+                   border-radius:8px; color:var(--text-light); font-size:2rem; letter-spacing:0.5rem;
+                   text-align:center; font-family:monospace; transition:var(--transition);"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
+            onfocus="this.style.borderColor='var(--primary)'"
+            onblur="this.style.borderColor='var(--border)'"
+            onkeydown="if(event.key==='Enter') app.register()">
+          <!-- Inputs ocultos para compatibilidad -->
+          <div style="display:none">
+            <input class="register-pin" id="rpin-1"><input class="register-pin" id="rpin-2">
+            <input class="register-pin" id="rpin-3"><input class="register-pin" id="rpin-4">
           </div>
+          <small style="color:var(--text-muted); margin-top:0.5rem; display:block;">Elegí 4 números que puedas recordar</small>
         </div>
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.register()">Registrarse</button>
@@ -775,37 +791,7 @@
 
         this.loadLocalData();
 
-        // FIX #1: Listeners separados para cada set de PINs
-        document.querySelectorAll('.login-pin').forEach((input, i, arr) => {
-          input.addEventListener('input', () => {
-            // Solo números
-            input.value = input.value.replace(/[^0-9]/g, '');
-            if (input.value.length === 1 && i < arr.length - 1) {
-              arr[i + 1].focus();
-            }
-          });
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && input.value === '' && i > 0) {
-              arr[i - 1].focus();
-            }
-            if (e.key === 'Enter') app.login();
-          });
-        });
-
-        document.querySelectorAll('.register-pin').forEach((input, i, arr) => {
-          input.addEventListener('input', () => {
-            input.value = input.value.replace(/[^0-9]/g, '');
-            if (input.value.length === 1 && i < arr.length - 1) {
-              arr[i + 1].focus();
-            }
-          });
-          input.addEventListener('keydown', (e) => {
-            if (e.key === 'Backspace' && input.value === '' && i > 0) {
-              arr[i - 1].focus();
-            }
-            if (e.key === 'Enter') app.register();
-          });
-        });
+        // Los PINs ahora usan campos únicos con oninput inline, no necesitan listeners aquí
 
         document.getElementById('file-input').addEventListener('change', (e) => this.handleFileCapture(e));
 
@@ -835,17 +821,34 @@
 
       login() {
         const username = document.getElementById('login-user').value.trim();
-        // FIX #1: Usar selector específico '.login-pin'
-        const pin = Array.from(document.querySelectorAll('.login-pin')).map(el => el.value).join('');
+        // Leer del campo único (más confiable en móviles)
+        const pin = (document.getElementById('login-pin-real').value || '').trim();
 
-        if (!username || pin.length !== 4) {
-          this.showAlert('Completa usuario y los 4 dígitos del PIN', 'error');
+        console.log('Login - usuario:', username, '| PIN length:', pin.length, '| usuarios guardados:', Object.keys(this.state.users).length);
+
+        if (!username) {
+          alert('Ingresa tu nombre de usuario');
+          document.getElementById('login-user').focus();
+          return;
+        }
+
+        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+          alert('Ingresa los 4 digitos del PIN (uno por casilla)');
+          document.getElementById('login-pin-real').focus();
           return;
         }
 
         const user = Object.values(this.state.users).find(u => u.username === username);
-        if (!user || user.pin !== pin) {
-          this.showAlert('Usuario o PIN inválido', 'error');
+
+        if (!user) {
+          alert('Usuario no encontrado. ¿Ya te registraste?');
+          return;
+        }
+
+        if (user.pin !== pin) {
+          alert('PIN incorrecto. Intenta de nuevo.');
+          document.getElementById('login-pin-real').value = '';
+          document.getElementById('login-pin-real').focus();
           return;
         }
 
@@ -857,21 +860,20 @@
       register() {
         const name = document.getElementById('register-name').value.trim();
         const username = document.getElementById('register-user').value.trim();
-        // FIX #1: Usar selector específico '.register-pin'
-        const pin = Array.from(document.querySelectorAll('.register-pin')).map(el => el.value).join('');
+        // Leer del campo único
+        const pin = (document.getElementById('register-pin-real').value || '').trim();
 
-        if (!name || !username || pin.length !== 4) {
-          this.showAlert('Completa todos los campos y los 4 dígitos del PIN', 'error');
-          return;
-        }
+        console.log('Register - nombre:', name, '| usuario:', username, '| PIN length:', pin.length);
 
-        if (!/^\d{4}$/.test(pin)) {
-          this.showAlert('El PIN debe ser 4 números', 'error');
+        if (!name) { alert('Ingresa tu nombre completo'); return; }
+        if (!username) { alert('Ingresa un nombre de usuario'); return; }
+        if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+          alert('El PIN debe ser exactamente 4 numeros. Completa las 4 casillas.');
           return;
         }
 
         if (Object.values(this.state.users).find(u => u.username === username)) {
-          this.showAlert('Ese nombre de usuario ya existe', 'error');
+          alert('Ese nombre de usuario ya existe, elige otro');
           return;
         }
 
@@ -887,13 +889,15 @@
         };
 
         this.saveLocalData();
-        this.showAlert('✅ Cuenta creada. Iniciá sesión!', 'success');
+        console.log('Usuario registrado:', this.state.users[userId]);
+
+        alert('Cuenta creada! Ahora inicia sesion con tu usuario y PIN.');
         this.showLogin();
 
         // Limpiar form de registro
         document.getElementById('register-name').value = '';
         document.getElementById('register-user').value = '';
-        document.querySelectorAll('.register-pin').forEach(el => el.value = '');
+        document.getElementById('register-pin-real').value = '';
 
         // Pre-completar el username en el login
         document.getElementById('login-user').value = username;
@@ -907,7 +911,7 @@
         document.getElementById('login-screen').style.display = 'flex';
         this.closeModal('menu-modal');
         document.getElementById('login-user').value = '';
-        document.querySelectorAll('.login-pin').forEach(el => el.value = '');
+        document.getElementById('login-pin-real').value = '';
       },
 
       showApp() {
@@ -1520,9 +1524,15 @@
         const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
         alertDiv.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><div>${message}</div>`;
 
-        // Mostrar en el área principal
-        const container = document.querySelector('.main-content') || document.querySelector('.login-container');
+        // Buscar el primer contenedor VISIBLE
+        const loginContainer = document.querySelector('.login-container');
+        const mainContent = document.querySelector('.main-content');
+        const loginVisible = loginContainer && document.getElementById('login-screen').style.display !== 'none';
+        const container = loginVisible ? loginContainer : mainContent;
+
         if (container) {
+          // Eliminar alertas anteriores del mismo tipo para no acumular
+          container.querySelectorAll(`.alert-${type}`).forEach(el => el.remove());
           container.insertBefore(alertDiv, container.firstChild);
           setTimeout(() => alertDiv.remove(), 4000);
         }
