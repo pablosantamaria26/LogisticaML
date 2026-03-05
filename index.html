@@ -820,7 +820,7 @@ const App = {
     const user=Object.values(users).find(x=>x.username===u);
     if(!user){alert('Usuario no encontrado');return}
     if(user.pin!==p){alert('PIN incorrecto');document.getElementById('lp').value='';return}
-    S.user=user;haptic('medium');this._enterApp();
+    S.user=user;haptic('medium');this._enterApp();document.dispatchEvent(new Event('fml-loggedin'));
   },
 
   register(){
@@ -1183,6 +1183,163 @@ document.querySelectorAll('.mbk').forEach(bk=>{
 
 // Init offline queue UI
 OfflineQueue.updateUI();
+
+// ── PWA INSTALL + NOTIFICATIONS ───────────────────────────────────────────────
+const PWA = {
+  deferredPrompt: null,
+
+  init() {
+    // Capture install prompt
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      // Show modal after 4 seconds if not installed
+      const installed = localStorage.getItem('fml_pwa_installed');
+      const dismissed = localStorage.getItem('fml_pwa_dismissed');
+      if (!installed && !dismissed) {
+        setTimeout(() => this.showInstall(), 4000);
+      }
+    });
+
+    window.addEventListener('appinstalled', () => {
+      localStorage.setItem('fml_pwa_installed', '1');
+      this.deferredPrompt = null;
+      document.getElementById('m-pwa').style.display = 'none';
+      toast('✅ App instalada correctamente', 'success');
+    });
+
+    // Notification modal after login if not granted
+    document.addEventListener('fml-loggedin', () => {
+      if ('Notification' in window && Notification.permission === 'default') {
+        const dismissedNotif = localStorage.getItem('fml_notif_dismissed');
+        if (!dismissedNotif) setTimeout(() => this.showNotif(), 6000);
+      }
+    });
+  },
+
+  showInstall() {
+    if (!this.deferredPrompt) return;
+    document.getElementById('m-pwa').style.display = 'flex';
+  },
+
+  async install() {
+    if (!this.deferredPrompt) {
+      // Fallback: show manual instructions
+      alert('Para instalar:\n\nAndroid Chrome: menú (⋮) → "Añadir a pantalla de inicio"\niPhone Safari: botón compartir → "Agregar a inicio"');
+      return;
+    }
+    document.getElementById('m-pwa').style.display = 'none';
+    this.deferredPrompt.prompt();
+    const { outcome } = await this.deferredPrompt.userChoice;
+    if (outcome === 'accepted') localStorage.setItem('fml_pwa_installed', '1');
+    this.deferredPrompt = null;
+  },
+
+  dismiss() {
+    document.getElementById('m-pwa').style.display = 'none';
+    localStorage.setItem('fml_pwa_dismissed', '1');
+  },
+
+  showNotif() {
+    document.getElementById('m-notif').style.display = 'flex';
+  },
+
+  async requestNotif() {
+    document.getElementById('m-notif').style.display = 'none';
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      toast('🔔 Notificaciones activadas', 'success');
+      localStorage.setItem('fml_notif_ok', '1');
+    } else {
+      toast('Notificaciones bloqueadas — activalas en ajustes del navegador', 'warning', 6000);
+    }
+  },
+
+  dismissNotif() {
+    document.getElementById('m-notif').style.display = 'none';
+    localStorage.setItem('fml_notif_dismissed', '1');
+  },
+};
+
+PWA.init();
+
+// Wire up install button
+document.getElementById('pwa-install-btn').onclick = () => PWA.install();
+
 </script>
+
+<!-- ══ PWA INSTALL MODAL ══════════════════════════════════════════════════ -->
+<div id="m-pwa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;
+  padding:0 0 var(--sab) 0">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;
+    padding:2rem 1.75rem calc(2rem + var(--sab));width:100%;max-width:480px;
+    animation:mUp .3s cubic-bezier(.16,1,.3,1) both">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem"></div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="width:72px;height:72px;background:var(--acc);border-radius:20px;
+        display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;
+        margin-bottom:1rem;box-shadow:0 8px 24px var(--acc-g)">🚛</div>
+      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;
+        letter-spacing:.04em;margin-bottom:.5rem">Instalar Flota ML</h2>
+      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">
+        Instalá la app en tu teléfono para acceso rápido, notificaciones y uso sin conexión.
+      </p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem">
+      <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
+        background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+        <span style="font-size:1.4rem">📲</span>
+        <div style="font-size:.875rem"><strong>Acceso directo</strong> desde la pantalla de inicio</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
+        background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+        <span style="font-size:1.4rem">🔔</span>
+        <div style="font-size:.875rem"><strong>Notificaciones</strong> de mantenimiento automáticas</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
+        background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
+        <span style="font-size:1.4rem">📶</span>
+        <div style="font-size:.875rem"><strong>Funciona sin señal</strong> y sincroniza automáticamente</div>
+      </div>
+    </div>
+    <button id="pwa-install-btn" class="btn btn-primary" style="margin-bottom:.625rem">
+      📲 Instalar ahora
+    </button>
+    <button class="btn btn-ghost" onclick="PWA.dismiss()">Ahora no</button>
+  </div>
+</div>
+
+<!-- ══ NOTIF PERMISSION MODAL ════════════════════════════════════════════ -->
+<div id="m-notif" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
+  backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;
+  padding:0 0 var(--sab) 0">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;
+    padding:2rem 1.75rem calc(2rem + var(--sab));width:100%;max-width:480px;
+    animation:mUp .3s cubic-bezier(.16,1,.3,1) both">
+    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem"></div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:3.5rem;margin-bottom:.875rem">🔔</div>
+      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;
+        letter-spacing:.04em;margin-bottom:.5rem">Activar notificaciones</h2>
+      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">
+        Recibí alertas automáticas cuando un vehículo se acerca al servicio de mantenimiento.
+      </p>
+    </div>
+    <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
+      background:var(--acc-g);border-radius:12px;border:1px solid var(--acc);margin-bottom:1.25rem">
+      <span style="font-size:1.4rem">🔧</span>
+      <div style="font-size:.875rem;line-height:1.5">
+        <strong>Aviso a los 500 km</strong> del próximo servicio<br>
+        <span style="color:var(--muted)">+ email automático a los 1000 km</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="PWA.requestNotif()" style="margin-bottom:.625rem">
+      🔔 Activar notificaciones
+    </button>
+    <button class="btn btn-ghost" onclick="PWA.dismissNotif()">Ahora no</button>
+  </div>
+</div>
+
 </body>
 </html>
