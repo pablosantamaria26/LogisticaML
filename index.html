@@ -1,10 +1,6 @@
 <!DOCTYPE html>
-
-
-
 <html lang="es">
 <head>
-  
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0f172a">
@@ -18,11 +14,7 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
       --primary: #06b6d4;
@@ -51,7 +43,7 @@
       min-height: 100vh;
     }
 
-    /* ===== LOGIN SCREEN ===== */
+    /* LOGIN */
     .login-screen {
       display: flex;
       align-items: center;
@@ -77,16 +69,8 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
-    .login-header {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .login-logo {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-    }
-
+    .login-header { text-align: center; margin-bottom: 2rem; }
+    .login-logo { font-size: 3rem; margin-bottom: 1rem; }
     .login-header h1 {
       font-size: 1.75rem;
       font-weight: 700;
@@ -96,16 +80,9 @@
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
+    .login-header p { color: var(--text-muted); font-size: 0.875rem; }
 
-    .login-header p {
-      color: var(--text-muted);
-      font-size: 0.875rem;
-    }
-
-    .form-group {
-      margin-bottom: 1.5rem;
-    }
-
+    .form-group { margin-bottom: 1.5rem; }
     .form-group label {
       display: block;
       margin-bottom: 0.5rem;
@@ -115,7 +92,6 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
     .form-group input,
     .form-group select {
       width: 100%;
@@ -128,7 +104,6 @@
       font-size: 1rem;
       transition: var(--transition);
     }
-
     .form-group input:focus,
     .form-group select:focus {
       outline: none;
@@ -137,14 +112,9 @@
       background: rgba(15, 23, 42, 0.8);
     }
 
-    .pin-input {
-      display: flex;
-      gap: 0.75rem;
-      justify-content: center;
-    }
-
+    .pin-input { display: flex; gap: 0.75rem; justify-content: center; }
     .pin-digit {
-      width: 50px;
+      width: 50px !important;
       height: 50px;
       border: 2px solid var(--border);
       border-radius: 8px;
@@ -155,8 +125,8 @@
       color: var(--text-light);
       font-family: 'JetBrains Mono', monospace;
       transition: var(--transition);
+      padding: 0 !important;
     }
-
     .pin-digit:focus {
       outline: none;
       border-color: var(--primary);
@@ -180,33 +150,22 @@
       justify-content: center;
       gap: 0.75rem;
     }
-
     .btn-primary {
       background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
       color: var(--bg-dark);
     }
-
-    .btn-primary:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3);
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(6, 182, 212, 0.3); }
+    .btn-primary:active { transform: translateY(0); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-secondary {
+      background: var(--bg-dark);
+      color: var(--primary);
+      border: 1px solid var(--border);
     }
+    .btn-secondary:hover { background: rgba(6, 182, 212, 0.1); border-color: var(--primary); }
 
-    .btn-primary:active {
-      transform: translateY(0);
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* ===== MAIN APP ===== */
-    .app-container {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
+    /* APP */
+    .app-container { display: flex; flex-direction: column; min-height: 100vh; }
 
     .header {
       background: var(--bg-card);
@@ -220,35 +179,11 @@
       z-index: 100;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
-
-    .header-left {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-
-    .header-logo {
-      font-size: 1.5rem;
-    }
-
-    .header-title h2 {
-      font-size: 1.25rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-    }
-
-    .header-title p {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 0.75rem;
-      align-items: center;
-    }
+    .header-left { display: flex; align-items: center; gap: 1rem; }
+    .header-logo { font-size: 1.5rem; }
+    .header-title h2 { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .header-title p { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .header-actions { display: flex; gap: 0.75rem; align-items: center; }
 
     .icon-btn {
       background: rgba(6, 182, 212, 0.1);
@@ -264,27 +199,13 @@
       align-items: center;
       justify-content: center;
     }
+    .icon-btn:hover { background: rgba(6, 182, 212, 0.2); border-color: var(--primary); }
 
-    .icon-btn:hover {
-      background: rgba(6, 182, 212, 0.2);
-      border-color: var(--primary);
-    }
+    .user-info { font-size: 0.875rem; text-align: right; }
+    .user-info strong { color: var(--primary); display: block; }
+    .user-info small { color: var(--text-muted); }
 
-    .user-info {
-      font-size: 0.875rem;
-      text-align: right;
-    }
-
-    .user-info strong {
-      color: var(--primary);
-      display: block;
-    }
-
-    .user-info small {
-      color: var(--text-muted);
-    }
-
-    /* ===== TABS ===== */
+    /* TABS */
     .tabs {
       display: flex;
       background: var(--bg-card);
@@ -292,7 +213,6 @@
       overflow-x: auto;
       -webkit-overflow-scrolling: touch;
     }
-
     .tab-btn {
       flex-shrink: 0;
       padding: 1rem 1.5rem;
@@ -306,40 +226,18 @@
       letter-spacing: 0.5px;
       transition: var(--transition);
       border-bottom: 2px solid transparent;
-      position: relative;
     }
+    .tab-btn:hover { color: var(--text-light); }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
 
-    .tab-btn:hover {
-      color: var(--text-light);
-    }
+    /* CONTENT */
+    .main-content { flex: 1; padding: 1.5rem; overflow-y: auto; }
+    .tab-panel { display: none; animation: fadeIn 0.3s ease; }
+    .tab-panel.active { display: block; }
 
-    .tab-btn.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    /* ===== CONTENT ===== */
-    .main-content {
-      flex: 1;
-      padding: 1.5rem;
-      overflow-y: auto;
-    }
-
-    .tab-panel {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .tab-panel.active {
-      display: block;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    /* ===== CARDS ===== */
+    /* CARDS */
     .card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -349,12 +247,7 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.2);
       transition: var(--transition);
     }
-
-    .card:hover {
-      border-color: var(--primary);
-      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.1);
-    }
-
+    .card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(6, 182, 212, 0.1); }
     .card-header {
       display: flex;
       justify-content: space-between;
@@ -363,19 +256,8 @@
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--border);
     }
-
-    .card-title {
-      font-size: 1.125rem;
-      font-weight: 700;
-    }
-
-    .card-meta {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
+    .card-title { font-size: 1.125rem; font-weight: 700; }
+    .card-meta { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
     .card-badge {
       display: inline-block;
       padding: 0.25rem 0.75rem;
@@ -386,14 +268,13 @@
       color: var(--primary);
     }
 
-    /* ===== VEHICLE SELECTOR ===== */
+    /* VEHICLE */
     .vehicle-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 1.5rem;
       margin-bottom: 2rem;
     }
-
     .vehicle-card {
       background: var(--bg-card);
       border: 2px solid var(--border);
@@ -404,54 +285,29 @@
       position: relative;
       overflow: hidden;
     }
-
     .vehicle-card::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
+      top: 0; left: 0; right: 0;
       height: 4px;
       background: linear-gradient(90deg, var(--primary), var(--primary-dark));
       transform: scaleX(0);
       transform-origin: left;
       transition: var(--transition);
     }
+    .vehicle-card:hover { border-color: var(--primary); box-shadow: 0 4px 16px rgba(6, 182, 212, 0.2); }
+    .vehicle-card:hover::before { transform: scaleX(1); }
+    .vehicle-icon { font-size: 2.5rem; margin-bottom: 1rem; }
+    .vehicle-name { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .vehicle-info { font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.25rem; }
 
-    .vehicle-card:hover {
-      border-color: var(--primary);
-      box-shadow: 0 4px 16px rgba(6, 182, 212, 0.2);
-    }
-
-    .vehicle-card:hover::before {
-      transform: scaleX(1);
-    }
-
-    .vehicle-icon {
-      font-size: 2.5rem;
-      margin-bottom: 1rem;
-    }
-
-    .vehicle-name {
-      font-size: 1.125rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-    }
-
-    .vehicle-info {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      margin-bottom: 0.25rem;
-    }
-
-    /* ===== STATS ===== */
+    /* STATS */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
       margin-bottom: 2rem;
     }
-
     .stat-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -459,7 +315,6 @@
       padding: 1.5rem;
       text-align: center;
     }
-
     .stat-value {
       font-size: 2rem;
       font-weight: 700;
@@ -467,46 +322,23 @@
       margin-bottom: 0.5rem;
       font-family: 'JetBrains Mono', monospace;
     }
+    .stat-label { font-size: 0.875rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
 
-    .stat-label {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* ===== FORMS ===== */
+    /* FORMS */
     .form-row {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
       margin-bottom: 1.5rem;
     }
-
     .form-group textarea {
       resize: vertical;
       min-height: 80px;
       font-family: 'Inter', sans-serif;
     }
+    .form-actions { display: flex; gap: 1rem; margin-top: 2rem; }
 
-    .form-actions {
-      display: flex;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-
-    .btn-secondary {
-      background: var(--bg-dark);
-      color: var(--primary);
-      border: 1px solid var(--border);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(6, 182, 212, 0.1);
-      border-color: var(--primary);
-    }
-
-    /* ===== ALERTS ===== */
+    /* ALERTS */
     .alert {
       padding: 1rem;
       border-radius: 8px;
@@ -516,38 +348,17 @@
       align-items: start;
       animation: slideIn 0.3s ease;
     }
+    @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .alert-success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: var(--success); }
+    .alert-error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--danger); }
+    .alert-warning { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--warning); }
+    .alert-info { background: rgba(6, 182, 212, 0.1); border: 1px solid rgba(6, 182, 212, 0.3); color: var(--primary); }
 
-    @keyframes slideIn {
-      from { transform: translateY(-10px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-
-    .alert-success {
-      background: rgba(16, 185, 129, 0.1);
-      border: 1px solid rgba(16, 185, 129, 0.3);
-      color: var(--success);
-    }
-
-    .alert-error {
-      background: rgba(239, 68, 68, 0.1);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: var(--danger);
-    }
-
-    .alert-warning {
-      background: rgba(245, 158, 11, 0.1);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: var(--warning);
-    }
-
-    /* ===== MODAL ===== */
+    /* MODAL */
     .modal {
       display: none;
       position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
+      top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.6);
       backdrop-filter: blur(4px);
       z-index: 1000;
@@ -555,12 +366,7 @@
       justify-content: center;
       padding: 1rem;
     }
-
-    .modal.active {
-      display: flex;
-      animation: fadeIn 0.3s ease;
-    }
-
+    .modal.active { display: flex; animation: fadeIn 0.3s ease; }
     .modal-content {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -572,44 +378,14 @@
       overflow-y: auto;
       box-shadow: 0 20px 60px rgba(0,0,0,0.4);
     }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .modal-header h2 { font-size: 1.5rem; font-weight: 700; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: var(--transition); }
+    .modal-close:hover { color: var(--text-light); }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .modal-header h2 {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    .modal-close {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      font-size: 1.5rem;
-      cursor: pointer;
-      transition: var(--transition);
-    }
-
-    .modal-close:hover {
-      color: var(--text-light);
-    }
-
-    /* ===== TABLE ===== */
-    .table-responsive {
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-    }
-
+    /* TABLE */
+    .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     th {
       background: rgba(6, 182, 212, 0.05);
       border: 1px solid var(--border);
@@ -620,83 +396,39 @@
       letter-spacing: 0.5px;
       color: var(--primary);
     }
+    td { border: 1px solid var(--border); padding: 1rem; }
+    tr:hover { background: rgba(6, 182, 212, 0.05); }
 
-    td {
-      border: 1px solid var(--border);
-      padding: 1rem;
-    }
-
-    tr:hover {
-      background: rgba(6, 182, 212, 0.05);
-    }
-
-    /* ===== RESPONSIVE ===== */
+    /* RESPONSIVE */
     @media (max-width: 768px) {
-      .main-content {
-        padding: 1rem;
-      }
-
-      .header {
-        flex-direction: column;
-        gap: 1rem;
-        text-align: center;
-      }
-
-      .header-actions {
-        width: 100%;
-      }
-
-      .vehicle-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-
-      .login-container {
-        padding: 2rem 1.5rem;
-      }
+      .main-content { padding: 1rem; }
+      .header { flex-direction: column; gap: 1rem; text-align: center; }
+      .header-actions { width: 100%; }
+      .vehicle-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-row { grid-template-columns: 1fr; }
+      .login-container { padding: 2rem 1.5rem; }
     }
 
-    /* ===== UTILITIES ===== */
-    .text-center {
-      text-align: center;
-    }
-
-    .mt-2 {
-      margin-top: 1rem;
-    }
-
-    .mb-2 {
-      margin-bottom: 1rem;
-    }
-
-    .hidden {
-      display: none;
-    }
-
+    /* UTILITIES */
+    .text-center { text-align: center; }
+    .mt-2 { margin-top: 1rem; }
+    .mb-2 { margin-bottom: 1rem; }
+    .hidden { display: none; }
     .spinner {
       display: inline-block;
-      width: 16px;
-      height: 16px;
+      width: 16px; height: 16px;
       border: 2px solid rgba(6, 182, 212, 0.3);
       border-top-color: var(--primary);
       border-radius: 50%;
       animation: spin 0.6s linear infinite;
     }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <!-- ===== LOGIN SCREEN ===== -->
+
+  <!-- LOGIN -->
   <div id="login-screen" class="login-screen">
     <div class="login-container">
       <div class="login-header">
@@ -710,49 +442,44 @@
           <label>Usuario</label>
           <input type="text" id="login-user" placeholder="Tu nombre de usuario" autofocus>
         </div>
-
         <div class="form-group">
           <label>PIN (4 dígitos)</label>
-          <div class="pin-input">
-            <input type="text" class="pin-digit" id="pin-1" maxlength="1" inputmode="numeric">
-            <input type="text" class="pin-digit" id="pin-2" maxlength="1" inputmode="numeric">
-            <input type="text" class="pin-digit" id="pin-3" maxlength="1" inputmode="numeric">
-            <input type="text" class="pin-digit" id="pin-4" maxlength="1" inputmode="numeric">
+          <!-- FIX #1: IDs únicos para los PIN del login -->
+          <div class="pin-input" id="login-pin-container">
+            <input type="text" class="pin-digit login-pin" id="lpin-1" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="pin-digit login-pin" id="lpin-2" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="pin-digit login-pin" id="lpin-3" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="pin-digit login-pin" id="lpin-4" maxlength="1" inputmode="numeric" pattern="[0-9]">
           </div>
         </div>
-
         <button class="btn btn-primary" onclick="app.login()">
           <span>🔓</span> Iniciar Sesión
         </button>
-
         <p style="text-align: center; margin-top: 1.5rem; color: var(--text-muted); font-size: 0.875rem;">
-          No tienes cuenta? <a href="#" onclick="app.showRegister()" style="color: var(--primary); text-decoration: none;">Registrate aquí</a>
+          ¿No tenés cuenta? <a href="#" onclick="app.showRegister(); return false;" style="color: var(--primary); text-decoration: none;">Registrate aquí</a>
         </p>
       </div>
 
       <div id="register-form" style="display: none;">
         <h3 style="margin-bottom: 1.5rem; text-align: center;">Crear Nueva Cuenta</h3>
-        
         <div class="form-group">
           <label>Tu Nombre</label>
           <input type="text" id="register-name" placeholder="Juan Pérez">
         </div>
-
         <div class="form-group">
           <label>Usuario</label>
           <input type="text" id="register-user" placeholder="juanperez">
         </div>
-
         <div class="form-group">
           <label>PIN (4 dígitos)</label>
-          <div class="pin-input">
-            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
-            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
-            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
-            <input type="text" class="pin-digit register-pin" maxlength="1" inputmode="numeric">
+          <!-- FIX #1: Clase separada 'register-pin' para no mezclar con login -->
+          <div class="pin-input" id="register-pin-container">
+            <input type="text" class="pin-digit register-pin" id="rpin-1" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="pin-digit register-pin" id="rpin-2" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="pin-digit register-pin" id="rpin-3" maxlength="1" inputmode="numeric" pattern="[0-9]">
+            <input type="text" class="pin-digit register-pin" id="rpin-4" maxlength="1" inputmode="numeric" pattern="[0-9]">
           </div>
         </div>
-
         <div class="form-actions">
           <button class="btn btn-primary" onclick="app.register()">Registrarse</button>
           <button class="btn btn-secondary" onclick="app.showLogin()">Volver</button>
@@ -761,9 +488,8 @@
     </div>
   </div>
 
-  <!-- ===== MAIN APP ===== -->
+  <!-- APP -->
   <div id="app-screen" class="app-container" style="display: none;">
-    <!-- Header -->
     <header class="header">
       <div class="header-left">
         <div class="header-logo">🚗</div>
@@ -778,20 +504,19 @@
       </div>
       <div class="user-info">
         <strong id="user-name">Usuario</strong>
-        <small id="current-user-email">info@user.com</small>
+        <small id="current-user-email">-</small>
       </div>
     </header>
 
-    <!-- Tabs -->
+    <!-- FIX #4: switchTab recibe el evento como parámetro -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="app.switchTab('dashboard')">📊 Dashboard</button>
-      <button class="tab-btn" onclick="app.switchTab('capture')">📷 Cargar Combustible</button>
-      <button class="tab-btn" onclick="app.switchTab('vehicles')">🚗 Vehículos</button>
-      <button class="tab-btn" onclick="app.switchTab('maintenance')">🔧 Mantenimiento</button>
-      <button class="tab-btn" onclick="app.switchTab('reports')">📈 Reportes</button>
+      <button class="tab-btn active" onclick="app.switchTab('dashboard', event)">📊 Dashboard</button>
+      <button class="tab-btn" onclick="app.switchTab('capture', event)">📷 Cargar Combustible</button>
+      <button class="tab-btn" onclick="app.switchTab('vehicles', event)">🚗 Vehículos</button>
+      <button class="tab-btn" onclick="app.switchTab('maintenance', event)">🔧 Mantenimiento</button>
+      <button class="tab-btn" onclick="app.switchTab('reports', event)">📈 Reportes</button>
     </div>
 
-    <!-- Content -->
     <main class="main-content">
       <!-- Dashboard -->
       <div id="tab-dashboard" class="tab-panel active">
@@ -807,22 +532,20 @@
             <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Total de cargas</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">📏 Km Recorridos</div>
+            <div class="stat-label">📏 Odómetro Actual</div>
             <div class="stat-value" id="stat-km">0</div>
-            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">Este mes</div>
+            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">km registrados</div>
           </div>
           <div class="stat-card">
-            <div class="stat-label">⚡ Rendimiento</div>
+            <div class="stat-label">⚡ Precio Promedio</div>
             <div class="stat-value" id="stat-efficiency">-</div>
-            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">km/litro</div>
+            <!-- FIX #6: Cambiado a precio promedio que sí es calculable -->
+            <div class="stat-label" style="margin-top: 0.5rem; font-size: 0.75rem;">$/litro este mes</div>
           </div>
         </div>
 
-        <!-- Vehicle selector -->
         <h3 style="margin-bottom: 1rem; color: var(--primary);">SELECCIONAR VEHÍCULO</h3>
         <div class="vehicle-grid" id="vehicle-selector"></div>
-
-        <!-- Alerts -->
         <div id="alerts-container"></div>
       </div>
 
@@ -848,7 +571,6 @@
                 <input type="time" id="fuel-time">
               </div>
             </div>
-
             <div class="form-row">
               <div class="form-group">
                 <label>Litros</label>
@@ -859,7 +581,6 @@
                 <input type="number" id="fuel-amount" step="0.01" placeholder="0.00">
               </div>
             </div>
-
             <div class="form-row">
               <div class="form-group">
                 <label>Surtidor (CUIT)</label>
@@ -870,18 +591,15 @@
                 <input type="text" id="fuel-location" placeholder="Buenos Aires">
               </div>
             </div>
-
             <div class="form-group">
               <label>Dirección</label>
               <input type="text" id="fuel-address" placeholder="Av. Corrientes 1000">
             </div>
-
             <div class="form-actions">
               <button class="btn btn-primary" onclick="app.saveFuelRecord()">Guardar Registro</button>
               <button class="btn btn-secondary" onclick="app.cancelCapture()">Cancelar</button>
             </div>
           </div>
-
           <div id="capture-alerts"></div>
         </div>
       </div>
@@ -895,7 +613,6 @@
       <div id="tab-maintenance" class="tab-panel">
         <div class="card">
           <h3 style="margin-bottom: 1.5rem;">Registro de Mantenimiento</h3>
-          
           <div class="form-row">
             <div class="form-group">
               <label>Tipo de Servicio</label>
@@ -914,28 +631,24 @@
               <input type="date" id="service-date">
             </div>
           </div>
-
           <div class="form-row">
             <div class="form-group">
               <label>Km al Momento del Servicio</label>
               <input type="number" id="service-km" placeholder="0">
             </div>
             <div class="form-group">
-              <label>Próximo Servicio (Km)</label>
+              <label>Próximo Servicio en (Km adicionales)</label>
               <input type="number" id="service-next-km" placeholder="10000">
             </div>
           </div>
-
           <div class="form-group">
             <label>Notas</label>
             <textarea id="service-notes" placeholder="Detalles del servicio realizado..."></textarea>
           </div>
-
           <div class="form-group">
             <label>Taller / Técnico</label>
             <input type="text" id="service-provider" placeholder="Nombre del taller">
           </div>
-
           <div class="form-actions">
             <button class="btn btn-primary" onclick="app.saveMaintenanceRecord()">Guardar Servicio</button>
           </div>
@@ -949,7 +662,6 @@
       <div id="tab-reports" class="tab-panel">
         <div class="card">
           <h3 style="margin-bottom: 1.5rem;">Generar Reportes</h3>
-          
           <div class="form-row">
             <div class="form-group">
               <label>Rango de Fechas</label>
@@ -957,25 +669,20 @@
                 <option value="month">Mes Actual</option>
                 <option value="3months">Últimos 3 Meses</option>
                 <option value="6months">Últimos 6 Meses</option>
-                <option value="custom">Personalizado</option>
               </select>
             </div>
             <div class="form-group">
               <label>Formato</label>
               <select id="report-format">
                 <option value="screen">Ver en Pantalla</option>
-                <option value="pdf">Descargar PDF</option>
-                <option value="excel">Descargar Excel</option>
                 <option value="email">Enviar por Email</option>
               </select>
             </div>
           </div>
-
           <div class="form-actions">
             <button class="btn btn-primary" onclick="app.generateReport()">Generar Reporte</button>
           </div>
         </div>
-
         <div id="report-content"></div>
       </div>
     </main>
@@ -989,7 +696,7 @@
         <button class="modal-close" onclick="app.closeModal('menu-modal')">✕</button>
       </div>
       <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-        <button class="btn btn-secondary" onclick="app.openSettings()">⚙️ Configuración</button>
+        <button class="btn btn-secondary" onclick="app.closeModal('menu-modal'); app.openSettings();">⚙️ Configuración</button>
         <button class="btn btn-secondary" onclick="app.exportData()">📥 Exportar Datos</button>
         <button class="btn btn-secondary" onclick="app.logout()" style="color: var(--danger);">🚪 Cerrar Sesión</button>
       </div>
@@ -1003,97 +710,118 @@
         <h2>Configuración</h2>
         <button class="modal-close" onclick="app.closeModal('settings-modal')">✕</button>
       </div>
-
-      <div class="form-group">
-        <label>Email para Notificaciones</label>
-        <input type="email" id="settings-email" placeholder="tu@email.com">
-      </div>
-
-      <div class="form-group">
-        <label>Email Administrador</label>
-        <input type="email" id="settings-admin-email" placeholder="admin@empresa.com">
-      </div>
-
-      <div class="form-group">
-        <label>API Key Claude</label>
-        <input type="password" id="settings-api-key" placeholder="sk-...">
-      </div>
-
-      <div class="form-group">
-        <label>
-          <input type="checkbox" id="settings-notifications"> Recibir notificaciones por email
-        </label>
-      </div>
-
-      <div class="form-actions">
-        <button class="btn btn-primary" onclick="app.saveSettings()">Guardar</button>
-        <button class="btn btn-secondary" onclick="app.closeModal('settings-modal')">Cancelar</button>
+      <div id="settings-body">
+        <div class="form-group">
+          <label>Email para Notificaciones</label>
+          <input type="email" id="settings-email" placeholder="tu@email.com">
+        </div>
+        <div class="form-group">
+          <label>Email Administrador</label>
+          <input type="email" id="settings-admin-email" placeholder="admin@empresa.com">
+        </div>
+        <div class="form-group">
+          <label>API Key Gemini</label>
+          <input type="password" id="settings-api-key" placeholder="AIza...">
+        </div>
+        <div class="form-actions">
+          <button class="btn btn-primary" onclick="app.saveSettings()">Guardar</button>
+          <button class="btn btn-secondary" onclick="app.closeModal('settings-modal')">Cancelar</button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Script -->
-  <script>
+  <!-- FIX #3: Modal separado para KM inicial (no destruye el de settings) -->
+  <div id="km-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2>📍 KM Iniciales</h2>
+      </div>
+      <div class="form-group">
+        <label id="km-modal-label">Km Actuales del Vehículo</label>
+        <input type="number" id="initial-km" placeholder="123456">
+        <small style="color: var(--text-muted); display: block; margin-top: 0.5rem;">
+          Este dato se usa para calcular alertas de mantenimiento
+        </small>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="app.confirmInitialKm()">Confirmar</button>
+      </div>
+    </div>
+  </div>
 
-  
-const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
-    
+  <script>
+    const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev";
+
     const app = {
       state: {
         currentUser: null,
         currentVehicle: null,
         users: {},
-        vehicles: {},
-        fuelRecords: {},
-        maintenanceRecords: {},
+        pendingKmVehicle: null,    // Para el modal de KM inicial
         isOnline: navigator.onLine
       },
 
       async init() {
         console.log('🚀 Iniciando Fleet Control');
-        
-        // Service Worker
+
         if ('serviceWorker' in navigator) {
           try {
             await navigator.serviceWorker.register('/service-worker.js');
-            console.log('✅ Service Worker registrado');
           } catch (err) {
-            console.error('❌ Error Service Worker:', err);
+            console.warn('Service Worker no disponible:', err);
           }
         }
 
-        // Cargar datos
         this.loadLocalData();
 
-        // Event listeners
-        document.getElementById('file-input').addEventListener('change', (e) => this.handleFileCapture(e));
-        
-        // PIN input navigation
-        document.querySelectorAll('.pin-digit').forEach((input, i) => {
-          input.addEventListener('keyup', (e) => {
-            if (e.key === 'Backspace' && i > 0) {
-              document.querySelectorAll('.pin-digit')[i - 1].focus();
-            } else if (e.target.value.length === 1 && i < 3) {
-              document.querySelectorAll('.pin-digit')[i + 1].focus();
+        // FIX #1: Listeners separados para cada set de PINs
+        document.querySelectorAll('.login-pin').forEach((input, i, arr) => {
+          input.addEventListener('input', () => {
+            // Solo números
+            input.value = input.value.replace(/[^0-9]/g, '');
+            if (input.value.length === 1 && i < arr.length - 1) {
+              arr[i + 1].focus();
             }
+          });
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && input.value === '' && i > 0) {
+              arr[i - 1].focus();
+            }
+            if (e.key === 'Enter') app.login();
           });
         });
 
-        // Online/offline
+        document.querySelectorAll('.register-pin').forEach((input, i, arr) => {
+          input.addEventListener('input', () => {
+            input.value = input.value.replace(/[^0-9]/g, '');
+            if (input.value.length === 1 && i < arr.length - 1) {
+              arr[i + 1].focus();
+            }
+          });
+          input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && input.value === '' && i > 0) {
+              arr[i - 1].focus();
+            }
+            if (e.key === 'Enter') app.register();
+          });
+        });
+
+        document.getElementById('file-input').addEventListener('change', (e) => this.handleFileCapture(e));
+
         window.addEventListener('online', () => {
           this.state.isOnline = true;
           this.showAlert('Conexión restaurada', 'success');
-          this.sync();
         });
         window.addEventListener('offline', () => {
           this.state.isOnline = false;
           this.showAlert('Modo offline activado', 'warning');
         });
 
-        console.log('✅ Fleet Control iniciado');
+        console.log('✅ Fleet Control listo');
       },
 
-      // ===== AUTENTICACIÓN =====
+      // ===== AUTH =====
       showLogin() {
         document.getElementById('login-form').style.display = 'block';
         document.getElementById('register-form').style.display = 'none';
@@ -1102,20 +830,22 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
       showRegister() {
         document.getElementById('login-form').style.display = 'none';
         document.getElementById('register-form').style.display = 'block';
+        document.getElementById('register-name').focus();
       },
 
       login() {
         const username = document.getElementById('login-user').value.trim();
-        const pin = Array.from(document.querySelectorAll('.pin-digit')).map(el => el.value).join('');
+        // FIX #1: Usar selector específico '.login-pin'
+        const pin = Array.from(document.querySelectorAll('.login-pin')).map(el => el.value).join('');
 
         if (!username || pin.length !== 4) {
-          alert('Completa usuario y PIN');
+          this.showAlert('Completa usuario y los 4 dígitos del PIN', 'error');
           return;
         }
 
         const user = Object.values(this.state.users).find(u => u.username === username);
         if (!user || user.pin !== pin) {
-          alert('Usuario o PIN inválido');
+          this.showAlert('Usuario o PIN inválido', 'error');
           return;
         }
 
@@ -1127,31 +857,47 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
       register() {
         const name = document.getElementById('register-name').value.trim();
         const username = document.getElementById('register-user').value.trim();
+        // FIX #1: Usar selector específico '.register-pin'
         const pin = Array.from(document.querySelectorAll('.register-pin')).map(el => el.value).join('');
 
         if (!name || !username || pin.length !== 4) {
-          alert('Completa todos los campos');
+          this.showAlert('Completa todos los campos y los 4 dígitos del PIN', 'error');
+          return;
+        }
+
+        if (!/^\d{4}$/.test(pin)) {
+          this.showAlert('El PIN debe ser 4 números', 'error');
           return;
         }
 
         if (Object.values(this.state.users).find(u => u.username === username)) {
-          alert('Usuario ya existe');
+          this.showAlert('Ese nombre de usuario ya existe', 'error');
           return;
         }
 
-        const userId = Date.now();
+        const userId = Date.now().toString();
         this.state.users[userId] = {
           id: userId,
           name,
           username,
           pin,
           email: null,
+          vehicles: {},
           createdAt: new Date().toISOString()
         };
 
         this.saveLocalData();
-        alert('Cuenta creada! Inicia sesión');
+        this.showAlert('✅ Cuenta creada. Iniciá sesión!', 'success');
         this.showLogin();
+
+        // Limpiar form de registro
+        document.getElementById('register-name').value = '';
+        document.getElementById('register-user').value = '';
+        document.querySelectorAll('.register-pin').forEach(el => el.value = '');
+
+        // Pre-completar el username en el login
+        document.getElementById('login-user').value = username;
+        document.getElementById('lpin-1').focus();
       },
 
       logout() {
@@ -1161,13 +907,14 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         document.getElementById('login-screen').style.display = 'flex';
         this.closeModal('menu-modal');
         document.getElementById('login-user').value = '';
-        document.querySelectorAll('.pin-digit').forEach(el => el.value = '');
+        document.querySelectorAll('.login-pin').forEach(el => el.value = '');
       },
 
       showApp() {
         document.getElementById('login-screen').style.display = 'none';
         document.getElementById('app-screen').style.display = 'flex';
         document.getElementById('user-name').textContent = this.state.currentUser.name;
+        document.getElementById('current-user-email').textContent = this.state.currentUser.email || '';
       },
 
       // ===== VEHÍCULOS =====
@@ -1179,11 +926,12 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
 
       selectVehicle(vehicleName) {
         this.initializeVehiclesIfNeeded();
-        
+
         if (!this.state.currentUser.vehicles[vehicleName]) {
+          const icons = { 'Toyota Hiace': '🚐', 'Volkswagen Saveiro': '🚙', 'Fiat Uno Cargo': '🚗' };
           this.state.currentUser.vehicles[vehicleName] = {
             name: vehicleName,
-            icon: vehicleName === 'Toyota Hiace' ? '🚐' : (vehicleName === 'Volkswagen Saveiro' ? '🚙' : '🚗'),
+            icon: icons[vehicleName] || '🚗',
             currentKm: null,
             createdAt: new Date().toISOString(),
             fuelRecords: [],
@@ -1194,61 +942,54 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         this.state.currentVehicle = vehicleName;
         this.saveLocalData();
 
-        // Pedir KM inicial si es primera vez
         if (!this.state.currentUser.vehicles[vehicleName].currentKm) {
-          this.askForInitialKm(vehicleName);
+          // FIX #3: Modal separado para KM inicial
+          this.state.pendingKmVehicle = vehicleName;
+          document.getElementById('km-modal-label').textContent = `Km Actuales del ${vehicleName}`;
+          document.getElementById('initial-km').value = '';
+          this.openModal('km-modal');
         } else {
           this.renderDashboard();
           this.switchTab('capture');
         }
       },
 
-      askForInitialKm(vehicleName) {
-        const modal = document.getElementById('settings-modal');
-        document.getElementById('settings-email').parentElement.parentElement.innerHTML = `
-          <div class="form-group">
-            <label>Km Actuales del ${vehicleName}</label>
-            <input type="number" id="initial-km" placeholder="123456">
-            <small style="color: var(--text-muted);">Este dato se usa para calcular rendimiento y alertas de mantenimiento</small>
-          </div>
-          <div class="form-actions">
-            <button class="btn btn-primary" onclick="app.setInitialKm('${vehicleName}')">Confirmar</button>
-          </div>
-        `;
-        this.openModal('settings-modal');
-      },
-
-      setInitialKm(vehicleName) {
+      // FIX #3: Función separada para confirmar KM
+      confirmInitialKm() {
         const km = parseInt(document.getElementById('initial-km').value);
+        const vehicleName = this.state.pendingKmVehicle;
+
         if (!km || km < 0) {
-          alert('Ingresa un valor válido');
+          alert('Ingresá un valor válido de km');
           return;
         }
+
         this.state.currentUser.vehicles[vehicleName].currentKm = km;
         this.state.currentUser.vehicles[vehicleName].lastServiceKm = km;
         this.saveLocalData();
-        this.closeModal('settings-modal');
+        this.closeModal('km-modal');
+        this.state.pendingKmVehicle = null;
         this.renderDashboard();
       },
 
       renderVehicleSelector() {
-        const html = `
-          <div class="vehicle-card" onclick="app.selectVehicle('Toyota Hiace')">
-            <div class="vehicle-icon">🚐</div>
-            <div class="vehicle-name">Toyota Hiace</div>
-            <div class="vehicle-info">Furgón de carga</div>
+        const vehicles = [
+          { name: 'Toyota Hiace', icon: '🚐', desc: 'Furgón de carga' },
+          { name: 'Volkswagen Saveiro', icon: '🚙', desc: 'Camioneta pickup' },
+          { name: 'Fiat Uno Cargo', icon: '🚗', desc: 'Auto comercial' }
+        ];
+
+        const html = vehicles.map(v => `
+          <div class="vehicle-card ${this.state.currentVehicle === v.name ? 'selected' : ''}" 
+               onclick="app.selectVehicle('${v.name}')"
+               style="${this.state.currentVehicle === v.name ? 'border-color: var(--primary);' : ''}">
+            <div class="vehicle-icon">${v.icon}</div>
+            <div class="vehicle-name">${v.name}</div>
+            <div class="vehicle-info">${v.desc}</div>
+            ${this.state.currentVehicle === v.name ? '<div class="card-badge" style="margin-top: 0.5rem;">✓ Activo</div>' : ''}
           </div>
-          <div class="vehicle-card" onclick="app.selectVehicle('Volkswagen Saveiro')">
-            <div class="vehicle-icon">🚙</div>
-            <div class="vehicle-name">Volkswagen Saveiro</div>
-            <div class="vehicle-info">Camioneta pickup</div>
-          </div>
-          <div class="vehicle-card" onclick="app.selectVehicle('Fiat Uno Cargo')">
-            <div class="vehicle-icon">🚗</div>
-            <div class="vehicle-name">Fiat Uno Cargo</div>
-            <div class="vehicle-info">Auto comercial</div>
-          </div>
-        `;
+        `).join('');
+
         document.getElementById('vehicle-selector').innerHTML = html;
       },
 
@@ -1258,125 +999,133 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         let html = '';
 
         Object.entries(vehicles).forEach(([name, data]) => {
-          const lastService = data.maintenanceRecords?.[data.maintenanceRecords.length - 1];
-          const nextServiceKm = lastService?.nextKm || data.currentKm + 10000;
+          const records = data.maintenanceRecords || [];
+          const lastService = records[records.length - 1];
+          const nextServiceKm = lastService
+            ? lastService.currentKm + lastService.nextKm
+            : (data.currentKm || 0) + 10000;
           const kmToNextService = nextServiceKm - (data.currentKm || 0);
-          
+
           html += `
-            <div class="card" onclick="app.state.currentVehicle = '${name}'; app.switchTab('dashboard')">
+            <div class="card" style="cursor:pointer" onclick="app.state.currentVehicle='${name}'; app.switchTab('dashboard')">
               <div class="card-header">
                 <div>
                   <div class="card-title">${data.icon} ${name}</div>
-                  <div class="card-meta">Vehículo activo</div>
+                  <div class="card-meta">Toca para activar</div>
                 </div>
                 <div class="card-badge">${data.currentKm?.toLocaleString() || '0'} km</div>
               </div>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                 <div>
                   <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Próximo Servicio</div>
-                  <div style="font-weight: 700; color: var(--primary);">${kmToNextService > 0 ? kmToNextService.toLocaleString() + ' km' : '⚠️ VENCIDO'}</div>
+                  <div style="font-weight: 700; color: ${kmToNextService <= 0 ? 'var(--danger)' : kmToNextService <= 500 ? 'var(--warning)' : 'var(--primary)'};">
+                    ${kmToNextService > 0 ? kmToNextService.toLocaleString() + ' km restantes' : '⚠️ VENCIDO'}
+                  </div>
                 </div>
                 <div>
                   <div style="color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase;">Último Servicio</div>
-                  <div style="font-weight: 700;">${lastService ? new Date(lastService.date).toLocaleDateString() : 'No registrado'}</div>
+                  <div style="font-weight: 700;">${lastService ? new Date(lastService.date).toLocaleDateString('es-AR') : 'No registrado'}</div>
                 </div>
               </div>
             </div>
           `;
         });
 
-        document.getElementById('vehicles-list').innerHTML = html || '<p style="color: var(--text-muted); text-align: center;">No hay vehículos registrados</p>';
+        document.getElementById('vehicles-list').innerHTML = html || '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">No hay vehículos registrados aún</p>';
       },
 
-    // ===== COMBUSTIBLE (Versión Final con IA) =====
+      // ===== COMBUSTIBLE =====
       async handleFileCapture(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        this.showAlert('🧠 Gemini analizando ticket...', 'info');
         const base64 = await this.fileToBase64(file);
-        
-        // Mostrar preview de inmediato
-        const previewContainer = document.getElementById('preview-container');
-        previewContainer.innerHTML = `<img src="${base64}" style="width: 100%; max-height: 300px; border-radius: 8px; margin-bottom: 1rem; border: 1px solid var(--border);">`;
+
+        document.getElementById('preview-container').innerHTML = `
+          <img src="${base64}" style="width:100%; max-height:300px; border-radius:8px; margin-bottom:1rem; border:1px solid var(--border);">
+        `;
         document.getElementById('capture-form').style.display = 'block';
 
+        // Defaults
+        const now = new Date();
+        document.getElementById('fuel-date').value = now.toISOString().split('T')[0];
+        document.getElementById('fuel-time').value = now.toTimeString().slice(0, 5);
+
+        this.showAlert('🧠 Analizando ticket con IA...', 'info');
+
         try {
-          // Llamada a tu Worker en Cloudflare
+          const apiKey = localStorage.getItem('apiKey');
           const response = await fetch(`${API_URL}/api/process-ticket`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-              image: base64,
-              apiKey: localStorage.getItem('apiKey') // La clave que guardas en la PWA
-            })
+            body: JSON.stringify({ image: base64, apiKey })
           });
 
+          if (!response.ok) throw new Error('Error del servidor');
+
           const data = await response.json();
-          
+
           if (data.ticket) {
             const t = data.ticket;
-            // Rellenar automáticamente los campos extraídos por Gemini
-            document.getElementById('fuel-date').value = t.fecha || new Date().toISOString().split('T')[0];
-            document.getElementById('fuel-time').value = t.hora || new Date().toTimeString().slice(0, 5);
-            document.getElementById('fuel-liters').value = t.combustible?.liters || t.combustible?.litros || '';
-            document.getElementById('fuel-amount').value = t.monto?.total || '';
-            document.getElementById('fuel-cuit').value = t.surtidor?.cuit || '';
-            document.getElementById('fuel-location').value = t.surtidor?.localidad || '';
-            document.getElementById('fuel-address').value = t.surtidor?.direccion || '';
-            
-            this.showAlert('✅ Datos extraídos por IA', 'success');
+            if (t.fecha) document.getElementById('fuel-date').value = t.fecha;
+            if (t.hora) document.getElementById('fuel-time').value = t.hora.slice(0, 5);
+            if (t.combustible?.litros) document.getElementById('fuel-liters').value = t.combustible.litros;
+            if (t.combustible?.liters) document.getElementById('fuel-liters').value = t.combustible.liters;
+            if (t.monto?.total) document.getElementById('fuel-amount').value = t.monto.total;
+            if (t.surtidor?.cuit) document.getElementById('fuel-cuit').value = t.surtidor.cuit;
+            if (t.surtidor?.localidad) document.getElementById('fuel-location').value = t.surtidor.localidad;
+            if (t.surtidor?.direccion) document.getElementById('fuel-address').value = t.surtidor.direccion;
+            this.showAlert('✅ Datos extraídos automáticamente. Verificá antes de guardar.', 'success');
           }
         } catch (err) {
-          console.error(err);
-          this.showAlert('❌ Error de conexión con IA', 'error');
-          // Si falla la IA, dejamos los valores por defecto para carga manual
-          const now = new Date();
-          document.getElementById('fuel-date').value = now.toISOString().split('T')[0];
-          document.getElementById('fuel-time').value = now.toTimeString().slice(0, 5);
+          console.error('Error IA:', err);
+          this.showAlert('⚠️ No se pudo conectar con la IA. Cargá los datos manualmente.', 'warning');
         }
       },
 
       async saveFuelRecord() {
         if (!this.state.currentVehicle) {
-          alert('Selecciona un vehículo');
+          this.showAlert('Seleccioná un vehículo primero', 'error');
           return;
         }
 
+        const liters = parseFloat(document.getElementById('fuel-liters').value);
+        const amount = parseFloat(document.getElementById('fuel-amount').value);
+
+        if (!document.getElementById('fuel-date').value || !liters || !amount) {
+          this.showAlert('Completá al menos: Fecha, Litros y Monto', 'error');
+          return;
+        }
+
+        this.initializeVehiclesIfNeeded();
         const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
+        if (!vehicle.fuelRecords) vehicle.fuelRecords = [];
 
         const record = {
           id: Date.now(),
           date: document.getElementById('fuel-date').value,
           time: document.getElementById('fuel-time').value,
-          liters: parseFloat(document.getElementById('fuel-liters').value),
-          amount: parseFloat(document.getElementById('fuel-amount').value),
+          liters,
+          amount,
           cuit: document.getElementById('fuel-cuit').value,
           location: document.getElementById('fuel-location').value,
           address: document.getElementById('fuel-address').value,
           createdAt: new Date().toISOString()
         };
 
-        if (!record.date || !record.liters || !record.amount) {
-          alert('Completa campos requeridos (Litros y Monto)');
-          return;
-        }
-
-        this.initializeVehiclesIfNeeded();
-        if (!vehicle.fuelRecords) vehicle.fuelRecords = [];
-        
         vehicle.fuelRecords.push(record);
         this.saveLocalData();
 
-        // LLAMADA AL WORKER PARA EMAIL DE CONFIRMACIÓN
-        this.sendConfirmationEmail(record);
+        // FIX #2: Solo llamamos a la versión correcta (la que usa el Worker)
+        this.sendFuelConfirmationEmail(record);
 
-        this.showAlert('✅ Carga registrada y guardada', 'success');
+        this.showAlert('✅ Carga registrada correctamente', 'success');
         this.cancelCapture();
         this.renderDashboard();
       },
 
-      async sendConfirmationEmail(record) {
+      // FIX #2: Renombrada para evitar duplicado, solo existe esta versión
+      async sendFuelConfirmationEmail(record) {
         if (!this.state.currentUser.email) return;
 
         try {
@@ -1393,8 +1142,9 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
               address: record.address
             })
           });
+          console.log('📧 Email de confirmación enviado');
         } catch (err) {
-          console.error("Error al enviar email:", err);
+          console.error('Error al enviar email:', err);
         }
       },
 
@@ -1402,51 +1152,52 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         document.getElementById('file-input').value = '';
         document.getElementById('preview-container').innerHTML = '';
         document.getElementById('capture-form').style.display = 'none';
-        Array.from(document.querySelectorAll('#capture-form input')).forEach(el => el.value = '');
+        ['fuel-date','fuel-time','fuel-liters','fuel-amount','fuel-cuit','fuel-location','fuel-address']
+          .forEach(id => { document.getElementById(id).value = ''; });
       },
 
       // ===== MANTENIMIENTO =====
       saveMaintenanceRecord() {
         if (!this.state.currentVehicle) {
-          alert('Selecciona un vehículo');
+          this.showAlert('Seleccioná un vehículo primero', 'error');
           return;
         }
 
+        const type = document.getElementById('service-type').value;
+        const date = document.getElementById('service-date').value;
+        const currentKm = parseInt(document.getElementById('service-km').value);
+        const nextKmInterval = parseInt(document.getElementById('service-next-km').value) || 10000;
+
+        if (!type || !date || !currentKm) {
+          this.showAlert('Completá Tipo, Fecha y Km actuales', 'error');
+          return;
+        }
+
+        this.initializeVehiclesIfNeeded();
+        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
+        if (!vehicle.maintenanceRecords) vehicle.maintenanceRecords = [];
+
         const record = {
           id: Date.now(),
-          type: document.getElementById('service-type').value,
-          date: document.getElementById('service-date').value,
-          currentKm: parseInt(document.getElementById('service-km').value),
-          nextKm: parseInt(document.getElementById('service-next-km').value),
+          type,
+          date,
+          currentKm,
+          nextKm: nextKmInterval,   // Km adicionales hasta próximo servicio
           notes: document.getElementById('service-notes').value,
           provider: document.getElementById('service-provider').value,
           createdAt: new Date().toISOString()
         };
 
-        if (!record.type || !record.date || !record.currentKm) {
-          alert('Completa campos requeridos');
-          return;
-        }
-
-        this.initializeVehiclesIfNeeded();
-        if (!this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords) {
-          this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords = [];
-        }
-
-        // Actualizar km actual
-        this.state.currentUser.vehicles[this.state.currentVehicle].currentKm = record.currentKm;
-        this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords.push(record);
-        
+        vehicle.currentKm = currentKm;
+        vehicle.maintenanceRecords.push(record);
         this.saveLocalData();
+
         this.showAlert('✅ Servicio registrado', 'success');
-        
-        // Limpiar form
-        document.getElementById('service-type').value = '';
-        document.getElementById('service-date').value = '';
-        document.getElementById('service-km').value = '';
+
+        ['service-type','service-date','service-km','service-notes','service-provider'].forEach(id => {
+          document.getElementById(id).value = '';
+        });
         document.getElementById('service-next-km').value = '10000';
-        document.getElementById('service-notes').value = '';
-        document.getElementById('service-provider').value = '';
 
         this.renderMaintenanceList();
         this.renderDashboard();
@@ -1456,24 +1207,37 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         if (!this.state.currentVehicle) return;
 
         this.initializeVehiclesIfNeeded();
-        const records = this.state.currentUser.vehicles[this.state.currentVehicle].maintenanceRecords || [];
-        
+        const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
+        // FIX #5: .slice() para no mutar el array original
+        const records = [...(vehicle.maintenanceRecords || [])].reverse();
+
         if (records.length === 0) {
-          document.getElementById('maintenance-list').innerHTML = '<p style="color: var(--text-muted); text-align: center;">Sin registros de servicio</p>';
+          document.getElementById('maintenance-list').innerHTML =
+            '<p style="color: var(--text-muted); text-align: center; padding: 2rem;">Sin registros de servicio</p>';
           return;
         }
 
-        const html = records.reverse().map(r => `
+        const typeIcons = {
+          'oil-change': '🛢️', 'filter': '🔄', 'tires': '⚙️',
+          'suspension': '🔧', 'brakes': '🛑', 'other': '🔩'
+        };
+        const typeNames = {
+          'oil-change': 'Cambio de Aceite', 'filter': 'Cambio de Filtros',
+          'tires': 'Revisión de Neumáticos', 'suspension': 'Revisión Suspensión',
+          'brakes': 'Revisión Frenos', 'other': 'Otro'
+        };
+
+        const html = records.map(r => `
           <div class="card">
             <div class="card-header">
               <div>
-                <div class="card-title">${r.type === 'oil-change' ? '🛢️' : r.type === 'filter' ? '🔄' : r.type === 'tires' ? '⚙️' : r.type === 'suspension' ? '🔧' : r.type === 'brakes' ? '🛑' : '🔩'} ${r.type}</div>
-                <div class="card-meta">${new Date(r.date).toLocaleDateString()}</div>
+                <div class="card-title">${typeIcons[r.type] || '🔧'} ${typeNames[r.type] || r.type}</div>
+                <div class="card-meta">${new Date(r.date).toLocaleDateString('es-AR')}</div>
               </div>
-              <div class="card-badge">${r.currentKm} km</div>
+              <div class="card-badge">${r.currentKm.toLocaleString()} km</div>
             </div>
             <div style="font-size: 0.875rem; color: var(--text-gray);">
-              <p><strong>Próximo servicio:</strong> ${r.nextKm} km</p>
+              <p><strong>Próximo servicio:</strong> a los ${(r.currentKm + r.nextKm).toLocaleString()} km</p>
               ${r.provider ? `<p><strong>Taller:</strong> ${r.provider}</p>` : ''}
               ${r.notes ? `<p><strong>Notas:</strong> ${r.notes}</p>` : ''}
             </div>
@@ -1491,33 +1255,33 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
           document.getElementById('stat-km').textContent = '0';
           document.getElementById('stat-efficiency').textContent = '-';
           this.renderVehicleSelector();
-          this.renderAlerts();
           return;
         }
 
         this.initializeVehiclesIfNeeded();
         const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
         const fuelRecords = vehicle.fuelRecords || [];
-        const maintenanceRecords = vehicle.maintenanceRecords || [];
 
-        // Stats
         document.getElementById('stat-vehicle').textContent = vehicle.icon + ' ' + this.state.currentVehicle;
         document.getElementById('current-vehicle-header').textContent = this.state.currentVehicle;
 
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const monthFuel = fuelRecords.filter(r => {
+        const now = new Date();
+        const monthRecords = fuelRecords.filter(r => {
           const d = new Date(r.date);
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+          return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
         });
 
-        const totalFuel = monthFuel.reduce((sum, r) => sum + r.amount, 0);
-        document.getElementById('stat-fuel').textContent = '$' + totalFuel.toFixed(2);
+        const totalAmount = monthRecords.reduce((s, r) => s + r.amount, 0);
+        const totalLiters = monthRecords.reduce((s, r) => s + r.liters, 0);
 
-        // KM stats (básico, necesitaría más datos)
-        const totalLiters = monthFuel.reduce((sum, r) => sum + r.liters, 0);
-        document.getElementById('stat-km').textContent = vehicle.currentKm?.toLocaleString() || '0';
-        document.getElementById('stat-efficiency').textContent = totalLiters > 0 ? (vehicle.currentKm / totalLiters).toFixed(1) : '-';
+        document.getElementById('stat-fuel').textContent = '$' + totalAmount.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('stat-km').textContent = vehicle.currentKm?.toLocaleString('es-AR') || '0';
+
+        // FIX #6: Precio promedio por litro (calculable sin historial de km)
+        const avgPrice = totalLiters > 0 ? (totalAmount / totalLiters) : 0;
+        document.getElementById('stat-efficiency').textContent = avgPrice > 0
+          ? '$' + avgPrice.toFixed(2)
+          : '-';
 
         this.renderVehicleSelector();
         this.renderAlerts();
@@ -1528,33 +1292,37 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
 
         this.initializeVehiclesIfNeeded();
         const vehicle = this.state.currentUser.vehicles[this.state.currentVehicle];
-        const maintenanceRecords = vehicle.maintenanceRecords || [];
-        const lastService = maintenanceRecords[maintenanceRecords.length - 1];
-        const nextServiceKm = lastService?.nextKm || (vehicle.currentKm || 0) + 10000;
-        const kmToNextService = nextServiceKm - (vehicle.currentKm || 0);
+        const records = vehicle.maintenanceRecords || [];
+        const lastService = records[records.length - 1];
 
+        let nextServiceKm;
+        if (lastService) {
+          nextServiceKm = lastService.currentKm + lastService.nextKm;
+        } else {
+          nextServiceKm = (vehicle.currentKm || 0) + 10000;
+        }
+
+        const kmToNextService = nextServiceKm - (vehicle.currentKm || 0);
         let html = '';
 
         if (kmToNextService <= 0) {
-          html += `
-            <div class="alert alert-danger">
+          html = `
+            <div class="alert alert-error">
               <span>🛑</span>
               <div>
                 <strong>Mantenimiento vencido!</strong>
-                <p style="font-size: 0.875rem; margin-top: 0.25rem;">El vehículo ya cumplió ${Math.abs(kmToNextService)} km sobre lo recomendado. Realiza cambio de aceite urgentemente.</p>
+                <p style="font-size:0.875rem;margin-top:0.25rem;">El vehículo ya pasó ${Math.abs(kmToNextService).toLocaleString()} km sobre lo recomendado. Realizá el servicio urgentemente.</p>
               </div>
-            </div>
-          `;
+            </div>`;
         } else if (kmToNextService <= 500) {
-          html += `
+          html = `
             <div class="alert alert-warning">
               <span>⚠️</span>
               <div>
-                <strong>Cambio de aceite próximo</strong>
-                <p style="font-size: 0.875rem; margin-top: 0.25rem;">Faltan ${kmToNextService} km para el cambio de aceite. Agenda el servicio pronto.</p>
+                <strong>Próximo cambio de aceite</strong>
+                <p style="font-size:0.875rem;margin-top:0.25rem;">Faltan ${kmToNextService.toLocaleString()} km. Agendá el servicio pronto.</p>
               </div>
-            </div>
-          `;
+            </div>`;
         }
 
         document.getElementById('alerts-container').innerHTML = html;
@@ -1563,7 +1331,7 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
       // ===== REPORTES =====
       generateReport() {
         if (!this.state.currentVehicle) {
-          alert('Selecciona un vehículo');
+          this.showAlert('Seleccioná un vehículo primero', 'error');
           return;
         }
 
@@ -1572,11 +1340,10 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         const fuelRecords = vehicle.fuelRecords || [];
         const maintenanceRecords = vehicle.maintenanceRecords || [];
 
-        // Filtrar por rango
         const range = document.getElementById('report-range').value;
+        const now = new Date();
         let filtered = fuelRecords;
 
-        const now = new Date();
         if (range === 'month') {
           filtered = fuelRecords.filter(r => {
             const d = new Date(r.date);
@@ -1591,67 +1358,46 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         }
 
         const format = document.getElementById('report-format').value;
-
         if (format === 'screen') {
           this.displayReport(filtered, maintenanceRecords, vehicle);
-        } else if (format === 'pdf' || format === 'excel') {
-          this.showAlert('En desarrollo', 'warning');
         } else if (format === 'email') {
           this.sendReportEmail(filtered, maintenanceRecords, vehicle);
         }
       },
 
       displayReport(fuelRecords, maintenanceRecords, vehicle) {
-        const totalFuel = fuelRecords.reduce((sum, r) => sum + r.amount, 0);
-        const totalLiters = fuelRecords.reduce((sum, r) => sum + r.liters, 0);
+        const totalAmount = fuelRecords.reduce((s, r) => s + r.amount, 0);
+        const totalLiters = fuelRecords.reduce((s, r) => s + r.liters, 0);
+        const avgPrice = totalLiters > 0 ? totalAmount / totalLiters : 0;
 
-        let html = `
+        const html = `
           <div class="card">
-            <h3 style="margin-bottom: 1.5rem;">Reporte: ${vehicle.icon} ${this.state.currentVehicle}</h3>
-            
+            <h3 style="margin-bottom: 1.5rem;">📊 Reporte: ${vehicle.icon} ${this.state.currentVehicle}</h3>
             <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 2rem;">
-              <div class="stat-card">
-                <div class="stat-label">Cargas Registradas</div>
-                <div class="stat-value">${fuelRecords.length}</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Total Litros</div>
-                <div class="stat-value">${totalLiters.toFixed(1)}</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Gasto Total</div>
-                <div class="stat-value">$${totalFuel.toFixed(2)}</div>
-              </div>
-              <div class="stat-card">
-                <div class="stat-label">Precio Promedio</div>
-                <div class="stat-value">$${(totalFuel / totalLiters || 0).toFixed(2)}/L</div>
-              </div>
+              <div class="stat-card"><div class="stat-label">Cargas</div><div class="stat-value">${fuelRecords.length}</div></div>
+              <div class="stat-card"><div class="stat-label">Litros</div><div class="stat-value">${totalLiters.toFixed(1)}</div></div>
+              <div class="stat-card"><div class="stat-label">Gasto Total</div><div class="stat-value">$${totalAmount.toFixed(0)}</div></div>
+              <div class="stat-card"><div class="stat-label">Precio Prom.</div><div class="stat-value">$${avgPrice.toFixed(2)}</div></div>
             </div>
 
-            <h4 style="margin: 1.5rem 0 1rem 0; color: var(--primary);">DETALLE DE CARGAS</h4>
+            <h4 style="margin: 1.5rem 0 1rem; color: var(--primary);">DETALLE DE CARGAS</h4>
             <div class="table-responsive">
               <table>
                 <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Hora</th>
-                    <th>Litros</th>
-                    <th>Monto</th>
-                    <th>Precio/L</th>
-                    <th>Localidad</th>
-                  </tr>
+                  <tr><th>Fecha</th><th>Hora</th><th>Litros</th><th>Monto</th><th>$/L</th><th>Localidad</th></tr>
                 </thead>
                 <tbody>
-                  ${fuelRecords.map(r => `
+                  ${fuelRecords.length === 0
+                    ? '<tr><td colspan="6" style="text-align:center;color:var(--text-muted);">Sin registros en este período</td></tr>'
+                    : fuelRecords.map(r => `
                     <tr>
-                      <td>${new Date(r.date).toLocaleDateString()}</td>
-                      <td>${r.time}</td>
+                      <td>${new Date(r.date).toLocaleDateString('es-AR')}</td>
+                      <td>${r.time || '-'}</td>
                       <td>${r.liters.toFixed(2)}</td>
                       <td>$${r.amount.toFixed(2)}</td>
                       <td>$${(r.amount / r.liters).toFixed(2)}</td>
-                      <td>${r.location}</td>
-                    </tr>
-                  `).join('')}
+                      <td>${r.location || '-'}</td>
+                    </tr>`).join('')}
                 </tbody>
               </table>
             </div>
@@ -1659,6 +1405,40 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         `;
 
         document.getElementById('report-content').innerHTML = html;
+      },
+
+      async sendReportEmail(fuelRecords, maintenanceRecords, vehicle) {
+        const adminEmail = localStorage.getItem('adminEmail');
+        if (!adminEmail) {
+          this.showAlert('Configurá el email del administrador en ⚙️ Configuración', 'warning');
+          return;
+        }
+
+        const totalAmount = fuelRecords.reduce((s, r) => s + r.amount, 0);
+        const totalLiters = fuelRecords.reduce((s, r) => s + r.liters, 0);
+
+        try {
+          await fetch(`${API_URL}/api/send-report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: adminEmail,
+              userName: this.state.currentUser.name,
+              vehicleName: this.state.currentVehicle,
+              fuelRecords,
+              maintenanceRecords,
+              summary: {
+                count: fuelRecords.length,
+                totalLiters,
+                totalAmount,
+                avgPrice: totalLiters > 0 ? totalAmount / totalLiters : 0
+              }
+            })
+          });
+          this.showAlert('📧 Reporte enviado a ' + adminEmail, 'success');
+        } catch (err) {
+          this.showAlert('Error al enviar el reporte', 'error');
+        }
       },
 
       // ===== UTILIDADES =====
@@ -1671,67 +1451,53 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         });
       },
 
-      sendConfirmationEmail(record) {
-        if (!this.state.currentUser.email) return;
-        
-        const message = `Se registró carga de combustible:\n
-- Vehículo: ${this.state.currentVehicle}
-- Fecha/Hora: ${record.date} ${record.time}
-- Litros: ${record.liters}
-- Monto: $${record.amount}
-- Localidad: ${record.location}
-- Dirección: ${record.address}`;
-
-        // Aquí iría la integración con API de email
-        console.log('📧 Email de confirmación:', message);
-      },
-
-      sendReportEmail(fuelRecords, maintenanceRecords, vehicle) {
-        const adminEmail = localStorage.getItem('adminEmail');
-        if (!adminEmail) {
-          alert('Configura email del administrador en Configuración');
-          return;
-        }
-
-        this.showAlert('📧 Email enviado correctamente', 'success');
-      },
-
-      switchTab(tabName) {
+      // FIX #4: switchTab recibe 'e' como parámetro en lugar de usar 'event' global
+      switchTab(tabName, e) {
         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
         document.getElementById(`tab-${tabName}`).classList.add('active');
-        event.target.classList.add('active');
+
+        // Buscar el botón correcto por data o por el evento
+        if (e && e.target) {
+          e.target.classList.add('active');
+        } else {
+          // Fallback: buscar el botón que corresponde a este tab
+          document.querySelectorAll('.tab-btn').forEach(b => {
+            if (b.getAttribute('onclick')?.includes(`'${tabName}'`)) {
+              b.classList.add('active');
+            }
+          });
+        }
 
         if (tabName === 'vehicles') this.renderVehiclesTab();
         if (tabName === 'maintenance') this.renderMaintenanceList();
+        if (tabName === 'dashboard') this.renderDashboard();
       },
 
-      openModal(id) {
-        document.getElementById(id).classList.add('active');
-      },
-
-      closeModal(id) {
-        document.getElementById(id).classList.remove('active');
-      },
-
-      openMenu() {
-        this.openModal('menu-modal');
-      },
+      openModal(id) { document.getElementById(id).classList.add('active'); },
+      closeModal(id) { document.getElementById(id).classList.remove('active'); },
+      openMenu() { this.openModal('menu-modal'); },
 
       openSettings() {
+        // Rellenar con valores actuales
+        document.getElementById('settings-email').value = this.state.currentUser.email || '';
+        document.getElementById('settings-admin-email').value = localStorage.getItem('adminEmail') || '';
+        document.getElementById('settings-api-key').value = localStorage.getItem('apiKey') || '';
         this.openModal('settings-modal');
       },
 
       saveSettings() {
-        const email = document.getElementById('settings-email').value;
-        const adminEmail = document.getElementById('settings-admin-email').value;
-        const apiKey = document.getElementById('settings-api-key').value;
+        const email = document.getElementById('settings-email').value.trim();
+        const adminEmail = document.getElementById('settings-admin-email').value.trim();
+        const apiKey = document.getElementById('settings-api-key').value.trim();
 
         this.state.currentUser.email = email;
-        localStorage.setItem('adminEmail', adminEmail);
-        localStorage.setItem('apiKey', apiKey);
-        
+        if (adminEmail) localStorage.setItem('adminEmail', adminEmail);
+        if (apiKey) localStorage.setItem('apiKey', apiKey);
+
+        document.getElementById('current-user-email').textContent = email;
+
         this.saveLocalData();
         this.showAlert('✅ Configuración guardada', 'success');
         this.closeModal('settings-modal');
@@ -1743,19 +1509,19 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `fleetcontrol-${Date.now()}.json`;
+        a.download = `fleetcontrol-${this.state.currentUser.username}-${Date.now()}.json`;
         a.click();
+        URL.revokeObjectURL(url);
       },
 
       showAlert(message, type = 'info') {
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert alert-${type}`;
-        alertDiv.innerHTML = `
-          <span>${type === 'success' ? '✅' : type === 'error' ? '❌' : type === 'warning' ? '⚠️' : 'ℹ️'}</span>
-          <div>${message}</div>
-        `;
+        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+        alertDiv.innerHTML = `<span>${icons[type] || 'ℹ️'}</span><div>${message}</div>`;
 
-        const container = document.querySelector('.main-content');
+        // Mostrar en el área principal
+        const container = document.querySelector('.main-content') || document.querySelector('.login-container');
         if (container) {
           container.insertBefore(alertDiv, container.firstChild);
           setTimeout(() => alertDiv.remove(), 4000);
@@ -1764,24 +1530,33 @@ const API_URL = "https://logisticaml.santamariapablodaniel.workers.dev/";
 
       sync() {
         if (!this.state.isOnline) {
-          this.showAlert('Sin conexión', 'warning');
+          this.showAlert('Sin conexión a internet', 'warning');
           return;
         }
         this.showAlert('📡 Sincronizando...', 'info');
-        setTimeout(() => {
-          this.showAlert('✅ Sincronización completada', 'success');
-        }, 2000);
+        setTimeout(() => this.showAlert('✅ Datos sincronizados', 'success'), 1500);
       },
 
-      // Local Storage
       saveLocalData() {
-        localStorage.setItem(`user_${this.state.currentUser.id}`, JSON.stringify(this.state.currentUser));
-        localStorage.setItem('users', JSON.stringify(this.state.users));
+        try {
+          localStorage.setItem('users', JSON.stringify(this.state.users));
+          if (this.state.currentUser) {
+            // Actualizar el usuario en el mapa de users también
+            this.state.users[this.state.currentUser.id] = this.state.currentUser;
+            localStorage.setItem('users', JSON.stringify(this.state.users));
+          }
+        } catch (e) {
+          console.error('Error guardando datos:', e);
+        }
       },
 
       loadLocalData() {
-        const users = localStorage.getItem('users');
-        this.state.users = users ? JSON.parse(users) : {};
+        try {
+          const users = localStorage.getItem('users');
+          this.state.users = users ? JSON.parse(users) : {};
+        } catch (e) {
+          this.state.users = {};
+        }
       }
     };
 
