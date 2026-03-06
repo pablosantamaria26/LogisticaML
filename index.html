@@ -477,6 +477,17 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       <!-- Últimas cargas de toda la flota -->
       <div class="slabel">Últimas cargas — toda la flota</div>
       <div id="adm-recent"></div>
+
+      <!-- BROADCAST MESSAGE -->
+      <div class="slabel" style="margin-top:1.5rem">Mensaje a toda la flota</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Escribí un mensaje y llegará como notificación push a <strong style="color:var(--text)">todos los dispositivos</strong> de los choferes.</p>
+        <div class="fl" style="margin-bottom:.75rem">
+          <label>Mensaje para los choferes</label>
+          <textarea id="broadcast-msg" placeholder="Ej: Reunión mañana a las 8am en el depósito..." style="min-height:80px;resize:vertical"></textarea>
+        </div>
+        <button class="btn btn-primary" onclick="App.sendBroadcast()" style="background:var(--acc)">📢 Enviar a toda la flota</button>
+      </div>
     </div>
 
   </div>
@@ -527,7 +538,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       <div style="margin-top:1rem;padding:1rem;background:rgba(57,255,20,.06);border:1px dashed var(--green);border-radius:12px">
         <p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:.75rem">🧪 Pruebas (borrar después)</p>
         <div style="display:flex;flex-direction:column;gap:.5rem">
-          <button class="btn btn-ghost btn-sm" onclick="App.testPushNotif()" style="border-color:var(--green);color:var(--green)">🔔 Probar notificación push</button>
+          <button class="btn btn-ghost btn-sm" onclick="App.testPushNotif()" style="border-color:var(--green);color:var(--green)">🔔 Probar push a todos los vehículos</button>
           <button class="btn btn-ghost btn-sm" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange)">📧 Probar email mantenimiento</button>
           <button class="btn btn-ghost btn-sm" onclick="App.resetAllData()" style="border-color:var(--red);color:var(--red)">🗑️ Resetear todos los datos</button>
         </div>
@@ -596,6 +607,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 // ══════════════════════════════════════════════════════════════════════════════
 const API       = "https://logisticaml.santamariapablodaniel.workers.dev";
 const ADMIN_KEY = "admin2024";
+const ADMIN_PIN = "2817";           // PIN fijo del administrador
 const TZ        = "America/Argentina/Buenos_Aires";
 const FLEET_DEF = "distribuidoramercadolimpio@gmail.com";
 const MAINT_WARN  = 500;
@@ -612,6 +624,7 @@ const USER_V   = {martin:'saveiro', ramiro:'fiat', nicolas:'hiace'};
 const SV_NAMES = {'oil-change':'Servicio completo','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
 const SV_ICONS = {'oil-change':'🛢️','tires':'⚙️','suspension':'🔧','brakes':'🛑','other':'🔩'};
 const ADMIN_USER = 'pablo'; // usuario admin con acceso al monitor
+const ADMIN_VIRTUAL = {id:'__admin__',name:'Administrador',username:'pablo',pin:ADMIN_PIN,email:'',vehicles:{},createdAt:''};
 
 let S = {user:null, vid:null, pendingKmV:null};
 let swReg = null;
@@ -840,6 +853,12 @@ const App = {
     const p=document.getElementById('lp').value.trim();
     if(!u){alert('Ingresá tu usuario');return}
     if(p.length!==4){alert('El PIN debe tener 4 dígitos');return}
+    // Admin virtual — PIN fijo 2817, usuario pablo
+    if(u===ADMIN_USER&&p===ADMIN_PIN){
+      S.user=ADMIN_VIRTUAL;haptic('medium');this._enterAdminApp();
+      document.dispatchEvent(new Event('fml-loggedin'));
+      return;
+    }
     const users=DB.users();
     const user=Object.values(users).find(x=>x.username===u);
     if(!user){alert('Usuario no encontrado');return}
@@ -864,6 +883,27 @@ const App = {
   },
 
   logout(){S={user:null,vid:null,pendingKmV:null};document.getElementById('sc-app').classList.remove('on');document.getElementById('sc-login').classList.add('on');this.close('m-menu');document.getElementById('lu').value='';document.getElementById('lp').value=''},
+
+  _enterAdminApp(){
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent='👑 Admin';
+    // Ocultar tabs de chofer, mostrar solo monitor
+    document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
+    const tabAdmin=document.getElementById('tab-admin');
+    tabAdmin.style.display='';
+    tabAdmin.classList.add('on');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('panel-admin').classList.add('on');
+    // Ocultar botón cambiar vehículo en menú
+    document.querySelector('#m-menu .btn-ghost[onclick*="openVPicker"]').style.display='none';
+    // Actualizar nav badge
+    document.getElementById('nav-ve').textContent='👑';
+    document.getElementById('nav-vn').textContent='Monitor Admin';
+    localStorage.setItem('fml_adm','1');
+    this.renderAdmin();
+    setTimeout(()=>subscribePush().catch(()=>{}),2000);
+  },
 
   _enterApp(){
     document.getElementById('sc-login').classList.remove('on');
@@ -1441,46 +1481,46 @@ const App = {
 
   // ── TEST FUNCTIONS (borrar después) ──────────────────────────────────────
   async testPushNotif(){
-    // Paso 1: verificar permiso
     if(Notification.permission==='default'){
       const p=await Notification.requestPermission();
-      if(p!=='granted'){toast('❌ Permiso denegado — activá notificaciones en ajustes','error',7000);return}
+      if(p!=='granted'){toast('❌ Permiso denegado','error',7000);return}
     }
-    if(Notification.permission!=='granted'){toast('❌ Notificaciones bloqueadas en este dispositivo','error',6000);return}
-
-    toast('⏳ Registrando suscripción push...','info',3000);
-
-    // Paso 2: suscribir y registrar en KV
-    const sub=await subscribePush();
-    if(!sub){
-      toast('❌ No se pudo crear suscripción push. Revisá la consola.','error',8000);
-      console.error('subscribePush() retornó null — ¿el service worker está activo?');
-      return;
+    if(Notification.permission!=='granted'){toast('❌ Notificaciones bloqueadas','error',6000);return}
+    toast('⏳ Registrando suscripción...','info',3000);
+    await subscribePush().catch(()=>{});
+    await new Promise(r=>setTimeout(r,1000));
+    toast('📤 Enviando push a TODOS los vehículos...','info',3000);
+    let totalSent=0;
+    for(const v of Object.values(VEHICLES)){
+      try{
+        const res=await fetch(`${API}/api/push-notify`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({vehicleId:v.id,title:`🔔 Prueba Admin — ${v.emoji} ${v.name}`,body:'Sistema de notificaciones funcionando ✅',tag:'test-all'})
+        });
+        const data=await res.json().catch(()=>({}));
+        totalSent+=data.sent||0;
+      }catch(e){}
     }
-    toast('✅ Suscripción registrada en el servidor','success',3000);
+    toast(totalSent>0?`✅ Push enviado a ${totalSent} dispositivo(s) en total`:'⚠️ Sin suscriptores registrados aún','success',8000);
+  },
 
-    // Paso 3: enviar push real desde el servidor al vehículo actual
-    await new Promise(r=>setTimeout(r,1500));
-    const vid=S.vid||'saveiro';
-    const v=VEHICLES[vid]||VEHICLES.saveiro;
-    toast('📤 Enviando push desde el servidor...','info',3000);
-    try{
-      const res=await fetch(`${API}/api/push-notify`,{
-        method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({vehicleId:vid,title:`🔧 Prueba Push — ${v.name}`,body:'Si ves esto, ¡el push funciona! 🎉',tag:'test-push'})
-      });
-      const data=await res.json().catch(()=>({}));
-      if(res.ok&&data.sent>0){
-        toast(`✅ Push enviado a ${data.sent} dispositivo(s) — revisá el celu en 5 seg`,'success',8000);
-      }else if(res.ok&&data.sent===0){
-        toast('⚠️ Servidor OK pero sin suscriptores guardados en KV para este vehículo','warning',8000);
-        console.log('Push response:',data);
-      }else{
-        toast('❌ Error del servidor: '+JSON.stringify(data),'error',8000);
-      }
-    }catch(e){
-      toast('❌ No se pudo conectar al servidor: '+e.message,'error',7000);
+  async sendBroadcast(){
+    const msg=document.getElementById('broadcast-msg')?.value?.trim();
+    if(!msg){toast('Escribí un mensaje primero','warning');return}
+    toast('📤 Enviando mensaje a toda la flota...','info',3000);
+    let totalSent=0;
+    for(const v of Object.values(VEHICLES)){
+      try{
+        const res=await fetch(`${API}/api/push-notify`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({vehicleId:v.id,title:'📢 Mensaje de administración',body:msg,tag:'broadcast'})
+        });
+        const data=await res.json().catch(()=>({}));
+        totalSent+=data.sent||0;
+      }catch(e){}
     }
+    document.getElementById('broadcast-msg').value='';
+    toast(totalSent>0?`✅ Mensaje enviado a ${totalSent} dispositivo(s)`:'⚠️ Sin dispositivos registrados','success',8000);
   },
   async testMaintEmail(){
     toast('📧 Enviando email de prueba...','info',3000);
