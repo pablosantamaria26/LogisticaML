@@ -1217,17 +1217,20 @@ const App = {
       return;
     }
 
-    // Validar que KM sea mayor al anterior registrado
+    // Validar que KM sea MAYOR al anterior registrado (no igual, no menor)
     const vd0=DB.users()[S.user.id].vehicles[S.vid];
     const lastKm=vd0?.currentKm||0;
-    if(lastKm>0&&kmVal<lastKm){
+    if(lastKm>0&&kmVal<=lastKm){
       const kmInput=document.getElementById('km-curr');
       kmInput.style.borderColor='var(--orange)';
       kmInput.style.boxShadow='0 0 0 3px rgba(245,158,11,.25)';
       kmInput.scrollIntoView({behavior:'smooth',block:'center'});
       setTimeout(()=>kmInput.focus(),400);
       setTimeout(()=>{kmInput.style.borderColor='';kmInput.style.boxShadow=''},3000);
-      toast(`⚠️ KM menor al anterior (${fmtN(lastKm)} km) — verificá el odómetro`,'warning',7000);
+      const msg=kmVal===lastKm
+        ?`⚠️ KM igual al anterior (${fmtN(lastKm)} km) — el odómetro debe avanzar`
+        :`⚠️ KM menor al anterior (${fmtN(lastKm)} km) — verificá el odómetro`;
+      toast(msg,'warning',7000);
       return;
     }
 
@@ -1330,29 +1333,57 @@ const App = {
   },
 
   // ── ADMIN MONITOR ────────────────────────────────────────────────────────
-  renderAdmin(){
-    document.getElementById('adm-updated').textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR',{timeZone:TZ});
-    const users=DB.users();
-    let totalCargas=0,totalAmt=0,totalLit=0,totalKmFlota=0;
-    const now=new Date();
+  _adminRefreshTimer:null,
 
-    // Recopilar datos de TODOS los usuarios para cada vehículo
+  async renderAdmin(){
+    document.getElementById('adm-updated').textContent='Actualizando...';
+    // Auto-refresh cada 30 segundos
+    if(this._adminRefreshTimer) clearInterval(this._adminRefreshTimer);
+    this._adminRefreshTimer=setInterval(()=>{
+      const p=document.getElementById('panel-admin');
+      if(p&&p.classList.contains('on'))this.renderAdmin();
+      else clearInterval(this._adminRefreshTimer);
+    },30000);
+
+    // Cargar registros desde KV (datos de TODOS los dispositivos)
+    let kvRecords=[];
+    try{
+      const res=await fetch(`${API}/api/get-records`);
+      if(res.ok){const d=await res.json();kvRecords=d.records||[];}
+    }catch(e){console.warn('get-records:',e)}
+
+    document.getElementById('adm-updated').textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR',{timeZone:TZ})+(kvRecords.length?` · ${kvRecords.length} reg`:'');
+
+    const now=new Date();
+    const localUsers=DB.users();
     const vData={};
     Object.values(VEHICLES).forEach(v=>{vData[v.id]={fuel:[],maint:[],currentKm:0,drivers:[]}});
 
-    Object.values(users).forEach(u=>{
+    // 1. localStorage (datos locales)
+    Object.values(localUsers).forEach(u=>{
       if(!u.vehicles)return;
       Object.entries(u.vehicles).forEach(([vid,vd])=>{
         if(!vData[vid])return;
-        if(vd.fuelRecords?.length)vData[vid].fuel.push(...vd.fuelRecords);
+        if(vd.fuelRecords?.length)vData[vid].fuel.push(...vd.fuelRecords.map(r=>({...r,_user:u.name})));
         if(vd.maintenanceRecords?.length)vData[vid].maint.push(...vd.maintenanceRecords);
         if(vd.currentKm>vData[vid].currentKm)vData[vid].currentKm=vd.currentKm;
         if(!vData[vid].drivers.includes(u.name))vData[vid].drivers.push(u.name);
       });
     });
 
+    // 2. KV nube — deduplicar por record.id
+    const seenIds=new Set(Object.values(vData).flatMap(vd=>vd.fuel.map(r=>r.id)));
+    kvRecords.forEach(entry=>{
+      const vid=entry.vehicleId;const r=entry.record;
+      if(!vData[vid]||!r)return;
+      if(!seenIds.has(r.id)){seenIds.add(r.id);vData[vid].fuel.push({...r,_user:entry.userName});}
+      if(r.km&&r.km>vData[vid].currentKm)vData[vid].currentKm=r.km;
+      if(entry.userName&&!vData[vid].drivers.includes(entry.userName))vData[vid].drivers.push(entry.userName);
+    });
+
     const cont=document.getElementById('adm-vcards');cont.innerHTML='';
     let allFuelForRecent=[];
+    let totalCargas=0,totalAmt=0,totalLit=0,totalKmFlota=0;
 
     Object.values(VEHICLES).forEach(v=>{
       const vd=vData[v.id];
