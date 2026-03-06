@@ -451,6 +451,17 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       </button>
 
       <div id="tprev-wrap" style="display:none"></div>
+      <!-- Retry buttons shown when AI fails -->
+      <div id="retry-btn-wrap" style="display:none;margin-bottom:1rem">
+        <div style="display:flex;gap:.625rem">
+          <button class="btn btn-primary" onclick="App._retryPhoto()" style="flex:1;min-height:48px;font-size:.875rem">
+            🔄 Reintentar con misma foto
+          </button>
+          <button class="btn btn-ghost" onclick="App._retakePhoto()" style="flex:1;min-height:48px;font-size:.875rem">
+            📷 Nueva foto
+          </button>
+        </div>
+      </div>
       <div id="fuel-form" style="display:none">
         <div class="slabel">Datos del ticket</div>
         <div class="fgrid">
@@ -956,40 +967,78 @@ const App = {
     const file=e.target.files[0];if(!file)return;
     const b64=await this._b64(file);
     document.getElementById('tprev-wrap').style.display='';
-    document.getElementById('tprev-wrap').innerHTML=`<div class="tprev"><img src="${b64}" alt="Ticket"><div class="tprev-badge"><span class="spin"></span> Analizando...</div></div>`;
+    document.getElementById('tprev-wrap').innerHTML=`<div class="tprev"><img src="${b64}" alt="Ticket"><div class="tprev-badge"><span class="spin"></span> Analizando con IA...</div></div>`;
     document.getElementById('fuel-form').style.display='';
     document.getElementById('fuel-hero-btn').style.display='none';
     const ar=nowAR();
-    document.getElementById('ff-date').value=ar.date;document.getElementById('ff-time').value=ar.time;
+    document.getElementById('ff-date').value=ar.date;
+    document.getElementById('ff-time').value=ar.time;
     const ckm=S.user.vehicles[S.vid]?.currentKm;if(ckm)document.getElementById('ff-km').value=ckm;
+    this._lastPhoto=b64; // guardar para retry
+    await this._processPhoto(b64);
+  },
 
-    // Process even if app goes background — keep reference
-    const imgData = b64;
+  async _processPhoto(b64){
+    // Obtener API key — primero del localStorage, luego del worker env
+    const apiKey=localStorage.getItem('fml_akey')||'';
     try{
-      const apiKey=localStorage.getItem('fml_akey')||'';
-      const res=await fetch(`${API}/api/process-ticket`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:imgData,apiKey})});
-      if(!res.ok)throw new Error('HTTP '+res.status);
+      const res=await fetch(`${API}/api/process-ticket`,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image:b64, apiKey})
+      });
+      if(!res.ok){
+        const err=await res.json().catch(()=>({}));
+        throw new Error(err.error||'HTTP '+res.status);
+      }
       const data=await res.json();
       if(data.ticket){
         const t=data.ticket;
         if(t.fecha)document.getElementById('ff-date').value=t.fecha;
         if(t.hora)document.getElementById('ff-time').value=t.hora.slice(0,5);
         const lit=t.combustible?.litros||t.combustible?.liters;
-        if(lit)document.getElementById('ff-lit').value=lit;
-        if(t.monto?.total)document.getElementById('ff-amt').value=t.monto.total;
-        if(t.monto?.iva)document.getElementById('ff-iva').value=t.monto.iva;
+        if(lit)document.getElementById('ff-lit').value=parseFloat(lit);
+        if(t.monto?.total)document.getElementById('ff-amt').value=parseFloat(t.monto.total);
+        if(t.monto?.iva)document.getElementById('ff-iva').value=parseFloat(t.monto.iva);
         if(t.surtidor?.cuit)document.getElementById('ff-cuit').value=t.surtidor.cuit;
         if(t.surtidor?.localidad)document.getElementById('ff-loc').value=t.surtidor.localidad;
         if(t.surtidor?.direccion)document.getElementById('ff-addr').value=t.surtidor.direccion;
-        document.querySelector('.tprev-badge').innerHTML='✅ Datos extraídos';
-        document.querySelector('.tprev-badge').style.color='var(--green)';
-        haptic('medium');toast('Datos extraídos — verificá antes de guardar','success');
+        const badge=document.querySelector('.tprev-badge');
+        if(badge){badge.innerHTML='✅ Datos extraídos';badge.style.color='var(--green)';}
+        haptic('medium');toast('✅ Datos extraídos — verificá antes de guardar','success');
+      } else {
+        throw new Error('Respuesta vacía de la IA');
       }
     }catch(err){
-      console.error('AI:',err);
-      document.querySelector('.tprev-badge').innerHTML='⚠️ Manual';
-      toast('Sin IA — cargá los datos manualmente','warning');
+      console.error('AI error:',err);
+      const badge=document.querySelector('.tprev-badge');
+      if(badge){badge.innerHTML='⚠️ Falló — reintentar';badge.style.color='var(--orange)';badge.style.cursor='pointer';badge.onclick=()=>this._retryPhoto();}
+      // Show retry button in form
+      const retryDiv=document.getElementById('retry-btn-wrap');
+      if(retryDiv)retryDiv.style.display='';
+      toast('⚠️ No se pudo leer el ticket — podés reintentar o cargar los datos manualmente','warning',7000);
+      // Check if it's a missing API key issue
+      if(err.message?.includes('API Key')||err.message?.includes('apiKey')){
+        toast('🔑 Configurá la API Key de Gemini en ⚙️ Configuración','warning',8000);
+      }
     }
+  },
+
+  _retryPhoto(){
+    // Retry with same photo
+    if(this._lastPhoto){
+      const badge=document.querySelector('.tprev-badge');
+      if(badge){badge.innerHTML='<span class="spin"></span> Reintentando...';badge.style.color='var(--acc)';badge.onclick=null;}
+      const retryDiv=document.getElementById('retry-btn-wrap');
+      if(retryDiv)retryDiv.style.display='none';
+      this._processPhoto(this._lastPhoto);
+    }
+  },
+
+  _retakePhoto(){
+    // Take a new photo
+    this.cancelFuel();
+    setTimeout(()=>document.getElementById('file-in').click(),100);
   },
 
   async saveFuel(){
@@ -1064,6 +1113,8 @@ const App = {
     document.getElementById('tprev-wrap').style.display='none';document.getElementById('tprev-wrap').innerHTML='';
     document.getElementById('fuel-form').style.display='none';
     document.getElementById('fuel-hero-btn').style.display='';
+    document.getElementById('retry-btn-wrap').style.display='none';
+    this._lastPhoto=null;
     ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','ff-km'].forEach(id=>document.getElementById(id).value='');
   },
 
