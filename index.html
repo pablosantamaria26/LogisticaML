@@ -565,6 +565,19 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       <div class="fl mb2"><label>API Key Gemini</label><input type="password" id="cfg-apikey" placeholder="AIza..."></div>
       <div class="slabel" style="margin-bottom:.75rem">Asignación especial para hoy</div>
       <div id="adm-assigns" style="display:flex;flex-direction:column;gap:.625rem"></div>
+
+      <!-- ⚡ BOTÓN DE PRUEBA — borrar después -->
+      <div style="margin-top:1rem;padding:1rem;background:rgba(57,255,20,.06);border:1px dashed var(--green);border-radius:12px">
+        <p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:.75rem">🧪 Prueba de notificaciones (borrar después)</p>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <button class="btn btn-ghost" onclick="App.testPushNotif()" style="border-color:var(--green);color:var(--green);min-height:44px;font-size:.85rem">
+            🔔 Probar notificación push ahora
+          </button>
+          <button class="btn btn-ghost" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange);min-height:44px;font-size:.85rem">
+            📧 Probar email de mantenimiento
+          </button>
+        </div>
+      </div>
     </div>
   </div>
   <div class="row2">
@@ -1349,6 +1362,48 @@ const PWA = {
 };
 
 PWA.init();
+
+// ── FUNCIONES DE PRUEBA (borrar después de confirmar que andan) ────────────────
+App.testPushNotif = function() {
+  if (Notification.permission !== 'granted') {
+    toast('⚠️ Primero activá las notificaciones en el modal', 'warning', 5000);
+    Notification.requestPermission().then(p => {
+      if (p === 'granted') {
+        pushNotify('🔧 Prueba — Servicio próximo', 'VW Saveiro: faltan 450 km para el cambio de aceite y filtros.', 'test-maint');
+        toast('✅ Notificación enviada', 'success');
+      }
+    });
+    return;
+  }
+  pushNotify(
+    '🔧 Prueba — Servicio próximo',
+    'VW Saveiro: faltan 450 km para el cambio de aceite y filtros.',
+    'test-maint'
+  );
+  toast('✅ Notificación push enviada — revisá tu celu', 'success', 5000);
+};
+
+App.testMaintEmail = async function() {
+  toast('📧 Enviando email de prueba...', 'info', 3000);
+  try {
+    const res = await fetch(`${API}/api/maintenance-alert`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        vehicleName: 'VW Saveiro (PRUEBA)',
+        vehicleIcon: '🚙',
+        currentKm: 125000,
+        nextServiceKm: 125450,
+        kmLeft: 450,
+        userEmail: S.user?.email || '',
+      })
+    });
+    if (res.ok) toast('✅ Email de prueba enviado a distribuidoramercadolimpio@gmail.com', 'success', 6000);
+    else toast('❌ Error enviando email — verificá la API key de Brevo en Cloudflare', 'error', 6000);
+  } catch(e) {
+    toast('❌ Error de red: ' + e.message, 'error', 5000);
+  }
+};
 
 // Wire up install button (safe)
 const _pwaBtn = document.getElementById('pwa-install-btn');
