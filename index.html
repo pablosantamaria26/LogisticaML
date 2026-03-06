@@ -361,8 +361,8 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
         <div class="km-header">
           <div class="km-header-icon">🛣️</div>
           <div class="km-header-text">
-            <h4>Kilómetros actuales</h4>
-            <p>Actualizá el odómetro en cada carga — controla costos y servicio</p>
+            <h4>Kilómetros actuales <span style="color:var(--red);font-size:.7rem;font-family:var(--font-b);text-transform:none;letter-spacing:0;font-weight:700"> ★ Obligatorio</span></h4>
+            <p>Fotografiá el tablero o ingresalos manualmente — necesario para guardar</p>
           </div>
         </div>
         <div class="km-input-row">
@@ -423,6 +423,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
           <button class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
           <button class="btn btn-ghost" onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
         </div>
+        <p style="text-align:center;font-size:.68rem;color:var(--muted);margin-top:.5rem">★ KM obligatorio para guardar</p>
       </div>
     </div>
 
@@ -1196,8 +1197,39 @@ const App = {
     const date=document.getElementById('ff-date').value;
     if(!date||!liters||!amount){alert('Completá: Fecha, Litros y Monto');return}
 
-    // KM del widget (siempre visible en la pestaña combustible)
+    // KM OBLIGATORIO — sin KM no se puede guardar
     const kmVal=parseInt(document.getElementById('km-curr').value)||null;
+    if(!kmVal||kmVal<=0){
+      // Marcar campo en rojo y hacer scroll hacia él
+      const kmInput=document.getElementById('km-curr');
+      const kmWidget=document.getElementById('km-widget');
+      kmInput.style.borderColor='var(--red)';
+      kmInput.style.boxShadow='0 0 0 3px rgba(239,68,68,.25)';
+      kmWidget.style.borderColor='var(--red)';
+      kmWidget.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(()=>kmInput.focus(),400);
+      setTimeout(()=>{
+        kmInput.style.borderColor='';
+        kmInput.style.boxShadow='';
+        kmWidget.style.borderColor='var(--acc)';
+      },3000);
+      toast('🛣️ KM obligatorio — fotografiá el tablero o ingresalos manualmente','error',6000);
+      return;
+    }
+
+    // Validar que KM sea mayor al anterior registrado
+    const vd0=DB.users()[S.user.id].vehicles[S.vid];
+    const lastKm=vd0?.currentKm||0;
+    if(lastKm>0&&kmVal<lastKm){
+      const kmInput=document.getElementById('km-curr');
+      kmInput.style.borderColor='var(--orange)';
+      kmInput.style.boxShadow='0 0 0 3px rgba(245,158,11,.25)';
+      kmInput.scrollIntoView({behavior:'smooth',block:'center'});
+      setTimeout(()=>kmInput.focus(),400);
+      setTimeout(()=>{kmInput.style.borderColor='';kmInput.style.boxShadow=''},3000);
+      toast(`⚠️ KM menor al anterior (${fmtN(lastKm)} km) — verificá el odómetro`,'warning',7000);
+      return;
+    }
 
     const record={
       id:Date.now(),date,time:document.getElementById('ff-time').value,
