@@ -1,5 +1,5 @@
-// Flota ML — Service Worker v22
-const CACHE = 'flota-ml-v22';
+// Flota ML — Service Worker v23
+const CACHE = 'flota-ml-v23';
 const STATIC = ['/LogisticaML/', '/LogisticaML/index.html'];
 
 self.addEventListener('install', e => {
@@ -60,10 +60,15 @@ self.addEventListener('push', e => {
     try { if (e.data) body = e.data.text(); } catch(__) {}
   }
 
-  // Sin icon/badge para evitar fallo silencioso en iOS/Android cuando el archivo no existe
+  // Ícono PNG para Android (SVG no es soportado por el NotificationManager nativo de Android)
+  // Usamos el ícono hosteado en GitHub Pages para no depender de CDNs externos
+  const ICON_PNG = 'https://pablosantamaria26.github.io/LogisticaML/icon-192.png';
+
   const options = {
     body,
     tag,
+    icon: ICON_PNG,
+    badge: ICON_PNG,
     vibrate: [200, 100, 200],
     requireInteraction: false,
     data: { url: '/LogisticaML/' },
