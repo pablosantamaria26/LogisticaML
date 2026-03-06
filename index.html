@@ -707,22 +707,53 @@ async function subscribePush(){
         applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC)
       });
     }
+
+    // ── Deduplicación por dispositivo ────────────────────────────────────
+    // Guardamos el último endpoint registrado por usuario+vehículo
+    // Si es el mismo que ya registramos, NO volvemos a llamar al servidor
+    const username=S.user?.username||'unknown';
+    const cacheKey=`fml_push_reg_${username}`;
+    const lastReg=JSON.parse(localStorage.getItem(cacheKey)||'{}');
+    const currentEndpoint=sub.endpoint;
+    const currentVid=S.vid||'__admin__';
+
+    const alreadyRegistered=(
+      lastReg.endpoint===currentEndpoint &&
+      lastReg.vid===currentVid &&
+      lastReg.username===username &&
+      // Re-registrar si pasaron más de 7 días (por si el server limpió las subs)
+      lastReg.ts && (Date.now()-lastReg.ts < 7*24*60*60*1000)
+    );
+
+    if(alreadyRegistered){
+      console.log('✅ Push ya registrada, sin cambios — omitiendo re-registro');
+      return sub;
+    }
+
     // Guardar sub localmente con ID del usuario
     const subs=DB.pushSubs();
-    subs[S.user?.username||'unknown']=JSON.parse(JSON.stringify(sub));
+    subs[username]=JSON.parse(JSON.stringify(sub));
     DB.savePushSubs(subs);
-    // Enviar al worker para que quede registrada
+
+    // Enviar al worker
     const regRes=await fetch(`${API}/api/register-push`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({subscription:sub,userId:S.user?.id,username:S.user?.username,vehicleId:S.vid})
+      body:JSON.stringify({subscription:sub,userId:S.user?.id,username,vehicleId:S.vid})
     }).catch(e=>{console.warn('register-push fetch error:',e);return null});
+
     if(regRes){
       const regData=await regRes.json().catch(()=>({}));
       if(regData.ok){
+        // Guardar en cache para no re-registrar innecesariamente
+        localStorage.setItem(cacheKey,JSON.stringify({
+          endpoint:currentEndpoint,
+          vid:currentVid,
+          username,
+          ts:Date.now()
+        }));
         console.log('✅ Push registrada en KV:',regData);
       }else{
         console.error('❌ Push NO registrada:',regData);
-        toast('❌ Push no se pudo registrar en servidor: '+JSON.stringify(regData),'error',8000);
       }
     }
     return sub;
