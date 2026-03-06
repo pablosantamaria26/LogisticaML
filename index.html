@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Flota ML</title>
+<link rel="manifest" href="/LogisticaML/manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -1430,13 +1431,47 @@ const App = {
   _b64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})},
 
   // ── TEST FUNCTIONS (borrar después) ──────────────────────────────────────
-  testPushNotif(){
-    if(Notification.permission!=='granted'){
-      Notification.requestPermission().then(p=>{if(p==='granted'){pushNotify('🔧 Prueba — Servicio próximo','VW Saveiro: faltan 450 km para el cambio de aceite.','test');toast('✅ Notificación enviada','success')}});
+  async testPushNotif(){
+    // Paso 1: verificar permiso
+    if(Notification.permission==='default'){
+      const p=await Notification.requestPermission();
+      if(p!=='granted'){toast('❌ Permiso denegado — activá notificaciones en ajustes','error',7000);return}
+    }
+    if(Notification.permission!=='granted'){toast('❌ Notificaciones bloqueadas en este dispositivo','error',6000);return}
+
+    toast('⏳ Registrando suscripción push...','info',3000);
+
+    // Paso 2: suscribir y registrar en KV
+    const sub=await subscribePush();
+    if(!sub){
+      toast('❌ No se pudo crear suscripción push. Revisá la consola.','error',8000);
+      console.error('subscribePush() retornó null — ¿el service worker está activo?');
       return;
     }
-    pushNotify('🔧 Prueba — Servicio próximo','VW Saveiro: faltan 450 km para el cambio de aceite.','test');
-    toast('✅ Notificación push enviada — revisá tu celu','success',5000);
+    toast('✅ Suscripción registrada en el servidor','success',3000);
+
+    // Paso 3: enviar push real desde el servidor al vehículo actual
+    await new Promise(r=>setTimeout(r,1500));
+    const vid=S.vid||'saveiro';
+    const v=VEHICLES[vid]||VEHICLES.saveiro;
+    toast('📤 Enviando push desde el servidor...','info',3000);
+    try{
+      const res=await fetch(`${API}/api/push-notify`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({vehicleId:vid,title:`🔧 Prueba Push — ${v.name}`,body:'Si ves esto, ¡el push funciona! 🎉',tag:'test-push'})
+      });
+      const data=await res.json().catch(()=>({}));
+      if(res.ok&&data.sent>0){
+        toast(`✅ Push enviado a ${data.sent} dispositivo(s) — revisá el celu en 5 seg`,'success',8000);
+      }else if(res.ok&&data.sent===0){
+        toast('⚠️ Servidor OK pero sin suscriptores guardados en KV para este vehículo','warning',8000);
+        console.log('Push response:',data);
+      }else{
+        toast('❌ Error del servidor: '+JSON.stringify(data),'error',8000);
+      }
+    }catch(e){
+      toast('❌ No se pudo conectar al servidor: '+e.message,'error',7000);
+    }
   },
   async testMaintEmail(){
     toast('📧 Enviando email de prueba...','info',3000);
