@@ -1,5 +1,5 @@
 // Flota ML — Service Worker v4.1
-const CACHE = 'flota-ml-v12';
+const CACHE = 'flota-ml-v11';
 
 self.addEventListener('install', e => {
   self.skipWaiting();
