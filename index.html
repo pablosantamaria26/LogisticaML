@@ -695,10 +695,19 @@ async function subscribePush(){
     subs[S.user?.username||'unknown']=JSON.parse(JSON.stringify(sub));
     DB.savePushSubs(subs);
     // Enviar al worker para que quede registrada
-    await fetch(`${API}/api/register-push`,{
+    const regRes=await fetch(`${API}/api/register-push`,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({subscription:sub,userId:S.user?.id,username:S.user?.username,vehicleId:S.vid})
-    }).catch(()=>{});
+    }).catch(e=>{console.warn('register-push fetch error:',e);return null});
+    if(regRes){
+      const regData=await regRes.json().catch(()=>({}));
+      if(regData.ok){
+        console.log('✅ Push registrada en KV:',regData);
+      }else{
+        console.error('❌ Push NO registrada:',regData);
+        toast('❌ Push no se pudo registrar en servidor: '+JSON.stringify(regData),'error',8000);
+      }
+    }
     return sub;
   }catch(e){console.warn('Push sub:',e);return null}
 }
