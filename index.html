@@ -11,89 +11,36 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-:root{
-  --sat:env(safe-area-inset-top,0px);
-  --sab:env(safe-area-inset-bottom,0px);
-  --touch:54px;
-}
+:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--touch:54px}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
 body{position:fixed;width:100%;-webkit-overflow-scrolling:touch;transition:background .35s,color .35s}
 
 /* ══ THEMES ══════════════════════════════════════════════════════════════ */
-body.t1{
-  --bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;
-  --border:#2a2a2a;--border2:#3d3d3d;
-  --text:#f0f0f0;--muted:#666;--dim:#2a2a2a;
-  --acc:#ff6b00;--acc2:#cc5500;--acc-g:rgba(255,107,0,.18);
-  --green:#22c55e;--orange:#f59e0b;--red:#ef4444;--blue:#3b82f6;
-  --font-h:'Bebas Neue',sans-serif;--font-b:'DM Sans',sans-serif;--font-m:'IBM Plex Mono',monospace;
-  background:var(--bg);color:var(--text);font-family:var(--font-b);
-}
-body.t1::before{content:'';position:fixed;inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,107,0,.025) 39px,rgba(255,107,0,.025) 40px);
-  pointer-events:none;z-index:0}
-
-body.t2{
-  --bg:#f0f2f8;--bg2:#ffffff;--bg3:#e8ebf5;
-  --border:#dde1ee;--border2:#c4cae0;
-  --text:#111827;--muted:#6b7280;--dim:#d1d5db;
-  --acc:#2563eb;--acc2:#1d4ed8;--acc-g:rgba(37,99,235,.12);
-  --green:#16a34a;--orange:#d97706;--red:#dc2626;--blue:#2563eb;
-  --font-h:'Syne',sans-serif;--font-b:'Syne',sans-serif;--font-m:'IBM Plex Mono',monospace;
-  background:var(--bg);color:var(--text);font-family:var(--font-b);
-}
-body.t2::before{content:'';position:fixed;inset:0;
-  background:radial-gradient(ellipse 80% 35% at 50% 0%,rgba(37,99,235,.06) 0%,transparent 60%);
-  pointer-events:none;z-index:0}
-
-body.t3{
-  --bg:#030a05;--bg2:#071a0c;--bg3:#0c2412;
-  --border:#112a18;--border2:#1a4025;
-  --text:#d4f5dc;--muted:#3d7a4a;--dim:#122018;
-  --acc:#39ff14;--acc2:#2acc0f;--acc-g:rgba(57,255,20,.12);
-  --green:#39ff14;--orange:#fbbf24;--red:#f87171;--blue:#60a5fa;
-  --font-h:'Space Mono',monospace;--font-b:'DM Sans',sans-serif;--font-m:'Space Mono',monospace;
-  background:var(--bg);color:var(--text);font-family:var(--font-b);
-}
-body.t3::before{content:'';position:fixed;inset:0;
-  background:radial-gradient(ellipse 100% 60% at 50% 100%,rgba(57,255,20,.04) 0%,transparent 65%);
-  pointer-events:none;z-index:0}
+body.t1{--bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;--border:#2a2a2a;--border2:#3d3d3d;--text:#f0f0f0;--muted:#666;--dim:#2a2a2a;--acc:#ff6b00;--acc2:#cc5500;--acc-g:rgba(255,107,0,.18);--green:#22c55e;--orange:#f59e0b;--red:#ef4444;--blue:#3b82f6;--font-h:'Bebas Neue',sans-serif;--font-b:'DM Sans',sans-serif;--font-m:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);font-family:var(--font-b)}
+body.t1::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,107,0,.025) 39px,rgba(255,107,0,.025) 40px);pointer-events:none;z-index:0}
+body.t2{--bg:#f0f2f8;--bg2:#ffffff;--bg3:#e8ebf5;--border:#dde1ee;--border2:#c4cae0;--text:#111827;--muted:#6b7280;--dim:#d1d5db;--acc:#2563eb;--acc2:#1d4ed8;--acc-g:rgba(37,99,235,.12);--green:#16a34a;--orange:#d97706;--red:#dc2626;--blue:#2563eb;--font-h:'Syne',sans-serif;--font-b:'Syne',sans-serif;--font-m:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);font-family:var(--font-b)}
+body.t2::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 35% at 50% 0%,rgba(37,99,235,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
+body.t3{--bg:#030a05;--bg2:#071a0c;--bg3:#0c2412;--border:#112a18;--border2:#1a4025;--text:#d4f5dc;--muted:#3d7a4a;--dim:#122018;--acc:#39ff14;--acc2:#2acc0f;--acc-g:rgba(57,255,20,.12);--green:#39ff14;--orange:#fbbf24;--red:#f87171;--blue:#60a5fa;--font-h:'Space Mono',monospace;--font-b:'DM Sans',sans-serif;--font-m:'Space Mono',monospace;background:var(--bg);color:var(--text);font-family:var(--font-b)}
+body.t3::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 100% 60% at 50% 100%,rgba(57,255,20,.04) 0%,transparent 65%);pointer-events:none;z-index:0}
 
 /* ══ SCREENS ══════════════════════════════════════════════════════════════ */
-.screen{display:none;flex-direction:column;position:fixed;inset:0;
-  padding-top:var(--sat);z-index:1}
+.screen{display:none;flex-direction:column;position:fixed;inset:0;padding-top:var(--sat);z-index:1}
 .screen.on{display:flex}
-
-/* ══ LOGIN ════════════════════════════════════════════════════════════════ */
-#sc-login{align-items:center;justify-content:center;
-  padding:calc(var(--sat)+2rem) 1.25rem 2rem;overflow-y:auto}
-.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;
-  padding:2.25rem 1.875rem;width:100%;max-width:380px;position:relative;z-index:1;
-  box-shadow:0 24px 80px rgba(0,0,0,.45);
-  animation:lbIn .45s cubic-bezier(.16,1,.3,1) both}
+#sc-login{align-items:center;justify-content:center;padding:calc(var(--sat)+2rem) 1.25rem 2rem;overflow-y:auto}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:2.25rem 1.875rem;width:100%;max-width:380px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.45);animation:lbIn .45s cubic-bezier(.16,1,.3,1) both}
 @keyframes lbIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
 .login-logo{text-align:center;margin-bottom:1.75rem}
-.logo-icon{display:inline-flex;align-items:center;justify-content:center;
-  width:72px;height:72px;background:var(--acc);border-radius:20px;
-  font-size:2.3rem;margin-bottom:1rem;
-  box-shadow:0 8px 30px var(--acc-g),0 0 0 1px rgba(255,255,255,.05)}
-.login-logo h1{font-family:var(--font-h);font-size:2.2rem;letter-spacing:.05em;
-  text-transform:uppercase;line-height:1;margin-bottom:.35rem}
+.logo-icon{display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;background:var(--acc);border-radius:20px;font-size:2.3rem;margin-bottom:1rem;box-shadow:0 8px 30px var(--acc-g),0 0 0 1px rgba(255,255,255,.05)}
+.login-logo h1{font-family:var(--font-h);font-size:2.2rem;letter-spacing:.05em;text-transform:uppercase;line-height:1;margin-bottom:.35rem}
 .login-logo p{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.14em}
-
 .theme-row{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.75rem}
-.tp{width:38px;height:38px;border-radius:11px;border:2px solid transparent;
-  cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.tp{width:38px;height:38px;border-radius:11px;border:2px solid transparent;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
 .tp.on{border-color:var(--acc);transform:scale(1.15);box-shadow:0 0 12px var(--acc-g)}
 .tp-1{background:#0d0d0d}.tp-2{background:#f0f2f8;border-color:#dde1ee!important}.tp-3{background:#030a05}
-
 .lf{margin-bottom:1rem}
-.lf label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
-.lf input{width:100%;padding:.9rem 1rem;background:var(--bg3);border:1.5px solid var(--border);
-  border-radius:13px;color:var(--text);font-family:var(--font-b);font-size:1rem;
-  transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;min-height:var(--touch)}
+.lf label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+.lf input{width:100%;padding:.9rem 1rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:13px;color:var(--text);font-family:var(--font-b);font-size:1rem;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;min-height:var(--touch)}
 .lf input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
 .lf input::placeholder{color:var(--dim)}
 .pin-f{font-family:var(--font-m)!important;font-size:1.8rem!important;letter-spacing:.6em!important;text-align:center!important;padding-left:1.5em!important}
@@ -101,22 +48,17 @@ body.t3::before{content:'';position:fixed;inset:0;
 .link-btn{background:none;border:none;color:var(--acc);font-size:.875rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px;font-family:var(--font-b)}
 
 /* ══ BUTTONS ══════════════════════════════════════════════════════════════ */
-.btn{width:100%;padding:1rem 1.25rem;border:none;border-radius:13px;font-family:var(--font-b);
-  font-size:1rem;font-weight:600;cursor:pointer;transition:all .18s;
-  display:flex;align-items:center;justify-content:center;gap:.5rem;
-  min-height:var(--touch);-webkit-appearance:none;user-select:none}
+.btn{width:100%;padding:1rem 1.25rem;border:none;border-radius:13px;font-family:var(--font-b);font-size:1rem;font-weight:600;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:.5rem;min-height:var(--touch);-webkit-appearance:none;user-select:none}
 .btn-primary{background:var(--acc);color:#000;font-weight:700;letter-spacing:.02em}
 .btn-primary:active{transform:scale(.96)}
 .btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}
 .btn-ghost:active{transform:scale(.96)}
 .btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1.5px solid rgba(239,68,68,.2)}
+.btn-sm{min-height:40px;padding:.6rem 1rem;font-size:.82rem}
 
 /* ══ TOAST ════════════════════════════════════════════════════════════════ */
-.toast-stack{position:fixed;top:calc(var(--sat)+.75rem);left:50%;transform:translateX(-50%);
-  z-index:9999;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 2rem);max-width:400px;pointer-events:none}
-.toast{padding:.875rem 1.125rem;border-radius:14px;font-size:.875rem;font-weight:600;
-  display:flex;align-items:center;gap:.625rem;backdrop-filter:blur(16px);pointer-events:auto;
-  animation:tIn .28s cubic-bezier(.16,1,.3,1) both;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+.toast-stack{position:fixed;top:calc(var(--sat)+.75rem);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 2rem);max-width:400px;pointer-events:none}
+.toast{padding:.875rem 1.125rem;border-radius:14px;font-size:.875rem;font-weight:600;display:flex;align-items:center;gap:.625rem;backdrop-filter:blur(16px);pointer-events:auto;animation:tIn .28s cubic-bezier(.16,1,.3,1) both;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 @keyframes tIn{from{opacity:0;transform:translateY(-10px) scale(.95)}to{opacity:1;transform:none}}
 @keyframes tOut{to{opacity:0;transform:translateY(-8px) scale(.95)}}
 .toast.bye{animation:tOut .2s ease forwards}
@@ -127,208 +69,168 @@ body.t3::before{content:'';position:fixed;inset:0;
 
 /* ══ APP LAYOUT ═══════════════════════════════════════════════════════════ */
 #sc-app{flex-direction:column;overflow:hidden}
-.topnav{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);
-  padding:0 .875rem;height:56px;display:flex;align-items:center;
-  justify-content:space-between;gap:.625rem;position:relative;z-index:2}
-.nav-brand{font-family:var(--font-h);font-size:1.4rem;text-transform:uppercase;
-  display:flex;align-items:center;gap:.45rem;flex-shrink:0;letter-spacing:.06em}
-.dot-live{width:8px;height:8px;border-radius:50%;background:var(--acc);
-  box-shadow:0 0 8px var(--acc);animation:blink 2.5s ease-in-out infinite}
+.topnav{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 .875rem;height:56px;display:flex;align-items:center;justify-content:space-between;gap:.625rem;position:relative;z-index:2}
+.nav-brand{font-family:var(--font-h);font-size:1.4rem;text-transform:uppercase;display:flex;align-items:center;gap:.45rem;flex-shrink:0;letter-spacing:.06em}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);animation:blink 2.5s ease-in-out infinite}
 @keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
-.nav-vbadge{display:flex;align-items:center;gap:.4rem;padding:.35rem .75rem;
-  background:var(--bg3);border:1px solid var(--border);border-radius:20px;
-  font-size:.78rem;color:var(--muted);flex:1;min-width:0;overflow:hidden}
+.nav-vbadge{display:flex;align-items:center;gap:.4rem;padding:.35rem .75rem;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:.78rem;color:var(--muted);flex:1;min-width:0;overflow:hidden}
 .nav-vbadge .vn{font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.icon-btn{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);
-  background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .18s;
-  font-size:1.15rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .18s;font-size:1.15rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .icon-btn:active{transform:scale(.88)}
 
 /* ══ TABBAR ═══════════════════════════════════════════════════════════════ */
 .tabbar{flex-shrink:0;display:flex;background:var(--bg2);border-bottom:1px solid var(--border);position:relative;z-index:2}
-.tab{flex:1;padding:.65rem .4rem;border:none;background:none;color:var(--dim);cursor:pointer;
-  font-family:var(--font-b);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
-  transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.2rem;
-  border-bottom:2.5px solid transparent;min-height:52px;-webkit-appearance:none}
+.tab{flex:1;padding:.65rem .4rem;border:none;background:none;color:var(--dim);cursor:pointer;font-family:var(--font-b);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.2rem;border-bottom:2.5px solid transparent;min-height:52px;-webkit-appearance:none}
 .tab .ti{font-size:1.25rem;line-height:1}
 .tab.on{color:var(--acc);border-bottom-color:var(--acc)}
 .tab:active{transform:scale(.88)}
 
 /* ══ MAIN SCROLL ══════════════════════════════════════════════════════════ */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-  padding:1.25rem;padding-bottom:calc(1.25rem + var(--sab))}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:1.25rem;padding-bottom:calc(1.25rem + var(--sab))}
 .panel{display:none;animation:pIn .22s ease both}
 .panel.on{display:block}
 @keyframes pIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
-/* ══ FUEL SECTION HIGHLIGHT ═══════════════════════════════════════════════ */
-/* Firulete / divisor visual para la sección combustible */
-.fuel-section-header{
-  display:flex;align-items:center;gap:.75rem;
-  margin-bottom:1.25rem;padding:.875rem 1rem;
-  background:linear-gradient(135deg,var(--acc-g),transparent);
-  border:1px solid var(--acc);border-radius:14px;
-  position:relative;overflow:hidden;
-}
-.fuel-section-header::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,var(--acc),rgba(255,255,255,.1),transparent);
-}
-.fuel-section-header::after{
-  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);
-}
-.fsh-icon{font-size:1.75rem;line-height:1;filter:drop-shadow(0 0 8px var(--acc))}
-.fsh-text h3{font-family:var(--font-h);font-size:1.1rem;text-transform:uppercase;
-  letter-spacing:.05em;line-height:1;margin-bottom:.2rem}
-.fsh-text p{color:var(--muted);font-size:.72rem}
-.fsh-badge{margin-left:auto;padding:.3rem .75rem;background:var(--acc);color:#000;
-  border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.06em;flex-shrink:0;animation:pulse-badge 2s ease-in-out infinite}
-@keyframes pulse-badge{0%,100%{box-shadow:0 0 0 0 var(--acc-g)}50%{box-shadow:0 0 0 6px transparent}}
-
-/* ══ BIG FUEL BUTTON ══════════════════════════════════════════════════════ */
-.fuel-hero{
-  width:100%;margin-bottom:1.5rem;background:var(--acc);
-  border:none;border-radius:20px;padding:0;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  min-height:130px;position:relative;overflow:hidden;-webkit-appearance:none;
-  box-shadow:0 6px 0 var(--acc2),0 10px 30px var(--acc-g);
-  transition:transform .1s,box-shadow .1s;
-  animation:fuelPulse 3s ease-in-out infinite;
-}
-@keyframes fuelPulse{
-  0%,100%{box-shadow:0 6px 0 var(--acc2),0 10px 30px var(--acc-g)}
-  50%{box-shadow:0 6px 0 var(--acc2),0 10px 50px var(--acc-g),0 0 80px var(--acc-g)}
-}
-.fuel-hero::before{content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 55%);pointer-events:none}
-.fuel-hero::after{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;
-  background:conic-gradient(transparent 0deg,rgba(255,255,255,.03) 60deg,transparent 120deg);
-  animation:shimmer 4s linear infinite;pointer-events:none}
-@keyframes shimmer{to{transform:rotate(360deg)}}
-.fuel-hero:active{transform:translateY(4px) scale(.98);box-shadow:0 2px 0 var(--acc2),0 4px 12px var(--acc-g)}
-.fuel-hero-inner{display:flex;align-items:center;gap:1.375rem;padding:1.75rem 2rem;z-index:1;position:relative}
-.fuel-hero-icon{font-size:3.75rem;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));flex-shrink:0}
-.fuel-hero-text h2{font-family:var(--font-h);font-size:1.9rem;font-weight:700;
-  color:#000;text-transform:uppercase;letter-spacing:.04em;line-height:1;margin-bottom:.35rem}
-.fuel-hero-text p{color:rgba(0,0,0,.55);font-size:.82rem;font-weight:600}
-.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.4);
-  transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none}
-@keyframes rippleAnim{to{transform:scale(4.5);opacity:0}}
-
-/* Offline queue badge on button */
-.fuel-hero .queue-badge{position:absolute;top:.75rem;right:.75rem;z-index:2;
-  background:rgba(0,0,0,.7);border-radius:20px;padding:.25rem .7rem;
-  font-size:.65rem;font-weight:700;color:#fff;display:none}
-.fuel-hero .queue-badge.show{display:block}
-
 /* ══ CARDS ════════════════════════════════════════════════════════════════ */
-.slabel{font-family:var(--font-m);font-size:.6rem;font-weight:700;text-transform:uppercase;
-  letter-spacing:.12em;color:var(--muted);margin-bottom:.875rem;
-  display:flex;align-items:center;gap:.5rem}
+.slabel{font-family:var(--font-m);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.875rem;display:flex;align-items:center;gap:.5rem}
 .slabel::after{content:'';flex:1;height:1px;background:var(--border)}
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:.75rem}
 .card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.875rem}
 .sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:1rem}
 @media(min-width:520px){.sgrid{grid-template-columns:repeat(4,1fr)}}
-.sc{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
-  padding:1rem .875rem;text-align:center;position:relative;overflow:hidden}
-.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,var(--acc),transparent);opacity:.5}
-.sv{font-family:var(--font-m);font-size:1.3rem;font-weight:700;color:var(--acc);
-  line-height:1.1;margin-bottom:.3rem}
+.sc{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem .875rem;text-align:center;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent);opacity:.5}
+.sv{font-family:var(--font-m);font-size:1.3rem;font-weight:700;color:var(--acc);line-height:1.1;margin-bottom:.3rem}
 .sl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
-.vhero{background:var(--bg2);border:1px solid var(--border);border-radius:16px;
-  padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;
-  position:relative;overflow:hidden}
-.vhero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;
-  background:radial-gradient(circle,var(--acc-g) 0%,transparent 70%);pointer-events:none}
+.vhero{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;position:relative;overflow:hidden}
+.vhero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,var(--acc-g) 0%,transparent 70%);pointer-events:none}
 .vhero .eb{font-size:3rem;line-height:1;flex-shrink:0}
 .vhero-i h2{font-family:var(--font-h);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.15rem}
 .vhero-i p{color:var(--muted);font-size:.8rem}
 .vhero-k{margin-left:auto;text-align:right;flex-shrink:0}
 .kv{font-family:var(--font-m);font-size:1.35rem;font-weight:700;color:var(--acc)}
 .kl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
-.aban{border-radius:12px;padding:.875rem 1rem;margin-bottom:.75rem;
-  display:flex;align-items:flex-start;gap:.625rem;font-size:.82rem}
+.aban{border-radius:12px;padding:.875rem 1rem;margin-bottom:.75rem;display:flex;align-items:flex-start;gap:.625rem;font-size:.82rem}
 .aban .ai{font-size:1.15rem;flex-shrink:0}
 .aban strong{display:block;font-weight:700;margin-bottom:.1rem}
 .a-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:var(--red)}
 .a-orange{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);color:var(--orange)}
+.a-green{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);color:var(--green)}
+
+/* ══ FUEL SECTION ═════════════════════════════════════════════════════════ */
+.fuel-section-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;padding:.875rem 1rem;background:linear-gradient(135deg,var(--acc-g),transparent);border:1px solid var(--acc);border-radius:14px;position:relative;overflow:hidden}
+.fuel-section-header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--acc),rgba(255,255,255,.1),transparent)}
+.fsh-icon{font-size:1.75rem;line-height:1;filter:drop-shadow(0 0 8px var(--acc))}
+.fsh-text h3{font-family:var(--font-h);font-size:1.1rem;text-transform:uppercase;letter-spacing:.05em;line-height:1;margin-bottom:.2rem}
+.fsh-text p{color:var(--muted);font-size:.72rem}
+.fsh-badge{margin-left:auto;padding:.3rem .75rem;background:var(--acc);color:#000;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;animation:pulse-badge 2s ease-in-out infinite}
+@keyframes pulse-badge{0%,100%{box-shadow:0 0 0 0 var(--acc-g)}50%{box-shadow:0 0 0 6px transparent}}
+
+/* ══ BIG FUEL BUTTON ══════════════════════════════════════════════════════ */
+.fuel-hero{width:100%;margin-bottom:1.5rem;background:var(--acc);border:none;border-radius:20px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:130px;position:relative;overflow:hidden;-webkit-appearance:none;box-shadow:0 6px 0 var(--acc2),0 10px 30px var(--acc-g);transition:transform .1s,box-shadow .1s;animation:fuelPulse 3s ease-in-out infinite}
+@keyframes fuelPulse{0%,100%{box-shadow:0 6px 0 var(--acc2),0 10px 30px var(--acc-g)}50%{box-shadow:0 6px 0 var(--acc2),0 10px 50px var(--acc-g),0 0 80px var(--acc-g)}}
+.fuel-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 55%);pointer-events:none}
+.fuel-hero:active{transform:translateY(4px) scale(.98);box-shadow:0 2px 0 var(--acc2),0 4px 12px var(--acc-g)}
+.fuel-hero-inner{display:flex;align-items:center;gap:1.375rem;padding:1.75rem 2rem;z-index:1;position:relative}
+.fuel-hero-icon{font-size:3.75rem;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));flex-shrink:0}
+.fuel-hero-text h2{font-family:var(--font-h);font-size:1.9rem;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:.04em;line-height:1;margin-bottom:.35rem}
+.fuel-hero-text p{color:rgba(0,0,0,.55);font-size:.82rem;font-weight:600}
+.fuel-hero .queue-badge{position:absolute;top:.75rem;right:.75rem;z-index:2;background:rgba(0,0,0,.7);border-radius:20px;padding:.25rem .7rem;font-size:.65rem;font-weight:700;color:#fff;display:none}
+.fuel-hero .queue-badge.show{display:block}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.4);transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4.5);opacity:0}}
+
+/* ══ KM WIDGET ════════════════════════════════════════════════════════════ */
+.km-widget{background:var(--bg2);border:2px solid var(--acc);border-radius:16px;padding:1.125rem;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.km-widget::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.km-header{display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem}
+.km-header-icon{font-size:1.4rem}
+.km-header-text{flex:1}
+.km-header-text h4{font-family:var(--font-h);font-size:1rem;text-transform:uppercase;letter-spacing:.04em;line-height:1;margin-bottom:.15rem}
+.km-header-text p{color:var(--muted);font-size:.72rem}
+.km-input-row{display:flex;gap:.625rem;align-items:center}
+.km-input-wrap{flex:1;position:relative}
+.km-input-wrap input{width:100%;padding:.9rem 1rem .9rem 2.8rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:var(--font-m);font-size:1.3rem;font-weight:700;letter-spacing:.04em;-webkit-appearance:none;min-height:56px;transition:border-color .2s,box-shadow .2s}
+.km-input-wrap input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
+.km-input-wrap::before{content:'🛣️';position:absolute;left:.75rem;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none}
+.km-photo-btn{width:56px;height:56px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;font-size:1.4rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
+.km-photo-btn:active{border-color:var(--acc);color:var(--acc)}
+.km-prev{margin-top:.625rem;border-radius:10px;overflow:hidden;position:relative;display:none}
+.km-prev img{width:100%;max-height:120px;object-fit:cover;display:block}
+.km-prev-badge{position:absolute;bottom:.5rem;right:.5rem;background:rgba(10,10,15,.88);backdrop-filter:blur(10px);border-radius:8px;padding:.25rem .625rem;font-size:.68rem;font-weight:700;color:var(--acc)}
 
 /* ══ FORM ═════════════════════════════════════════════════════════════════ */
 .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.875rem}
 @media(max-width:400px){.fgrid{grid-template-columns:1fr}}
 .ffull{grid-column:1/-1}
 .fl label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
-.fl input,.fl select,.fl textarea{width:100%;padding:.8rem .875rem;background:var(--bg3);
-  border:1.5px solid var(--border);border-radius:12px;color:var(--text);
-  font-family:var(--font-b);font-size:.9rem;transition:border-color .2s;
-  -webkit-appearance:none;min-height:var(--touch)}
+.fl input,.fl select,.fl textarea{width:100%;padding:.8rem .875rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:var(--font-b);font-size:.9rem;transition:border-color .2s;-webkit-appearance:none;min-height:var(--touch)}
 .fl input:focus,.fl select:focus,.fl textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
 .fl textarea{resize:vertical;min-height:80px}
 select option{background:var(--bg2)}
 .twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--border)}
 table{width:100%;border-collapse:collapse;font-size:.8rem}
-th{background:var(--bg3);padding:.7rem .9rem;text-align:left;font-size:.58rem;
-  font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+th{background:var(--bg3);padding:.7rem .9rem;text-align:left;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
 td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 .tm{font-family:var(--font-m);font-size:.75rem}
-.chip{display:inline-flex;align-items:center;gap:.2rem;padding:.22rem .65rem;
-  border-radius:20px;font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.chip{display:inline-flex;align-items:center;gap:.2rem;padding:.22rem .65rem;border-radius:20px;font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .c-green{background:rgba(34,197,94,.13);color:var(--green)}
 .c-orange{background:rgba(245,158,11,.13);color:var(--orange)}
 .c-red{background:rgba(239,68,68,.13);color:var(--red)}
 .c-acc{background:var(--acc-g);color:var(--acc)}
+.c-blue{background:rgba(59,130,246,.13);color:var(--blue)}
 .maint-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:.625rem}
-.scan-btn{width:100%;min-height:100px;background:var(--bg2);
-  border:2px dashed var(--border2);border-radius:16px;color:var(--muted);
-  cursor:pointer;transition:all .18s;font-family:var(--font-b);
-  display:flex;flex-direction:column;align-items:center;gap:.4rem;
-  padding:1.5rem;margin-bottom:1rem;-webkit-appearance:none}
-.scan-btn:active{border-color:var(--acc);color:var(--acc);background:var(--acc-g)}
 .tprev{border-radius:12px;overflow:hidden;margin-bottom:.875rem;border:1px solid var(--border);position:relative}
 .tprev img{width:100%;max-height:200px;object-fit:cover;display:block}
-.tprev-badge{position:absolute;top:.625rem;right:.625rem;background:rgba(10,10,15,.88);
-  backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:8px;
-  padding:.3rem .65rem;font-size:.68rem;font-weight:700;color:var(--acc)}
-.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--acc-g);
-  border-top-color:var(--acc);border-radius:50%;animation:rot .5s linear infinite}
+.tprev-badge{position:absolute;top:.625rem;right:.625rem;background:rgba(10,10,15,.88);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:8px;padding:.3rem .65rem;font-size:.68rem;font-weight:700;color:var(--acc)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--acc-g);border-top-color:var(--acc);border-radius:50%;animation:rot .5s linear infinite}
 @keyframes rot{to{transform:rotate(360deg)}}
-
-/* Offline queue indicator */
-.offline-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);
-  border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;
-  display:none;align-items:center;gap:.625rem;font-size:.82rem;color:var(--orange)}
+.offline-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;display:none;align-items:center;gap:.625rem;font-size:.82rem;color:var(--orange)}
 .offline-banner.show{display:flex}
 
+/* ══ ADMIN DASHBOARD ══════════════════════════════════════════════════════ */
+.adm-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:1rem}
+@media(min-width:600px){.adm-grid{grid-template-columns:repeat(3,1fr)}}
+.adm-vcard{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:1.25rem;position:relative;overflow:hidden;cursor:pointer;transition:all .2s}
+.adm-vcard:hover{border-color:var(--acc);transform:translateY(-2px)}
+.adm-vcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.adm-vcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.adm-vemoji{font-size:2.5rem;line-height:1}
+.adm-vstatus{padding:.25rem .7rem;border-radius:20px;font-size:.62rem;font-weight:700;text-transform:uppercase}
+.adm-vname{font-family:var(--font-h);font-size:1.3rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem}
+.adm-vdriver{font-size:.78rem;color:var(--muted);margin-bottom:1rem}
+.adm-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
+.adm-stat{background:var(--bg3);border-radius:10px;padding:.625rem;text-align:center}
+.adm-sv{font-family:var(--font-m);font-size:1rem;font-weight:700;color:var(--acc);display:block;line-height:1.1}
+.adm-sl{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.2rem;display:block}
+.adm-km-bar{margin-top:1rem}
+.adm-km-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:.35rem}
+.adm-km-bg{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden}
+.adm-km-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--acc));transition:width .5s ease}
+.adm-km-fill.warn{background:linear-gradient(90deg,var(--orange),var(--red))}
+
+/* detail modal */
+.adm-detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem}
+@media(min-width:480px){.adm-detail-grid{grid-template-columns:repeat(3,1fr)}}
+.adm-d-stat{background:var(--bg3);border-radius:12px;padding:.875rem;text-align:center;border:1px solid var(--border)}
+.adm-d-sv{font-family:var(--font-m);font-size:1.2rem;font-weight:700;color:var(--acc);display:block;line-height:1}
+.adm-d-sl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.35rem;display:block}
+
 /* ══ MODALS ═══════════════════════════════════════════════════════════════ */
-.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);
-  backdrop-filter:blur(10px);z-index:500;align-items:flex-end;justify-content:center;
-  padding:0 0 var(--sab) 0}
+.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);z-index:500;align-items:flex-end;justify-content:center;padding:0 0 var(--sab) 0}
 @media(min-width:600px){.mbk{align-items:center;padding:1rem}}
 .mbk.on{display:flex;animation:mfade .2s ease}
 @keyframes mfade{from{opacity:0}to{opacity:1}}
-.modal{background:var(--bg2);border:1px solid var(--border);
-  border-radius:22px 22px 0 0;padding:1.5rem 1.5rem calc(1.5rem + var(--sab));
-  width:100%;max-width:500px;max-height:88vh;overflow-y:auto;
-  box-shadow:0 -16px 50px rgba(0,0,0,.55);
-  animation:mUp .28s cubic-bezier(.16,1,.3,1) both}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem calc(1.5rem + var(--sab));width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 -16px 50px rgba(0,0,0,.55);animation:mUp .28s cubic-bezier(.16,1,.3,1) both}
 @media(min-width:600px){.modal{border-radius:22px;padding:1.75rem;animation:mIn .28s cubic-bezier(.16,1,.3,1) both}}
 @keyframes mIn{from{opacity:0;transform:scale(.93) translateY(14px)}to{opacity:1;transform:none}}
 @keyframes mUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:none}}
-.modal::before{content:'';display:block;width:36px;height:4px;background:var(--border2);
-  border-radius:2px;margin:0 auto 1.25rem}
+.modal::before{content:'';display:block;width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.25rem}
 @media(min-width:600px){.modal::before{display:none}}
 .mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
 .mtitle{font-family:var(--font-h);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em}
-.mclose{background:none;border:1.5px solid var(--border);color:var(--muted);
-  width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:.9rem;
-  display:flex;align-items:center;justify-content:center;transition:all .18s}
-.vcard{display:flex;align-items:center;gap:1rem;padding:1.125rem;
-  background:var(--bg3);border:2px solid var(--border);border-radius:14px;
-  cursor:pointer;transition:all .18s;margin-bottom:.625rem;min-height:76px}
+.mclose{background:none;border:1.5px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.vcard{display:flex;align-items:center;gap:1rem;padding:1.125rem;background:var(--bg3);border:2px solid var(--border);border-radius:14px;cursor:pointer;transition:all .18s;margin-bottom:.625rem;min-height:76px}
 .vcard:hover,.vcard.sel{border-color:var(--acc);background:var(--acc-g)}
 .vcard:active{transform:scale(.97)}
 .vcard .ve{font-size:2.5rem;line-height:1;flex-shrink:0}
@@ -342,10 +244,15 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 .mb2{margin-bottom:1rem}
 .row2{display:flex;gap:.625rem}
 .gap{display:flex;flex-direction:column;gap:.5rem}
+
+/* PWA modals */
+#m-pwa,#m-notif{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;padding:0 0 var(--sab) 0}
+.pwa-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:2rem 1.75rem calc(2rem + var(--sab));width:100%;max-width:480px;animation:mUp .3s cubic-bezier(.16,1,.3,1) both}
+.pwa-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem}
+.pwa-feature{display:flex;align-items:center;gap:.875rem;padding:.875rem;background:var(--bg3);border-radius:12px;border:1px solid var(--border);font-size:.875rem}
 </style>
 </head>
 <body class="t1">
-
 <div class="toast-stack" id="toasts"></div>
 
 <!-- ══ LOGIN ══════════════════════════════════════════════════════════════ -->
@@ -362,23 +269,15 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       <div class="tp tp-3"    onclick="setTheme(3)" title="Verde flota">🟢</div>
     </div>
     <div id="f-login">
-      <div class="lf"><label>Usuario</label>
-        <input type="text" id="lu" placeholder="tu usuario" autocomplete="username" autocorrect="off" autocapitalize="none"
-               onkeydown="if(event.key==='Enter') document.getElementById('lp').focus()"></div>
-      <div class="lf"><label>PIN</label>
-        <input type="password" id="lp" class="pin-f" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••"
-               autocomplete="current-password" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
-               onkeydown="if(event.key==='Enter') App.login()"></div>
+      <div class="lf"><label>Usuario</label><input type="text" id="lu" placeholder="tu usuario" autocomplete="username" autocorrect="off" autocapitalize="none" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()"></div>
+      <div class="lf"><label>PIN</label><input type="password" id="lp" class="pin-f" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="current-password" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)" onkeydown="if(event.key==='Enter')App.login()"></div>
       <button class="btn btn-primary" onclick="App.login()">Ingresar →</button>
       <div class="toggle-link">¿Primera vez? <button class="link-btn" onclick="App.showReg()">Crear cuenta</button></div>
     </div>
     <div id="f-reg" style="display:none">
       <div class="lf"><label>Nombre completo</label><input type="text" id="rn" placeholder="Juan García" autocomplete="name"></div>
       <div class="lf"><label>Usuario</label><input type="text" id="ru" placeholder="juangarcia" autocorrect="off" autocapitalize="none"></div>
-      <div class="lf"><label>PIN (4 números)</label>
-        <input type="password" id="rp" class="pin-f" maxlength="4" inputmode="numeric" placeholder="••••"
-               oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)"
-               onkeydown="if(event.key==='Enter') App.register()"></div>
+      <div class="lf"><label>PIN (4 números)</label><input type="password" id="rp" class="pin-f" maxlength="4" inputmode="numeric" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)" onkeydown="if(event.key==='Enter')App.register()"></div>
       <button class="btn btn-primary" onclick="App.register()" style="margin-bottom:.625rem">Crear cuenta</button>
       <button class="btn btn-ghost" onclick="App.showLogin()">← Volver</button>
     </div>
@@ -393,20 +292,35 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
     <button class="icon-btn" id="offline-icon" title="Sin conexión" style="display:none;color:var(--orange)">📶</button>
     <button class="icon-btn" onclick="App.openMenu()">⋮</button>
   </nav>
-  <div class="tabbar">
+  <div class="tabbar" id="main-tabs">
     <button class="tab on"  onclick="App.tab('dash',this)"><span class="ti">📊</span>Panel</button>
     <button class="tab"     onclick="App.tab('fuel',this)"><span class="ti">⛽</span>Combustible</button>
     <button class="tab"     onclick="App.tab('maint',this)"><span class="ti">🔧</span>Servicio</button>
+    <button class="tab" id="tab-admin" style="display:none" onclick="App.tab('admin',this)"><span class="ti">👁️</span>Monitor</button>
   </div>
   <div class="main">
 
-    <!-- DASHBOARD -->
+    <!-- ── PANEL DASHBOARD ──────────────────────────────────────────────── -->
     <div id="panel-dash" class="panel on">
       <div id="dash-alerts"></div>
       <div class="vhero">
         <div class="eb" id="h-emoji">🚛</div>
         <div class="vhero-i"><h2 id="h-name">—</h2><p id="h-desc">Seleccioná un vehículo</p></div>
-        <div class="vhero-k"><div class="kv" id="h-km">—</div><div class="kl">km</div></div>
+        <div class="vhero-k"><div class="kv" id="h-km">—</div><div class="kl">km actuales</div></div>
+      </div>
+      <!-- Progress bar al próximo servicio -->
+      <div id="maint-progress" style="display:none" class="card" style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
+          <span style="font-size:.78rem;font-weight:700">🔧 Próximo servicio</span>
+          <span id="mp-label" style="font-family:var(--font-m);font-size:.75rem;color:var(--acc)"></span>
+        </div>
+        <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+          <div id="mp-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--acc));transition:width .6s ease;width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:.35rem">
+          <span id="mp-done" style="font-size:.65rem;color:var(--muted)"></span>
+          <span id="mp-next" style="font-size:.65rem;color:var(--muted)"></span>
+        </div>
       </div>
       <div class="sgrid">
         <div class="sc"><div class="sv" id="st-fuel">$0</div><div class="sl">Gasto mes</div></div>
@@ -414,31 +328,66 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
         <div class="sc"><div class="sv" id="st-n">0</div><div class="sl">Cargas</div></div>
         <div class="sc"><div class="sv" id="st-avg">—</div><div class="sl">$/litro</div></div>
       </div>
+      <!-- KM stats -->
+      <div class="sgrid">
+        <div class="sc"><div class="sv" id="st-kmprom">—</div><div class="sl">km/carga</div></div>
+        <div class="sc"><div class="sv" id="st-costkm">—</div><div class="sl">$/km</div></div>
+        <div class="sc"><div class="sv" id="st-totalkm">—</div><div class="sl">km mes</div></div>
+        <div class="sc"><div class="sv" id="st-kml">—</div><div class="sl">km/litro</div></div>
+      </div>
       <div class="slabel">Últimas cargas</div>
       <div id="dash-recent"></div>
     </div>
 
-    <!-- COMBUSTIBLE -->
+    <!-- ── PANEL COMBUSTIBLE ────────────────────────────────────────────── -->
     <div id="panel-fuel" class="panel">
       <input type="file" id="file-in" accept="image/*" capture="environment" style="display:none" onchange="App.handlePhoto(event)">
+      <input type="file" id="file-km" accept="image/*" capture="environment" style="display:none" onchange="App.handleKmPhoto(event)">
 
-      <!-- Firulete / sección destacada -->
       <div class="fuel-section-header">
         <div class="fsh-icon">⛽</div>
-        <div class="fsh-text">
-          <h3>Carga de combustible</h3>
-          <p>Fotografiá el ticket y la IA extrae todo</p>
-        </div>
+        <div class="fsh-text"><h3>Carga de combustible</h3><p>Fotografiá el ticket y la IA extrae todo</p></div>
         <div class="fsh-badge">IA activa</div>
       </div>
 
-      <!-- Banner offline queue -->
       <div class="offline-banner" id="offline-banner">
         <span>📶</span>
-        <div><strong>Sin conexión</strong> — <span id="queue-count">0</span> carga(s) en cola. Se sincronizarán automáticamente.</div>
+        <div><strong>Sin conexión</strong> — <span id="queue-count">0</span> carga(s) en cola.</div>
       </div>
 
-      <!-- BIG BUTTON -->
+      <!-- KM WIDGET — siempre visible en combustible -->
+      <div class="km-widget" id="km-widget">
+        <div class="km-header">
+          <div class="km-header-icon">🛣️</div>
+          <div class="km-header-text">
+            <h4>Kilómetros actuales</h4>
+            <p>Actualizá el odómetro en cada carga — controla costos y servicio</p>
+          </div>
+        </div>
+        <div class="km-input-row">
+          <div class="km-input-wrap">
+            <input type="number" id="km-curr" placeholder="125000" inputmode="numeric"
+              style="font-size:1.3rem" oninput="App.onKmInput(this.value)">
+          </div>
+          <button class="km-photo-btn" onclick="document.getElementById('file-km').click()" title="Fotografiar tablero">
+            📷
+          </button>
+        </div>
+        <div class="km-prev" id="km-prev">
+          <img id="km-prev-img" src="" alt="Tablero">
+          <div class="km-prev-badge" id="km-prev-badge">analizando...</div>
+        </div>
+        <!-- Barra de progreso al próximo servicio -->
+        <div id="km-maint-bar" style="display:none;margin-top:.75rem">
+          <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:.35rem">
+            <span>Próximo servicio</span><span id="km-maint-label" style="color:var(--acc);font-family:var(--font-m)"></span>
+          </div>
+          <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+            <div id="km-maint-fill" style="height:100%;border-radius:4px;transition:width .5s"></div>
+          </div>
+        </div>
+      </div>
+
       <button class="fuel-hero" id="fuel-hero-btn" onclick="App.triggerFuelScan(event)">
         <div class="queue-badge" id="queue-badge"></div>
         <div class="fuel-hero-inner">
@@ -451,15 +400,10 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       </button>
 
       <div id="tprev-wrap" style="display:none"></div>
-      <!-- Retry buttons shown when AI fails -->
       <div id="retry-btn-wrap" style="display:none;margin-bottom:1rem">
         <div style="display:flex;gap:.625rem">
-          <button class="btn btn-primary" onclick="App._retryPhoto()" style="flex:1;min-height:48px;font-size:.875rem">
-            🔄 Reintentar con misma foto
-          </button>
-          <button class="btn btn-ghost" onclick="App._retakePhoto()" style="flex:1;min-height:48px;font-size:.875rem">
-            📷 Nueva foto
-          </button>
+          <button class="btn btn-primary" onclick="App._retryPhoto()" style="flex:1;min-height:48px;font-size:.875rem">🔄 Reintentar foto</button>
+          <button class="btn btn-ghost" onclick="App._retakePhoto()" style="flex:1;min-height:48px;font-size:.875rem">📷 Nueva foto</button>
         </div>
       </div>
       <div id="fuel-form" style="display:none">
@@ -473,16 +417,15 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
           <div class="fl"><label>CUIT surtidor</label><input type="text" id="ff-cuit" placeholder="XX-XXXXXXXX-X" inputmode="numeric"></div>
           <div class="fl ffull"><label>Localidad</label><input type="text" id="ff-loc" placeholder="Buenos Aires"></div>
           <div class="fl ffull"><label>Dirección</label><input type="text" id="ff-addr" placeholder="Av. Corrientes 1000"></div>
-          <div class="fl ffull"><label>KM del vehículo</label><input type="number" id="ff-km" placeholder="150000" inputmode="numeric"></div>
         </div>
         <div class="row2">
           <button class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
-          <button class="btn btn-ghost"   onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
+          <button class="btn btn-ghost" onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
         </div>
       </div>
     </div>
 
-    <!-- SERVICIO -->
+    <!-- ── PANEL SERVICIO ───────────────────────────────────────────────── -->
     <div id="panel-maint" class="panel">
       <div class="card mb2">
         <div class="slabel" style="margin-bottom:1rem">Nuevo servicio</div>
@@ -509,6 +452,32 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       <div id="maint-list"></div>
     </div>
 
+    <!-- ── PANEL ADMIN MONITOR ──────────────────────────────────────────── -->
+    <div id="panel-admin" class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div>
+          <div style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em">Monitor de Flota</div>
+          <div style="color:var(--muted);font-size:.78rem" id="adm-updated"></div>
+        </div>
+        <button class="icon-btn" onclick="App.renderAdmin()" title="Actualizar">🔄</button>
+      </div>
+
+      <!-- Resumen global -->
+      <div class="sgrid" style="margin-bottom:1.5rem">
+        <div class="sc"><div class="sv" id="adm-total-cargas">0</div><div class="sl">Cargas totales</div></div>
+        <div class="sc"><div class="sv" id="adm-total-gasto">$0</div><div class="sl">Gasto mes</div></div>
+        <div class="sc"><div class="sv" id="adm-total-lit">0L</div><div class="sl">Litros mes</div></div>
+        <div class="sc"><div class="sv" id="adm-total-km">—</div><div class="sl">KM totales</div></div>
+      </div>
+
+      <div class="slabel">Estado de cada vehículo</div>
+      <div class="adm-grid" id="adm-vcards"></div>
+
+      <!-- Últimas cargas de toda la flota -->
+      <div class="slabel">Últimas cargas — toda la flota</div>
+      <div id="adm-recent"></div>
+    </div>
+
   </div>
 </div>
 
@@ -520,10 +489,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 </div></div>
 
 <div class="mbk" id="m-menu"><div class="modal" style="max-width:320px">
-  <div class="mhdr">
-    <span class="mtitle" id="menu-uname">Opciones</span>
-    <button class="mclose" onclick="App.close('m-menu')">✕</button>
-  </div>
+  <div class="mhdr"><span class="mtitle" id="menu-uname">Opciones</span><button class="mclose" onclick="App.close('m-menu')">✕</button></div>
   <div class="gap">
     <button class="btn btn-ghost" onclick="App.openVPicker()">🚗 Cambiar vehículo</button>
     <button class="btn btn-ghost" onclick="App.openSettings()">⚙️ Configuración</button>
@@ -541,84 +507,117 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 </div></div>
 
 <div class="mbk" id="m-cfg"><div class="modal">
-  <div class="mhdr">
-    <span class="mtitle">Configuración</span>
-    <button class="mclose" onclick="App.close('m-cfg')">✕</button>
-  </div>
+  <div class="mhdr"><span class="mtitle">Configuración</span><button class="mclose" onclick="App.close('m-cfg')">✕</button></div>
   <div class="slabel">Mi cuenta</div>
-  <div class="fl mb2">
-    <label>Mi email (recibo confirmaciones por carga)</label>
-    <input type="email" id="cfg-email" placeholder="tu@email.com" inputmode="email">
-  </div>
+  <div class="fl mb2"><label>Mi email (recibo confirmaciones)</label><input type="email" id="cfg-email" placeholder="tu@email.com" inputmode="email"></div>
   <div class="div"></div>
   <div class="slabel">Administrador</div>
-  <div class="fl mb2">
-    <label>Clave de administrador</label>
-    <input type="password" id="cfg-akey" placeholder="Clave admin" oninput="App.checkAdminKey()">
-  </div>
+  <div class="fl mb2"><label>Clave de administrador</label><input type="password" id="cfg-akey" placeholder="Clave admin" oninput="App.checkAdminKey()"></div>
   <div id="admin-panel" style="display:none">
     <div class="card" style="border-color:var(--orange);margin-bottom:1rem">
       <p style="font-size:.7rem;color:var(--orange);font-weight:700;margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">⚡ Panel Admin</p>
       <div class="fl mb2"><label>Email dueño (reporte el 1°)</label><input type="email" id="cfg-owner-email" placeholder="dueno@empresa.com"></div>
       <div class="fl mb2"><label>Email contador (resumen el 25)</label><input type="email" id="cfg-cont-email" placeholder="contador@estudio.com"></div>
-      <div class="fl mb2"><label>Email flota (alertas y copias)</label><input type="email" id="cfg-fleet-email" placeholder="distribuidoramercadolimpio@gmail.com"></div>
+      <div class="fl mb2"><label>Email flota (alertas)</label><input type="email" id="cfg-fleet-email" placeholder="distribuidoramercadolimpio@gmail.com"></div>
       <div class="fl mb2"><label>API Key Gemini</label><input type="password" id="cfg-apikey" placeholder="AIza..."></div>
       <div class="slabel" style="margin-bottom:.75rem">Asignación especial para hoy</div>
       <div id="adm-assigns" style="display:flex;flex-direction:column;gap:.625rem"></div>
-
-      <!-- ⚡ BOTÓN DE PRUEBA — borrar después -->
+      <!-- TEST BUTTONS -->
       <div style="margin-top:1rem;padding:1rem;background:rgba(57,255,20,.06);border:1px dashed var(--green);border-radius:12px">
-        <p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:.75rem">🧪 Prueba de notificaciones (borrar después)</p>
+        <p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:.75rem">🧪 Pruebas (borrar después)</p>
         <div style="display:flex;flex-direction:column;gap:.5rem">
-          <button class="btn btn-ghost" onclick="App.testPushNotif()" style="border-color:var(--green);color:var(--green);min-height:44px;font-size:.85rem">
-            🔔 Probar notificación push ahora
-          </button>
-          <button class="btn btn-ghost" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange);min-height:44px;font-size:.85rem">
-            📧 Probar email de mantenimiento
-          </button>
+          <button class="btn btn-ghost btn-sm" onclick="App.testPushNotif()" style="border-color:var(--green);color:var(--green)">🔔 Probar notificación push</button>
+          <button class="btn btn-ghost btn-sm" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange)">📧 Probar email mantenimiento</button>
+          <button class="btn btn-ghost btn-sm" onclick="App.resetAllData()" style="border-color:var(--red);color:var(--red)">🗑️ Resetear todos los datos</button>
         </div>
       </div>
     </div>
   </div>
   <div class="row2">
     <button class="btn btn-primary" onclick="App.saveSettings()" style="flex:2">Guardar</button>
-    <button class="btn btn-ghost"   onclick="App.close('m-cfg')" style="flex:1">Cancelar</button>
+    <button class="btn btn-ghost" onclick="App.close('m-cfg')" style="flex:1">Cancelar</button>
   </div>
 </div></div>
 
 <div class="mbk" id="m-km"><div class="modal" style="max-width:360px">
   <p class="mtitle mb1">KM del vehículo</p>
   <p class="muted mb2" style="font-size:.82rem">Primera vez con este vehículo. ¿Cuántos km tiene?</p>
-  <div class="fl mb2">
-    <label id="km-lbl">Kilómetros actuales</label>
-    <input type="number" id="km-in" placeholder="150000" inputmode="numeric"
-           onkeydown="if(event.key==='Enter') App.confirmKm()">
-  </div>
+  <div class="fl mb2"><label id="km-lbl">Kilómetros actuales</label><input type="number" id="km-in" placeholder="150000" inputmode="numeric" onkeydown="if(event.key==='Enter')App.confirmKm()"></div>
   <button class="btn btn-primary" onclick="App.confirmKm()">Confirmar</button>
 </div></div>
 
+<!-- Detalle vehículo admin -->
+<div class="mbk" id="m-adm-detail"><div class="modal" style="max-width:540px">
+  <div class="mhdr"><span class="mtitle" id="adm-detail-title">Detalle</span><button class="mclose" onclick="App.close('m-adm-detail')">✕</button></div>
+  <div id="adm-detail-body"></div>
+</div></div>
+
+<!-- PWA Install -->
+<div id="m-pwa">
+  <div class="pwa-sheet">
+    <div class="pwa-handle"></div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="width:72px;height:72px;background:var(--acc);border-radius:20px;display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:1rem;box-shadow:0 8px 24px var(--acc-g)">🚛</div>
+      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Instalar Flota ML</h2>
+      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">Instalá la app en tu teléfono para notificaciones y uso sin conexión.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem">
+      <div class="pwa-feature"><span style="font-size:1.4rem">📲</span><div style="font-size:.875rem"><strong>Acceso directo</strong> desde la pantalla de inicio</div></div>
+      <div class="pwa-feature"><span style="font-size:1.4rem">🔔</span><div style="font-size:.875rem"><strong>Notificaciones</strong> de mantenimiento en tu celu</div></div>
+      <div class="pwa-feature"><span style="font-size:1.4rem">📶</span><div style="font-size:.875rem"><strong>Funciona sin señal</strong> y sincroniza automáticamente</div></div>
+    </div>
+    <button id="pwa-install-btn" class="btn btn-primary" style="margin-bottom:.625rem">📲 Instalar ahora</button>
+    <button class="btn btn-ghost" onclick="PWA.dismiss()">Ahora no</button>
+  </div>
+</div>
+
+<!-- Notif Permission -->
+<div id="m-notif">
+  <div class="pwa-sheet">
+    <div class="pwa-handle"></div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:3.5rem;margin-bottom:.875rem">🔔</div>
+      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Activar notificaciones</h2>
+      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">Recibí alertas cuando tu vehículo se acerca al servicio de mantenimiento.</p>
+    </div>
+    <div class="pwa-feature" style="background:var(--acc-g);border:1px solid var(--acc);margin-bottom:1.25rem">
+      <span style="font-size:1.4rem">🔧</span>
+      <div style="font-size:.875rem;line-height:1.5"><strong>Aviso a los 500 km</strong> del próximo servicio<br><span style="color:var(--muted)">+ email automático a los 1000 km</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="PWA.requestNotif()" style="margin-bottom:.625rem">🔔 Activar notificaciones</button>
+    <button class="btn btn-ghost" onclick="PWA.dismissNotif()">Ahora no</button>
+  </div>
+</div>
+
 <script>
-// ── CONFIG ────────────────────────────────────────────────────────────────────
-const API        = "https://logisticaml.santamariapablodaniel.workers.dev";
-const ADMIN_KEY  = "admin2024";
-const TZ         = "America/Argentina/Buenos_Aires";
-const FLEET_DEF  = "distribuidoramercadolimpio@gmail.com";
-const MAINT_WARN = 500; // km antes del servicio para alerta push
-const MAINT_EMAIL= 1000; // km antes del servicio para email
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════════════════════
+const API       = "https://logisticaml.santamariapablodaniel.workers.dev";
+const ADMIN_KEY = "admin2024";
+const TZ        = "America/Argentina/Buenos_Aires";
+const FLEET_DEF = "distribuidoramercadolimpio@gmail.com";
+const MAINT_WARN  = 500;
+const MAINT_EMAIL = 1000;
+// VAPID public key for Web Push subscriptions
+const VAPID_PUBLIC = "BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY";
 
 const VEHICLES = {
   hiace:   {id:'hiace',   name:'Toyota Hiace',  emoji:'🚐', desc:'Furgón de carga',  fixedUser:'nicolas'},
   saveiro: {id:'saveiro', name:'VW Saveiro',     emoji:'🚙', desc:'Camioneta pickup', fixedUser:'martin'},
   fiat:    {id:'fiat',    name:'Fiat Uno Cargo', emoji:'🚗', desc:'Auto comercial',   fixedUser:'ramiro'},
 };
-const USER_V  = {martin:'saveiro', ramiro:'fiat', nicolas:'hiace'};
-const SV_NAMES = {'oil-change':'Aceite + Filtro (servicio completo)','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
+const USER_V   = {martin:'saveiro', ramiro:'fiat', nicolas:'hiace'};
+const SV_NAMES = {'oil-change':'Servicio completo','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
 const SV_ICONS = {'oil-change':'🛢️','tires':'⚙️','suspension':'🔧','brakes':'🛑','other':'🔩'};
+const ADMIN_USER = 'pablo'; // usuario admin con acceso al monitor
 
 let S = {user:null, vid:null, pendingKmV:null};
-let swRegistered = false;
+let swReg = null;
 
-// ── DB ────────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// DB
+// ══════════════════════════════════════════════════════════════════════════════
 const DB = {
   save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
   load(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
@@ -630,207 +629,198 @@ const DB = {
   saveQueue(q){this.save('fml_queue',q)},
   priceHistory(){return this.load('fml_prices',[])},
   savePriceHistory(h){this.save('fml_prices',h)},
+  pushSubs(){return this.load('fml_push_subs',{})},
+  savePushSubs(s){this.save('fml_push_subs',s)},
 };
 
-// ── OFFLINE QUEUE ─────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// OFFLINE QUEUE
+// ══════════════════════════════════════════════════════════════════════════════
 const OfflineQueue = {
-  add(item){
-    const q = DB.queue();
-    q.push({...item, queuedAt: new Date().toISOString(), id: Date.now()});
-    DB.saveQueue(q);
-    this.updateUI();
-  },
-  remove(id){
-    DB.saveQueue(DB.queue().filter(x => x.id !== id));
-    this.updateUI();
-  },
+  add(item){const q=DB.queue();q.push({...item,queuedAt:new Date().toISOString(),id:Date.now()});DB.saveQueue(q);this.updateUI()},
+  remove(id){DB.saveQueue(DB.queue().filter(x=>x.id!==id));this.updateUI()},
   count(){return DB.queue().length},
   updateUI(){
-    const n = this.count();
-    const banner = document.getElementById('offline-banner');
-    const badge  = document.getElementById('queue-badge');
-    const icon   = document.getElementById('offline-icon');
-    if (n > 0) {
-      banner?.classList.add('show');
-      document.getElementById('queue-count').textContent = n;
-      if (badge) { badge.textContent = `${n} en cola`; badge.classList.add('show'); }
-      if (icon) icon.style.display = 'flex';
-    } else {
-      banner?.classList.remove('show');
-      if (badge) badge.classList.remove('show');
-      if (icon) icon.style.display = 'none';
-    }
+    const n=this.count();
+    const banner=document.getElementById('offline-banner');
+    const badge=document.getElementById('queue-badge');
+    const icon=document.getElementById('offline-icon');
+    if(n>0){banner?.classList.add('show');const qc=document.getElementById('queue-count');if(qc)qc.textContent=n;if(badge){badge.textContent=`${n} en cola`;badge.classList.add('show')}if(icon)icon.style.display='flex'}
+    else{banner?.classList.remove('show');if(badge)badge.classList.remove('show');if(icon)icon.style.display='none'}
   },
   async flush(){
-    const q = DB.queue();
-    if (!q.length || !navigator.onLine) return;
-    let synced = 0;
-    for (const item of q) {
-      try {
-        // Solo sincronizar datos (sync-record) — no reenviar emails viejos
-        if (item.type === 'sync-record') {
-          const res = await fetch(`${API}/api/sync-record`, {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body:JSON.stringify(item.data)
-          });
-          if (res.ok) { this.remove(item.id); synced++; }
-        } else {
-          // Descartar items que no sean sync-record (emails, etc.)
-          this.remove(item.id);
-        }
-      } catch(e) { /* mantener en cola si falla */ }
+    const q=DB.queue();if(!q.length||!navigator.onLine)return;
+    let synced=0;
+    for(const item of q){
+      try{
+        if(item.type==='sync-record'){const res=await fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item.data)});if(res.ok){this.remove(item.id);synced++}}
+        else this.remove(item.id);
+      }catch(e){}
     }
-    if (synced > 0) toast(`✅ ${synced} registro(s) sincronizado(s)`, 'success');
+    if(synced>0)toast(`✅ ${synced} registro(s) sincronizado(s)`,'success');
     this.updateUI();
   }
 };
+window.addEventListener('online',()=>{toast('📶 Conexión restaurada','info',3000);setTimeout(()=>OfflineQueue.flush(),1500)});
+window.addEventListener('offline',()=>{toast('📴 Sin conexión — cargas se guardan localmente','warning',5000)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine)OfflineQueue.flush()});
 
-// Flush on reconnect
-window.addEventListener('online', () => {
-  toast('📶 Conexión restaurada — sincronizando...', 'info', 3000);
-  setTimeout(() => OfflineQueue.flush(), 1500);
-});
-window.addEventListener('offline', () => {
-  toast('📴 Sin conexión — las cargas se guardarán localmente', 'warning', 5000);
-  document.getElementById('offline-icon').style.display = 'flex';
-});
-
-// Flush on page visibility (app brought to foreground)
-document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && navigator.onLine) OfflineQueue.flush();
-});
-
-// ── SERVICE WORKER (background sync) ─────────────────────────────────────────
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/LogisticaML/service-worker.js', {scope:'/LogisticaML/'})
-    .then(reg => {
-      swRegistered = true;
-      if ('Notification' in window && Notification.permission === 'default') {
-        setTimeout(() => {
-          Notification.requestPermission().then(p => {
-            if (p === 'granted') toast('🔔 Notificaciones activadas', 'success', 3000);
-          });
-        }, 3000);
-      }
-      navigator.serviceWorker.addEventListener('message', e => {
-        if (e.data?.type === 'FLUSH_QUEUE' && navigator.onLine) OfflineQueue.flush();
+// ══════════════════════════════════════════════════════════════════════════════
+// SERVICE WORKER + WEB PUSH
+// ══════════════════════════════════════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/LogisticaML/service-worker.js',{scope:'/LogisticaML/'})
+    .then(reg=>{
+      swReg=reg;
+      navigator.serviceWorker.addEventListener('message',e=>{
+        if(e.data?.type==='FLUSH_QUEUE'&&navigator.onLine)OfflineQueue.flush();
       });
-      window.addEventListener('online', () => {
-        reg.sync?.register('flush-queue').catch(() => OfflineQueue.flush());
-      });
-    }).catch(err => console.warn('SW:', err));
+    }).catch(err=>console.warn('SW:',err));
 }
 
-// ── PUSH NOTIFICATION ─────────────────────────────────────────────────────────
-function pushNotify(title, body, tag='fml') {
-  if (!('Notification' in window)) return;
-  if (Notification.permission === 'granted') {
-    navigator.serviceWorker?.ready.then(reg => {
-      reg.showNotification(title, { body, icon: '', tag, badge: '' });
-    }).catch(() => new Notification(title, { body }));
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then(p => {
-      if (p === 'granted') new Notification(title, { body });
-    });
+// Suscribir dispositivo a Web Push y enviar sub al worker
+async function subscribePush(){
+  if(!swReg||!('PushManager' in window))return null;
+  try{
+    let sub=await swReg.pushManager.getSubscription();
+    if(!sub){
+      sub=await swReg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC)
+      });
+    }
+    // Guardar sub localmente con ID del usuario
+    const subs=DB.pushSubs();
+    subs[S.user?.username||'unknown']=JSON.parse(JSON.stringify(sub));
+    DB.savePushSubs(subs);
+    // Enviar al worker para que quede registrada
+    await fetch(`${API}/api/register-push`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subscription:sub,userId:S.user?.id,username:S.user?.username,vehicleId:S.vid})
+    }).catch(()=>{});
+    return sub;
+  }catch(e){console.warn('Push sub:',e);return null}
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=window.atob(base64);
+  return new Uint8Array([...rawData].map(c=>c.charCodeAt(0)));
+}
+
+// Notificación local (cuando app está abierta)
+function pushNotify(title,body,tag='fml'){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='granted'){
+    swReg?.showNotification(title,{body,tag,icon:'',badge:''}).catch(()=>new Notification(title,{body}));
   }
 }
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-function nowAR() {
-  const now = new Date();
-  return {
-    date: now.toLocaleDateString('en-CA', {timeZone:TZ}),
-    time: now.toLocaleTimeString('es-AR', {timeZone:TZ, hour:'2-digit', minute:'2-digit', hour12:false}),
-  };
-}
+// ══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+function nowAR(){const now=new Date();return{date:now.toLocaleDateString('en-CA',{timeZone:TZ}),time:now.toLocaleTimeString('es-AR',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false})}}
 function fmt$(n){return'$'+(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtN(n){return(n||0).toLocaleString('es-AR')}
-
-// ── THEMES ────────────────────────────────────────────────────────────────────
-function setTheme(n){
-  document.body.className='t'+n;
-  localStorage.setItem('fml_theme','t'+n);
-  document.querySelectorAll('.tp').forEach((el,i)=>el.classList.toggle('on',i===n-1));
-  document.querySelectorAll('.tb').forEach((el,i)=>{
-    el.style.borderColor = i===n-1 ? 'var(--acc)' : 'var(--border)';
-    el.style.transform   = i===n-1 ? 'scale(1.1)' : 'scale(1)';
-  });
-}
+function setTheme(n){document.body.className='t'+n;localStorage.setItem('fml_theme','t'+n);document.querySelectorAll('.tp').forEach((el,i)=>el.classList.toggle('on',i===n-1));document.querySelectorAll('.tb').forEach((el,i)=>{el.style.borderColor=i===n-1?'var(--acc)':'var(--border)';el.style.transform=i===n-1?'scale(1.1)':'scale(1)'})}
 (()=>{const t=localStorage.getItem('fml_theme')||'t1';setTheme(parseInt(t.replace('t','')))})();
-
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function toast(msg, type='info', ms=4500) {
-  const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
-  const el=document.createElement('div');
-  el.className=`toast t-${type}`;
-  el.innerHTML=`<span>${icons[type]}</span><span style="flex:1">${msg}</span>`;
-  document.getElementById('toasts').appendChild(el);
-  setTimeout(()=>{el.classList.add('bye');setTimeout(()=>el.remove(),230)},ms);
-}
-
-// ── HAPTIC + RIPPLE ───────────────────────────────────────────────────────────
+function toast(msg,type='info',ms=4500){const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};const el=document.createElement('div');el.className=`toast t-${type}`;el.innerHTML=`<span>${icons[type]}</span><span style="flex:1">${msg}</span>`;document.getElementById('toasts').appendChild(el);setTimeout(()=>{el.classList.add('bye');setTimeout(()=>el.remove(),230)},ms)}
 function haptic(t='light'){if(navigator.vibrate){const p={light:30,medium:60,heavy:100};navigator.vibrate(p[t]||30)}}
-function addRipple(btn,e){
-  const rect=btn.getBoundingClientRect();
-  const r=document.createElement('span');
-  const d=Math.max(rect.width,rect.height);
-  r.className='ripple';
-  r.style.cssText=`width:${d}px;height:${d}px;left:${(e.clientX||rect.left+rect.width/2)-rect.left-d/2}px;top:${(e.clientY||rect.top+rect.height/2)-rect.top-d/2}px`;
-  btn.appendChild(r);setTimeout(()=>r.remove(),650);
+function addRipple(btn,e){const rect=btn.getBoundingClientRect();const r=document.createElement('span');const d=Math.max(rect.width,rect.height);r.className='ripple';r.style.cssText=`width:${d}px;height:${d}px;left:${(e.clientX||rect.left+rect.width/2)-rect.left-d/2}px;top:${(e.clientY||rect.top+rect.height/2)-rect.top-d/2}px`;btn.appendChild(r);setTimeout(()=>r.remove(),650)}
+function isAdmin(){return S.user?.username===ADMIN_USER||localStorage.getItem('fml_adm')==='1'}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// KM ANALYSIS — calcula todas las métricas
+// ══════════════════════════════════════════════════════════════════════════════
+function calcKmMetrics(fuel, currentKm){
+  // Solo cargas con KM registrados, ordenadas por fecha
+  const withKm = [...fuel].filter(r=>r.km>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(withKm.length < 2) return {kmPorCarga:null,costoPorKm:null,totalKm:null,kmPorLitro:null};
+
+  const first=withKm[0], last=withKm[withKm.length-1];
+  const totalKm=last.km-first.km;
+  if(totalKm<=0) return {kmPorCarga:null,costoPorKm:null,totalKm:null,kmPorLitro:null};
+
+  const totalAmt=withKm.slice(1).reduce((s,r)=>s+r.amount,0);
+  const totalLit=withKm.slice(1).reduce((s,r)=>s+r.liters,0);
+  const nCargas=withKm.length-1;
+
+  return{
+    totalKm,
+    kmPorCarga: Math.round(totalKm/nCargas),
+    costoPorKm: totalAmt>0 ? (totalAmt/totalKm).toFixed(2) : null,
+    kmPorLitro: totalLit>0 ? (totalKm/totalLit).toFixed(1) : null,
+  };
 }
 
-// ── MAINTENANCE CHECK ─────────────────────────────────────────────────────────
-function checkMaintenanceAlerts(vd, vid) {
-  if (!vd.maintenanceRecords?.length || !vd.currentKm) return;
-  const last = vd.maintenanceRecords[vd.maintenanceRecords.length-1];
-  const nextKm  = last.currentKm + last.nextKm;
-  const kmLeft  = nextKm - vd.currentKm;
-  const v       = VEHICLES[vid];
-  const alerted = DB.load(`fml_alrt_${vid}`, 0);
+// ══════════════════════════════════════════════════════════════════════════════
+// MAINTENANCE CHECK + ALERT
+// ══════════════════════════════════════════════════════════════════════════════
+function getMaintStatus(vd){
+  const maint=vd.maintenanceRecords||[];
+  const currentKm=vd.currentKm||0;
+  if(!maint.length||!currentKm) return null;
+  const last=maint[maint.length-1];
+  const nextKm=last.currentKm+last.nextKm;
+  const kmLeft=nextKm-currentKm;
+  const pct=Math.max(0,Math.min(100,Math.round((currentKm-last.currentKm)/last.nextKm*100)));
+  return{nextKm,kmLeft,pct,lastKm:last.currentKm,interval:last.nextKm};
+}
 
-  // Push at 500km
-  if (kmLeft <= MAINT_WARN && kmLeft > 0 && alerted < MAINT_WARN) {
-    DB.save(`fml_alrt_${vid}`, MAINT_WARN);
-    pushNotify(
-      `🔧 Servicio próximo — ${v.name}`,
-      `Faltan ${fmtN(kmLeft)} km para el cambio de aceite y filtros.`
-    );
-    toast(`🔧 ${v.name}: faltan ${fmtN(kmLeft)} km para el servicio`, 'warning', 8000);
+async function checkMaintenanceAlerts(vd,vid){
+  const st=getMaintStatus(vd);
+  if(!st)return;
+  const v=VEHICLES[vid];
+  const alerted=DB.load(`fml_alrt_${vid}`,0);
+
+  if(st.kmLeft<=MAINT_WARN&&st.kmLeft>0&&alerted<MAINT_WARN){
+    DB.save(`fml_alrt_${vid}`,MAINT_WARN);
+    pushNotify(`🔧 Servicio próximo — ${v.name}`,`Faltan ${fmtN(st.kmLeft)} km para el cambio.`,'maint-'+vid);
+    toast(`🔧 ${v.name}: faltan ${fmtN(st.kmLeft)} km para el servicio`,'warning',8000);
+    // Enviar push a TODOS los dispositivos suscritos a este vehículo
+    await sendPushToVehicle(vid,{
+      title:`🔧 Servicio próximo — ${v.name}`,
+      body:`Faltan ${fmtN(st.kmLeft)} km para el cambio de aceite.`,
+      tag:'maint-'+vid
+    });
   }
-
-  // Email at 1000km
-  if (kmLeft <= MAINT_EMAIL && alerted < MAINT_EMAIL) {
-    DB.save(`fml_alrt_${vid}`, MAINT_EMAIL);
-    const fleetEmail = localStorage.getItem('fml_fleet_email') || FLEET_DEF;
-    fetch(`${API}/api/maintenance-alert`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        vehicleName: v.name, vehicleIcon: v.emoji,
-        currentKm: vd.currentKm, nextServiceKm: nextKm, kmLeft,
-        userEmail: S.user?.email || '',
-      })
-    }).then(()=>console.log('📧 Email alerta mantenimiento enviado')).catch(console.error);
+  if(st.kmLeft<=MAINT_EMAIL&&alerted<MAINT_EMAIL){
+    DB.save(`fml_alrt_${vid}`,MAINT_EMAIL);
+    fetch(`${API}/api/maintenance-alert`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vehicleName:v.name,vehicleIcon:v.emoji,currentKm:vd.currentKm,nextServiceKm:st.nextKm,kmLeft:st.kmLeft,userEmail:S.user?.email||''})
+    }).catch(console.error);
   }
 }
 
-// ── PRICE HISTORY ─────────────────────────────────────────────────────────────
-function recordPrice(pricePerLiter, date) {
-  if (!pricePerLiter || pricePerLiter <= 0) return;
-  const h = DB.priceHistory();
-  const month = date ? date.slice(0,7) : nowAR().date.slice(0,7);
-  const existing = h.find(x => x.month === month);
-  if (existing) {
-    existing.prices.push(pricePerLiter);
-    existing.avg = existing.prices.reduce((s,v)=>s+v,0) / existing.prices.length;
-  } else {
-    h.push({ month, prices: [pricePerLiter], avg: pricePerLiter });
-  }
-  // Keep last 12 months
-  if (h.length > 12) h.splice(0, h.length - 12);
+// Enviar push notification a todos los dispositivos de un vehículo
+async function sendPushToVehicle(vid,payload){
+  try{
+    await fetch(`${API}/api/push-notify`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vehicleId:vid,...payload})
+    });
+  }catch(e){console.warn('Push:',e)}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PRICE HISTORY
+// ══════════════════════════════════════════════════════════════════════════════
+function recordPrice(ppl,date){
+  if(!ppl||ppl<=0)return;
+  const h=DB.priceHistory();
+  const month=date?date.slice(0,7):nowAR().date.slice(0,7);
+  const ex=h.find(x=>x.month===month);
+  if(ex){ex.prices.push(ppl);ex.avg=ex.prices.reduce((s,v)=>s+v,0)/ex.prices.length}
+  else h.push({month,prices:[ppl],avg:ppl});
+  if(h.length>12)h.splice(0,h.length-12);
   DB.savePriceHistory(h);
 }
 
-// ── APP ───────────────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+// APP
+// ══════════════════════════════════════════════════════════════════════════════
 const App = {
   showLogin(){document.getElementById('f-login').style.display='';document.getElementById('f-reg').style.display='none';setTimeout(()=>document.getElementById('lu').focus(),80)},
   showReg(){document.getElementById('f-login').style.display='none';document.getElementById('f-reg').style.display='';setTimeout(()=>document.getElementById('rn').focus(),80)},
@@ -844,7 +834,8 @@ const App = {
     const user=Object.values(users).find(x=>x.username===u);
     if(!user){alert('Usuario no encontrado');return}
     if(user.pin!==p){alert('PIN incorrecto');document.getElementById('lp').value='';return}
-    S.user=user;haptic('medium');this._enterApp();document.dispatchEvent(new Event('fml-loggedin'));
+    S.user=user;haptic('medium');this._enterApp();
+    document.dispatchEvent(new Event('fml-loggedin'));
   },
 
   register(){
@@ -859,8 +850,7 @@ const App = {
     DB.saveUsers(users);
     alert(`✅ Cuenta creada. Iniciá sesión con "${u}".`);
     document.getElementById('rn').value='';document.getElementById('ru').value='';document.getElementById('rp').value='';
-    this.showLogin();
-    document.getElementById('lu').value=u;document.getElementById('lp').focus();
+    this.showLogin();document.getElementById('lu').value=u;document.getElementById('lp').focus();
   },
 
   logout(){S={user:null,vid:null,pendingKmV:null};document.getElementById('sc-app').classList.remove('on');document.getElementById('sc-login').classList.add('on');this.close('m-menu');document.getElementById('lu').value='';document.getElementById('lp').value=''},
@@ -869,11 +859,13 @@ const App = {
     document.getElementById('sc-login').classList.remove('on');
     document.getElementById('sc-app').classList.add('on');
     document.getElementById('menu-uname').textContent=S.user.name;
-    // Limpiar emails viejos de la cola (solo mantener sync-record)
-    const q = DB.queue().filter(x => x.type === 'sync-record');
-    DB.saveQueue(q);
-    OfflineQueue.updateUI();
-    if (navigator.onLine) setTimeout(()=>OfflineQueue.flush(), 2000);
+    // Mostrar tab admin si es pablo
+    const tabAdmin=document.getElementById('tab-admin');
+    if(isAdmin()&&S.user.username===ADMIN_USER) tabAdmin.style.display='';
+    else tabAdmin.style.display='none';
+    const q=DB.queue().filter(x=>x.type==='sync-record');
+    DB.saveQueue(q);OfflineQueue.updateUI();
+    if(navigator.onLine)setTimeout(()=>OfflineQueue.flush(),2000);
     this.openVPicker();
   },
 
@@ -882,48 +874,33 @@ const App = {
     const today=nowAR().date;
     const ovr=DB.overrides();const uOvr=ovr[S.user.username];
     const hasOvr=uOvr&&uOvr.expires>=today;
-
-    // Buscar vehiculo — tolerante a mayusculas, espacios, nombre completo
-    const uKey  = (S.user.username||'').toLowerCase().trim();
-    const uName = (S.user.name||'').toLowerCase().trim();
-    const uFirst= uName.split(' ')[0];
-    let assignedId = null;
-    if(hasOvr){
-      assignedId = uOvr.vehicleId;
-    } else {
+    const uKey=(S.user.username||'').toLowerCase().trim();
+    const uFirst=(S.user.name||'').toLowerCase().split(' ')[0];
+    let assignedId=null;
+    if(hasOvr){assignedId=uOvr.vehicleId}
+    else{
       for(const [key,vid] of Object.entries(USER_V)){
-        const k=key.toLowerCase();
-        if(uKey===k||uName===k||uFirst===k||uKey.startsWith(k)||uFirst.startsWith(k)){
-          assignedId=vid; break;
-        }
+        if(uKey===key.toLowerCase()||uFirst===key.toLowerCase()){assignedId=vid;break}
       }
-      // Tambien verificar fixedUser en VEHICLES
       if(!assignedId){
         for(const v of Object.values(VEHICLES)){
-          if(v.fixedUser){
-            const fu=v.fixedUser.toLowerCase();
-            if(uKey===fu||uFirst===fu||uName.startsWith(fu)){assignedId=v.id;break;}
-          }
+          if(v.fixedUser&&(uKey===v.fixedUser.toLowerCase()||uFirst===v.fixedUser.toLowerCase())){assignedId=v.id;break}
         }
       }
     }
-
-    const isAdmin=localStorage.getItem('fml_adm')==='1';
+    const admin=isAdmin();
     const cont=document.getElementById('vcards');cont.innerHTML='';
-
-    if(assignedId){
+    if(assignedId||admin){
       Object.values(VEHICLES).forEach(v=>{
         const isAssigned=v.id===assignedId;
-        if(!isAdmin&&!isAssigned) return;
-        const badge=hasOvr&&isAssigned?'<span class="chip c-orange">Hoy especial</span>':isAssigned?'<span class="chip c-acc">Tu vehiculo</span>':'';
-        const card=document.createElement('div');
-        card.className='vcard'+(isAssigned?' sel':'');
+        if(!admin&&!isAssigned)return;
+        const badge=hasOvr&&isAssigned?'<span class="chip c-orange">Hoy especial</span>':isAssigned?'<span class="chip c-acc">Tu vehículo</span>':'';
+        const card=document.createElement('div');card.className='vcard'+(isAssigned?' sel':'');
         card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb">${badge}</div>`;
         card.onclick=()=>{haptic('medium');this.selectV(v.id)};
         cont.appendChild(card);
       });
     } else {
-      // Sin asignacion: mostrar todos
       Object.values(VEHICLES).forEach(v=>{
         const card=document.createElement('div');card.className='vcard';
         card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb"><span class="chip c-orange">Elegir</span></div>`;
@@ -933,6 +910,7 @@ const App = {
     }
     document.getElementById('m-veh').classList.add('on');
   },
+
   selectV(vid){
     S.vid=vid;this.close('m-veh');
     const users=DB.users();
@@ -942,11 +920,18 @@ const App = {
     const v=VEHICLES[vid];
     document.getElementById('nav-ve').textContent=v.emoji;
     document.getElementById('nav-vn').textContent=v.name;
-    if(!S.user.vehicles[vid].currentKm){
+    // Pre-fill KM widget with current value
+    const ckm=S.user.vehicles[vid].currentKm;
+    if(ckm){document.getElementById('km-curr').value=ckm;this._updateKmBar(ckm)}
+    if(!ckm){
       S.pendingKmV=vid;document.getElementById('km-lbl').textContent=`KM actuales del ${v.name}`;
       document.getElementById('km-in').value='';document.getElementById('m-km').classList.add('on');
       setTimeout(()=>document.getElementById('km-in').focus(),300);
-    } else {this.renderDash()}
+    } else {
+      // Suscribir push para este vehículo
+      if(Notification.permission==='granted')subscribePush().catch(()=>{});
+      this.renderDash();
+    }
   },
 
   confirmKm(){
@@ -954,7 +939,9 @@ const App = {
     if(!km||km<0){alert('Ingresá un valor válido');return}
     const users=DB.users();users[S.user.id].vehicles[S.pendingKmV].currentKm=km;
     DB.saveUsers(users);S.user=users[S.user.id];S.pendingKmV=null;
-    this.close('m-km');this.renderDash();toast('KM registrado ✅','success');
+    this.close('m-km');document.getElementById('km-curr').value=km;this._updateKmBar(km);
+    this.renderDash();toast('KM registrado ✅','success');
+    if(Notification.permission==='granted')subscribePush().catch(()=>{});
   },
 
   tab(name,btn){
@@ -963,54 +950,129 @@ const App = {
     btn.classList.add('on');document.getElementById('panel-'+name).classList.add('on');
     haptic('light');
     if(name==='maint')this.renderMaintList();
-    if(name==='dash') this.renderDash();
+    if(name==='dash')this.renderDash();
+    if(name==='admin')this.renderAdmin();
   },
 
+  // ── KM input handling ────────────────────────────────────────────────────
+  onKmInput(val){
+    const km=parseInt(val);
+    if(km>0){this._updateKmBar(km)}
+  },
+
+  _updateKmBar(km){
+    if(!S.vid)return;
+    const vd=S.user.vehicles[S.vid];
+    const st=getMaintStatus(vd);
+    const bar=document.getElementById('km-maint-bar');
+    if(!st){if(bar)bar.style.display='none';return}
+    if(bar)bar.style.display='';
+    const label=document.getElementById('km-maint-label');
+    const fill=document.getElementById('km-maint-fill');
+    const pct=Math.max(0,Math.min(100,Math.round((km-st.lastKm)/st.interval*100)));
+    if(label)label.textContent=st.kmLeft>0?`Faltan ${fmtN(st.kmLeft)} km`:'⚠️ Vencido';
+    if(fill){fill.style.width=pct+'%';fill.style.background=pct>80?'linear-gradient(90deg,var(--orange),var(--red))':'linear-gradient(90deg,var(--green),var(--acc))'}
+  },
+
+  // ── OCR tablero ──────────────────────────────────────────────────────────
+  async handleKmPhoto(e){
+    const file=e.target.files[0];if(!file)return;
+    const b64=await this._b64(file);
+    document.getElementById('km-prev').style.display='';
+    document.getElementById('km-prev-img').src=b64;
+    document.getElementById('km-prev-badge').innerHTML='<span class="spin"></span> leyendo...';
+    const apiKey=localStorage.getItem('fml_akey')||'';
+    try{
+      const res=await fetch(`${API}/api/process-odometer`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,apiKey})});
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(data.km){
+        document.getElementById('km-curr').value=data.km;
+        document.getElementById('km-prev-badge').innerHTML='✅ '+fmtN(data.km)+' km';
+        this._updateKmBar(data.km);
+        toast('✅ KM leídos del tablero: '+fmtN(data.km),'success');
+        haptic('medium');
+      }else throw new Error('No se pudo leer el odómetro');
+    }catch(err){
+      document.getElementById('km-prev-badge').innerHTML='⚠️ Manual';
+      toast('No se pudo leer el tablero — ingresá los KM manualmente','warning',5000);
+    }
+    document.getElementById('file-km').value='';
+  },
+
+  // ── DASHBOARD ────────────────────────────────────────────────────────────
   renderDash(){
     if(!S.vid)return;
-    const vd=S.user.vehicles[S.vid];const v=VEHICLES[S.vid];
-    const fuel=vd.fuelRecords||[];const maint=vd.maintenanceRecords||[];
+    const vd=S.user.vehicles[S.vid];
+    const v=VEHICLES[S.vid];
+    const fuel=vd.fuelRecords||[];
     document.getElementById('h-emoji').textContent=v.emoji;
     document.getElementById('h-name').textContent=v.name;
     document.getElementById('h-desc').textContent=v.desc;
     document.getElementById('h-km').textContent=vd.currentKm?fmtN(vd.currentKm):'—';
+
+    // Mantenimiento progress bar
+    const st=getMaintStatus(vd);
+    const mpBlock=document.getElementById('maint-progress');
+    if(st&&mpBlock){
+      mpBlock.style.display='';
+      document.getElementById('mp-label').textContent=st.kmLeft>0?`Faltan ${fmtN(st.kmLeft)} km`:'⚠️ Vencido';
+      const bar=document.getElementById('mp-bar');
+      bar.style.width=st.pct+'%';
+      bar.style.background=st.pct>80?'linear-gradient(90deg,var(--orange),var(--red))':'linear-gradient(90deg,var(--green),var(--acc))';
+      document.getElementById('mp-done').textContent=`Último: ${fmtN(st.lastKm)} km`;
+      document.getElementById('mp-next').textContent=`Próximo: ${fmtN(st.nextKm)} km`;
+    } else if(mpBlock) mpBlock.style.display='none';
+
+    // Stats del mes
     const now=new Date();
     const mo=fuel.filter(r=>{const d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
-    const amt=mo.reduce((s,r)=>s+r.amount,0);const lit=mo.reduce((s,r)=>s+r.liters,0);
+    const amt=mo.reduce((s,r)=>s+r.amount,0);
+    const lit=mo.reduce((s,r)=>s+r.liters,0);
     document.getElementById('st-fuel').textContent='$'+Math.round(amt).toLocaleString('es-AR');
     document.getElementById('st-lit').textContent=lit.toFixed(1);
     document.getElementById('st-n').textContent=mo.length;
     document.getElementById('st-avg').textContent=lit>0?'$'+(amt/lit).toFixed(2):'—';
-    this._renderAlerts(vd,maint);
+
+    // KM metrics
+    const km=calcKmMetrics(fuel,vd.currentKm);
+    document.getElementById('st-kmprom').textContent=km.kmPorCarga?fmtN(km.kmPorCarga):'—';
+    document.getElementById('st-costkm').textContent=km.costoPorKm?'$'+km.costoPorKm:'—';
+    document.getElementById('st-totalkm').textContent=km.totalKm?fmtN(km.totalKm):'—';
+    document.getElementById('st-kml').textContent=km.kmPorLitro||'—';
+
+    this._renderAlerts(vd);
+
+    // Recent records
     const recent=[...fuel].reverse().slice(0,5);
     document.getElementById('dash-recent').innerHTML=recent.length===0
       ?'<p class="muted tc" style="padding:2rem 0">Sin cargas registradas aún</p>'
       :recent.map(r=>`<div class="card" style="margin-bottom:.5rem">
         <div class="card-row">
           <div><div style="font-weight:600;margin-bottom:.15rem">${new Date(r.date).toLocaleDateString('es-AR')}${r.time?' · '+r.time:''}</div>
-          <div class="muted" style="font-size:.78rem">${r.location||'Sin localidad'} · ${r.liters.toFixed(2)} L</div></div>
+          <div class="muted" style="font-size:.78rem">${r.location||'Sin localidad'} · ${r.liters.toFixed(2)} L${r.km?' · '+fmtN(r.km)+' km':''}</div></div>
           <div style="text-align:right">
             <div class="tm" style="font-size:.95rem;color:var(--acc)">${fmt$(r.amount)}</div>
             <div class="muted" style="font-size:.7rem">$${(r.amount/r.liters).toFixed(2)}/L</div>
           </div>
         </div></div>`).join('');
-    checkMaintenanceAlerts(vd, S.vid);
+
+    checkMaintenanceAlerts(vd,S.vid);
   },
 
-  _renderAlerts(vd, maint){
-    const last=maint[maint.length-1];
-    const nextKm=last?(last.currentKm+last.nextKm):((vd.currentKm||0)+10000);
-    const toNext=nextKm-(vd.currentKm||0);
+  _renderAlerts(vd){
+    const st=getMaintStatus(vd);
     let html='';
-    if(toNext<=0) html=`<div class="aban a-red"><span class="ai">🛑</span><div><strong>Mantenimiento vencido</strong><p>Superó ${fmtN(Math.abs(toNext))} km. Agendá urgente.</p></div></div>`;
-    else if(toNext<=500) html=`<div class="aban a-orange"><span class="ai">⚠️</span><div><strong>Servicio en ${fmtN(toNext)} km</strong><p>Programá el cambio de aceite y filtros.</p></div></div>`;
+    if(st){
+      if(st.kmLeft<=0)html=`<div class="aban a-red"><span class="ai">🛑</span><div><strong>Mantenimiento vencido</strong><p>Superó ${fmtN(Math.abs(st.kmLeft))} km. Agendá urgente.</p></div></div>`;
+      else if(st.kmLeft<=500)html=`<div class="aban a-orange"><span class="ai">⚠️</span><div><strong>Servicio en ${fmtN(st.kmLeft)} km</strong><p>Programá el cambio de aceite y filtros pronto.</p></div></div>`;
+      else if(st.kmLeft<=1000)html=`<div class="aban a-orange"><span class="ai">🔔</span><div><strong>Servicio próximo — ${fmtN(st.kmLeft)} km</strong><p>Empezá a coordinar con el taller.</p></div></div>`;
+    }
     document.getElementById('dash-alerts').innerHTML=html;
   },
 
-  triggerFuelScan(e){
-    haptic('heavy');addRipple(document.getElementById('fuel-hero-btn'),e);
-    setTimeout(()=>document.getElementById('file-in').click(),150);
-  },
+  // ── FUEL SCAN ────────────────────────────────────────────────────────────
+  triggerFuelScan(e){haptic('heavy');addRipple(document.getElementById('fuel-hero-btn'),e);setTimeout(()=>document.getElementById('file-in').click(),150)},
 
   async handlePhoto(e){
     const file=e.target.files[0];if(!file)return;
@@ -1022,24 +1084,15 @@ const App = {
     const ar=nowAR();
     document.getElementById('ff-date').value=ar.date;
     document.getElementById('ff-time').value=ar.time;
-    const ckm=S.user.vehicles[S.vid]?.currentKm;if(ckm)document.getElementById('ff-km').value=ckm;
-    this._lastPhoto=b64; // guardar para retry
+    this._lastPhoto=b64;
     await this._processPhoto(b64);
   },
 
   async _processPhoto(b64){
-    // Obtener API key — primero del localStorage, luego del worker env
     const apiKey=localStorage.getItem('fml_akey')||'';
     try{
-      const res=await fetch(`${API}/api/process-ticket`,{
-        method:'POST',
-        headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({image:b64, apiKey})
-      });
-      if(!res.ok){
-        const err=await res.json().catch(()=>({}));
-        throw new Error(err.error||'HTTP '+res.status);
-      }
+      const res=await fetch(`${API}/api/process-ticket`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,apiKey})});
+      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error||'HTTP '+res.status)}
       const data=await res.json();
       if(data.ticket){
         const t=data.ticket;
@@ -1053,108 +1106,79 @@ const App = {
         if(t.surtidor?.localidad)document.getElementById('ff-loc').value=t.surtidor.localidad;
         if(t.surtidor?.direccion)document.getElementById('ff-addr').value=t.surtidor.direccion;
         const badge=document.querySelector('.tprev-badge');
-        if(badge){badge.innerHTML='✅ Datos extraídos';badge.style.color='var(--green)';}
+        if(badge){badge.innerHTML='✅ Datos extraídos';badge.style.color='var(--green)'}
         haptic('medium');toast('✅ Datos extraídos — verificá antes de guardar','success');
-      } else {
-        throw new Error('Respuesta vacía de la IA');
-      }
+      }else throw new Error('Respuesta vacía');
     }catch(err){
-      console.error('AI error:',err);
       const badge=document.querySelector('.tprev-badge');
-      if(badge){badge.innerHTML='⚠️ Falló — reintentar';badge.style.color='var(--orange)';badge.style.cursor='pointer';badge.onclick=()=>this._retryPhoto();}
-      // Show retry button in form
-      const retryDiv=document.getElementById('retry-btn-wrap');
-      if(retryDiv)retryDiv.style.display='';
-      toast('⚠️ No se pudo leer el ticket — podés reintentar o cargar los datos manualmente','warning',7000);
-      // Check if it's a missing API key issue
-      if(err.message?.includes('API Key')||err.message?.includes('apiKey')){
-        toast('🔑 Configurá la API Key de Gemini en ⚙️ Configuración','warning',8000);
-      }
+      if(badge){badge.innerHTML='⚠️ Falló — reintentar';badge.style.color='var(--orange)';badge.style.cursor='pointer';badge.onclick=()=>this._retryPhoto()}
+      document.getElementById('retry-btn-wrap').style.display='';
+      toast('⚠️ No se pudo leer el ticket — podés reintentar o cargar manualmente','warning',7000);
     }
   },
 
-  _retryPhoto(){
-    // Retry with same photo
-    if(this._lastPhoto){
-      const badge=document.querySelector('.tprev-badge');
-      if(badge){badge.innerHTML='<span class="spin"></span> Reintentando...';badge.style.color='var(--acc)';badge.onclick=null;}
-      const retryDiv=document.getElementById('retry-btn-wrap');
-      if(retryDiv)retryDiv.style.display='none';
-      this._processPhoto(this._lastPhoto);
-    }
-  },
+  _retryPhoto(){if(this._lastPhoto){const b=document.querySelector('.tprev-badge');if(b){b.innerHTML='<span class="spin"></span> Reintentando...';b.style.color='var(--acc)';b.onclick=null}document.getElementById('retry-btn-wrap').style.display='none';this._processPhoto(this._lastPhoto)}},
+  _retakePhoto(){this.cancelFuel();setTimeout(()=>document.getElementById('file-in').click(),100)},
 
-  _retakePhoto(){
-    // Take a new photo
-    this.cancelFuel();
-    setTimeout(()=>document.getElementById('file-in').click(),100);
-  },
-
+  // ── SAVE FUEL ────────────────────────────────────────────────────────────
   async saveFuel(){
     if(!S.vid){alert('Seleccioná un vehículo');return}
     const liters=parseFloat(document.getElementById('ff-lit').value);
     const amount=parseFloat(document.getElementById('ff-amt').value);
     const date=document.getElementById('ff-date').value;
     if(!date||!liters||!amount){alert('Completá: Fecha, Litros y Monto');return}
-    const km=parseInt(document.getElementById('ff-km').value)||null;
+
+    // KM del widget (siempre visible en la pestaña combustible)
+    const kmVal=parseInt(document.getElementById('km-curr').value)||null;
+
     const record={
       id:Date.now(),date,time:document.getElementById('ff-time').value,
       liters,amount,iva:parseFloat(document.getElementById('ff-iva').value)||0,
       cuit:document.getElementById('ff-cuit').value,
       location:document.getElementById('ff-loc').value,
       address:document.getElementById('ff-addr').value,
-      km,createdAt:new Date().toISOString(),
+      km:kmVal,createdAt:new Date().toISOString(),
     };
-    // Save locally first (always works, even offline)
+
+    // Save locally
     const users=DB.users();const vd=users[S.user.id].vehicles[S.vid];
     if(!vd.fuelRecords)vd.fuelRecords=[];
     vd.fuelRecords.push(record);
-    if(km)vd.currentKm=km;
+    if(kmVal)vd.currentKm=kmVal;
     DB.saveUsers(users);S.user=users[S.user.id];
 
-    // Track price history for AI analysis
-    const ppl = liters > 0 ? amount/liters : 0;
-    if (ppl > 0) recordPrice(ppl, date);
+    const ppl=liters>0?amount/liters:0;
+    if(ppl>0)recordPrice(ppl,date);
 
     this.cancelFuel();this.renderDash();haptic('heavy');
-    toast('✅ Carga guardada localmente','success');
+    // Update KM display
+    if(kmVal)this._updateKmBar(kmVal);
+    toast('✅ Carga guardada','success');
 
-    // Sync + email in background (queue if offline)
-    const v = VEHICLES[S.vid];
-    const syncData = {userId:S.user.id,userName:S.user.name,vehicleId:S.vid,vehicleName:v.name,vehicleIcon:v.emoji,record};
-    if (navigator.onLine) {
-      fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)}).catch(()=>{OfflineQueue.add({type:'sync-record',data:syncData})});
+    // Sync + email
+    const v=VEHICLES[S.vid];
+    const syncData={userId:S.user.id,userName:S.user.name,vehicleId:S.vid,vehicleName:v.name,vehicleIcon:v.emoji,record};
+    if(navigator.onLine){
+      fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)}).catch(()=>OfflineQueue.add({type:'sync-record',data:syncData}));
       this._sendConfirmEmail(record).catch(console.error);
-    } else {
+    }else{
       OfflineQueue.add({type:'sync-record',data:syncData});
       toast('📴 Sin conexión — se sincronizará automáticamente','warning');
     }
-    checkMaintenanceAlerts(S.user.vehicles[S.vid], S.vid);
+    await checkMaintenanceAlerts(S.user.vehicles[S.vid],S.vid);
   },
 
   async _sendConfirmEmail(record){
-    // Siempre enviar a distribuidoramercadolimpio@gmail.com (+ email del chofer si configuró)
-    const fleetEmail = FLEET_DEF; // distribuidoramercadolimpio@gmail.com — fijo
-    const userEmail  = S.user.email?.trim() || '';
-    const v = VEHICLES[S.vid];
-    const body = {
-      to: fleetEmail,
-      userName:S.user.name, vehicleName:v.name, vehicleIcon:v.emoji,
-      fuelRecord:record, location:record.location, address:record.address
-    };
-    // CC al chofer si tiene email configurado y es distinto
-    if (userEmail && userEmail.includes('@') && userEmail !== fleetEmail) body.cc = userEmail;
-    try {
-      const res = await fetch(`${API}/api/send-confirmation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-      const data = await res.json().catch(()=>({}));
-      if (res.ok) toast('📧 Email enviado','info',3000);
-      else console.warn('Email no enviado:', data?.error || res.status);
-      // No encolar — si hay conexión es error del servidor, no de red
-    } catch(err) {
-      // Solo encolar si realmente no hay red — no por errores del servidor
-      if (!navigator.onLine) OfflineQueue.add({type:'send-confirmation',data:body});
-      else console.warn('Email falló (servidor):', err);
-    }
+    const v=VEHICLES[S.vid];
+    const body={to:FLEET_DEF,userName:S.user.name,vehicleName:v.name,vehicleIcon:v.emoji,fuelRecord:record,location:record.location,address:record.address};
+    const userEmail=S.user.email?.trim()||'';
+    if(userEmail&&userEmail.includes('@')&&userEmail!==FLEET_DEF)body.cc=userEmail;
+    try{
+      const res=await fetch(`${API}/api/send-confirmation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json().catch(()=>({}));
+      if(res.ok)toast('📧 Email enviado','info',3000);
+      else console.warn('Email:',data?.error||res.status);
+    }catch(err){if(!navigator.onLine)OfflineQueue.add({type:'send-confirmation',data:body})}
   },
 
   cancelFuel(){
@@ -1164,9 +1188,10 @@ const App = {
     document.getElementById('fuel-hero-btn').style.display='';
     document.getElementById('retry-btn-wrap').style.display='none';
     this._lastPhoto=null;
-    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','ff-km'].forEach(id=>document.getElementById(id).value='');
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr'].forEach(id=>document.getElementById(id).value='');
   },
 
+  // ── MAINTENANCE ──────────────────────────────────────────────────────────
   saveMaint(){
     if(!S.vid){alert('Seleccioná un vehículo');return}
     const type=document.getElementById('sv-type').value;
@@ -1174,15 +1199,12 @@ const App = {
     const km=parseInt(document.getElementById('sv-km').value);
     const next=parseInt(document.getElementById('sv-next').value)||10000;
     if(!type||!date||!km){alert('Completá: Tipo, Fecha y KM');return}
-    const record={id:Date.now(),type,date,currentKm:km,nextKm:next,
-      notes:document.getElementById('sv-notes').value,
-      provider:document.getElementById('sv-prov').value,createdAt:new Date().toISOString()};
+    const record={id:Date.now(),type,date,currentKm:km,nextKm:next,notes:document.getElementById('sv-notes').value,provider:document.getElementById('sv-prov').value,createdAt:new Date().toISOString()};
     const users=DB.users();const vd=users[S.user.id].vehicles[S.vid];
     if(!vd.maintenanceRecords)vd.maintenanceRecords=[];
     vd.maintenanceRecords.push(record);vd.currentKm=km;
     DB.saveUsers(users);S.user=users[S.user.id];
-    // Reset alert flag so it can alert again after service
-    DB.save(`fml_alrt_${S.vid}`, 0);
+    DB.save(`fml_alrt_${S.vid}`,0);
     haptic('medium');toast('✅ Servicio registrado','success');
     ['sv-type','sv-date','sv-km','sv-notes','sv-prov'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('sv-next').value='10000';
@@ -1207,6 +1229,148 @@ const App = {
         </div></div>`).join('');
   },
 
+  // ── ADMIN MONITOR ────────────────────────────────────────────────────────
+  renderAdmin(){
+    document.getElementById('adm-updated').textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR',{timeZone:TZ});
+    const users=DB.users();
+    let totalCargas=0,totalAmt=0,totalLit=0,totalKmFlota=0;
+    const now=new Date();
+
+    // Recopilar datos de TODOS los usuarios para cada vehículo
+    const vData={};
+    Object.values(VEHICLES).forEach(v=>{vData[v.id]={fuel:[],maint:[],currentKm:0,drivers:[]}});
+
+    Object.values(users).forEach(u=>{
+      if(!u.vehicles)return;
+      Object.entries(u.vehicles).forEach(([vid,vd])=>{
+        if(!vData[vid])return;
+        if(vd.fuelRecords?.length)vData[vid].fuel.push(...vd.fuelRecords);
+        if(vd.maintenanceRecords?.length)vData[vid].maint.push(...vd.maintenanceRecords);
+        if(vd.currentKm>vData[vid].currentKm)vData[vid].currentKm=vd.currentKm;
+        if(!vData[vid].drivers.includes(u.name))vData[vid].drivers.push(u.name);
+      });
+    });
+
+    const cont=document.getElementById('adm-vcards');cont.innerHTML='';
+    let allFuelForRecent=[];
+
+    Object.values(VEHICLES).forEach(v=>{
+      const vd=vData[v.id];
+      const mo=vd.fuel.filter(r=>{const d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
+      const amt=mo.reduce((s,r)=>s+r.amount,0);
+      const lit=mo.reduce((s,r)=>s+r.liters,0);
+      const km=calcKmMetrics(vd.fuel,vd.currentKm);
+      const maint=vd.maint.sort((a,b)=>b.currentKm-a.currentKm);
+      const st=getMaintStatus({maintenanceRecords:maint,currentKm:vd.currentKm});
+
+      totalCargas+=mo.length;totalAmt+=amt;totalLit+=lit;
+      if(km.totalKm)totalKmFlota+=km.totalKm;
+
+      // Tag fuel records with vehicle for combined recent list
+      vd.fuel.forEach(r=>allFuelForRecent.push({...r,_vname:v.name,_vemoji:v.emoji}));
+
+      // Status chip
+      let statusText='OK',statusColor='var(--green)',statusBg='rgba(34,197,94,.13)';
+      if(st){
+        if(st.kmLeft<=0){statusText='VENCIDO';statusColor='var(--red)';statusBg='rgba(239,68,68,.13)'}
+        else if(st.kmLeft<=500){statusText='URGENTE';statusColor='var(--orange)';statusBg='rgba(245,158,11,.13)'}
+        else if(st.kmLeft<=1000){statusText='PRÓXIMO';statusColor='var(--orange)';statusBg='rgba(245,158,11,.08)'}
+      }
+
+      const card=document.createElement('div');card.className='adm-vcard';
+      card.innerHTML=`
+        <div class="adm-vcard-top">
+          <span class="adm-vemoji">${v.emoji}</span>
+          <span class="adm-vstatus" style="background:${statusBg};color:${statusColor}">${statusText}</span>
+        </div>
+        <div class="adm-vname">${v.name}</div>
+        <div class="adm-vdriver">👤 ${vd.drivers.length?vd.drivers.join(', '):'Sin asignar'}</div>
+        <div class="adm-stats">
+          <div class="adm-stat"><span class="adm-sv">${fmtN(vd.currentKm)||'—'}</span><span class="adm-sl">KM actuales</span></div>
+          <div class="adm-stat"><span class="adm-sv">${fmt$(amt)}</span><span class="adm-sl">Gasto mes</span></div>
+          <div class="adm-stat"><span class="adm-sv">${lit.toFixed(1)}L</span><span class="adm-sl">Litros mes</span></div>
+          <div class="adm-stat"><span class="adm-sv">${km.costoPorKm?'$'+km.costoPorKm:'—'}</span><span class="adm-sl">$/km</span></div>
+        </div>
+        ${st?`<div class="adm-km-bar">
+          <div class="adm-km-label"><span>Mantenimiento</span><span style="color:${statusColor}">${st.kmLeft>0?'Faltan '+fmtN(st.kmLeft)+' km':'⚠️ VENCIDO'}</span></div>
+          <div class="adm-km-bg"><div class="adm-km-fill ${st.pct>80?'warn':''}" style="width:${st.pct}%"></div></div>
+        </div>`:''}
+      `;
+      card.onclick=()=>this._showAdminDetail(v.id,vData[v.id]);
+      cont.appendChild(card);
+    });
+
+    // Totales globales
+    document.getElementById('adm-total-cargas').textContent=totalCargas;
+    document.getElementById('adm-total-gasto').textContent=fmt$(totalAmt);
+    document.getElementById('adm-total-lit').textContent=totalLit.toFixed(1)+'L';
+    document.getElementById('adm-total-km').textContent=totalKmFlota?fmtN(totalKmFlota)+'km':'—';
+
+    // Ultimas cargas de toda la flota
+    const recent=allFuelForRecent.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
+    document.getElementById('adm-recent').innerHTML=recent.length===0
+      ?'<p class="muted tc" style="padding:1.5rem 0">Sin cargas registradas</p>'
+      :recent.map(r=>`<div class="card" style="margin-bottom:.5rem">
+          <div class="card-row">
+            <div><div style="font-weight:600;margin-bottom:.1rem">${r._vemoji} ${r._vname}</div>
+            <div class="muted" style="font-size:.75rem">${new Date(r.date).toLocaleDateString('es-AR')}${r.time?' · '+r.time:''}${r.location?' · '+r.location:''}</div></div>
+            <div style="text-align:right">
+              <div class="tm" style="color:var(--acc)">${fmt$(r.amount)}</div>
+              <div class="muted" style="font-size:.7rem">${r.liters.toFixed(1)}L · $${(r.amount/r.liters).toFixed(2)}/L${r.km?' · '+fmtN(r.km)+' km':''}</div>
+            </div>
+          </div></div>`).join('');
+  },
+
+  _showAdminDetail(vid,vd){
+    const v=VEHICLES[vid];
+    document.getElementById('adm-detail-title').textContent=`${v.emoji} ${v.name}`;
+    const fuel=vd.fuel||[];
+    const maint=(vd.maint||[]).sort((a,b)=>b.currentKm-a.currentKm);
+    const st=getMaintStatus({maintenanceRecords:maint,currentKm:vd.currentKm});
+    const km=calcKmMetrics(fuel,vd.currentKm);
+    const now=new Date();
+    const mo=fuel.filter(r=>{const d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
+    const tAmt=mo.reduce((s,r)=>s+r.amount,0);
+    const tLit=mo.reduce((s,r)=>s+r.liters,0);
+    const tIva=mo.reduce((s,r)=>s+(r.iva||0),0);
+    const allAmt=fuel.reduce((s,r)=>s+r.amount,0);
+
+    const body=`
+      <div class="adm-detail-grid">
+        <div class="adm-d-stat"><span class="adm-d-sv">${fmtN(vd.currentKm)||'—'}</span><span class="adm-d-sl">KM actuales</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${fuel.length}</span><span class="adm-d-sl">Cargas totales</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${fmt$(tAmt)}</span><span class="adm-d-sl">Gasto mes</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${tLit.toFixed(1)}L</span><span class="adm-d-sl">Litros mes</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv" style="color:var(--green)">${fmt$(tIva)}</span><span class="adm-d-sl">IVA mes</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${km.costoPorKm?'$'+km.costoPorKm:'—'}</span><span class="adm-d-sl">$/km</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${km.kmPorLitro||'—'}</span><span class="adm-d-sl">km/litro</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${km.kmPorCarga?fmtN(km.kmPorCarga):' —'}</span><span class="adm-d-sl">km/carga</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${fmt$(allAmt)}</span><span class="adm-d-sl">Gasto total</span></div>
+      </div>
+      ${st?`<div class="aban ${st.kmLeft<=0?'a-red':st.kmLeft<=500?'a-orange':'a-green'}">
+        <span class="ai">🔧</span>
+        <div><strong>${st.kmLeft<=0?'Mantenimiento VENCIDO':'Próximo servicio'}</strong>
+        <p>${st.kmLeft>0?`Faltan ${fmtN(st.kmLeft)} km (próximo: ${fmtN(st.nextKm)} km)`:`Superó ${fmtN(Math.abs(st.kmLeft))} km del intervalo`}</p></div>
+      </div>`:''}
+      <div class="slabel" style="margin-top:1rem">Últimas 5 cargas</div>
+      ${[...fuel].reverse().slice(0,5).map(r=>`
+        <div style="display:flex;justify-content:space-between;padding:.625rem 0;border-bottom:1px solid var(--border);font-size:.82rem">
+          <div><div style="font-weight:600">${new Date(r.date).toLocaleDateString('es-AR')}</div>
+          <div class="muted" style="font-size:.75rem">${r.location||'—'} · ${r.liters.toFixed(2)}L${r.km?' · '+fmtN(r.km)+' km':''}</div></div>
+          <div style="text-align:right;font-family:var(--font-m);color:var(--acc)">${fmt$(r.amount)}</div>
+        </div>`).join('')}
+      ${maint.length?`<div class="slabel" style="margin-top:1rem">Servicios registrados</div>
+      ${maint.slice(0,3).map(r=>`<div style="display:flex;justify-content:space-between;padding:.625rem 0;border-bottom:1px solid var(--border);font-size:.82rem">
+        <div><div style="font-weight:600">${SV_ICONS[r.type]||'🔧'} ${SV_NAMES[r.type]||r.type}</div>
+        <div class="muted" style="font-size:.75rem">${new Date(r.date).toLocaleDateString('es-AR')} · ${fmtN(r.currentKm)} km${r.provider?' · '+r.provider:''}</div></div>
+        <div class="chip c-acc" style="font-size:.62rem">prox ${fmtN(r.currentKm+r.nextKm)}km</div>
+      </div>`).join('')}`:''}
+    `;
+    document.getElementById('adm-detail-body').innerHTML=body;
+    document.getElementById('m-adm-detail').classList.add('on');
+  },
+
+  // ── SETTINGS ─────────────────────────────────────────────────────────────
   openSettings(){
     this.close('m-menu');
     document.getElementById('cfg-email').value=S.user.email||'';
@@ -1215,17 +1379,12 @@ const App = {
     document.getElementById('cfg-fleet-email').value=localStorage.getItem('fml_fleet_email')||FLEET_DEF;
     document.getElementById('cfg-apikey').value=localStorage.getItem('fml_akey')||'';
     document.getElementById('cfg-akey').value='';
-    document.getElementById('admin-panel').style.display=localStorage.getItem('fml_adm')==='1'?'':'none';
-    if(localStorage.getItem('fml_adm')==='1')this._buildAssigns();
+    document.getElementById('admin-panel').style.display=isAdmin()?'':'none';
+    if(isAdmin())this._buildAssigns();
     document.getElementById('m-cfg').classList.add('on');
   },
 
-  checkAdminKey(){
-    if(document.getElementById('cfg-akey').value===ADMIN_KEY){
-      document.getElementById('admin-panel').style.display='';localStorage.setItem('fml_adm','1');
-      this._buildAssigns();toast('🔓 Panel admin desbloqueado','success');
-    }
-  },
+  checkAdminKey(){if(document.getElementById('cfg-akey').value===ADMIN_KEY){document.getElementById('admin-panel').style.display='';localStorage.setItem('fml_adm','1');this._buildAssigns();toast('🔓 Panel admin desbloqueado','success')}},
 
   _buildAssigns(){
     const users=DB.users();const ovr=DB.overrides();const today=nowAR().date;
@@ -1253,7 +1412,7 @@ const App = {
     if(ce)localStorage.setItem('fml_cont_email',ce);
     if(fe)localStorage.setItem('fml_fleet_email',fe);
     if(ak)localStorage.setItem('fml_akey',ak);
-    if(localStorage.getItem('fml_adm')==='1'){
+    if(isAdmin()){
       const ovr=DB.overrides();const today=nowAR().date;
       document.querySelectorAll('#adm-assigns select').forEach(sel=>{
         const uname=sel.dataset.uid;const vid=sel.value;const def=USER_V[uname];
@@ -1266,223 +1425,73 @@ const App = {
 
   openMenu(){document.getElementById('m-menu').classList.add('on')},
   close(id){document.getElementById(id).classList.remove('on')},
-
-  exportData(){
-    const blob=new Blob([JSON.stringify({user:S.user,priceHistory:DB.priceHistory(),at:new Date().toISOString()},null,2)],{type:'application/json'});
-    const a=document.createElement('a');a.href=URL.createObjectURL(blob);
-    a.download=`flota-ml-${S.user.username}-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href);
-  },
-
+  logout(){S={user:null,vid:null,pendingKmV:null};document.getElementById('sc-app').classList.remove('on');document.getElementById('sc-login').classList.add('on');this.close('m-menu');document.getElementById('lu').value='';document.getElementById('lp').value=''},
+  exportData(){const blob=new Blob([JSON.stringify({user:S.user,priceHistory:DB.priceHistory(),at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`flota-ml-${S.user.username}-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href)},
   _b64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})},
+
+  // ── TEST FUNCTIONS (borrar después) ──────────────────────────────────────
+  testPushNotif(){
+    if(Notification.permission!=='granted'){
+      Notification.requestPermission().then(p=>{if(p==='granted'){pushNotify('🔧 Prueba — Servicio próximo','VW Saveiro: faltan 450 km para el cambio de aceite.','test');toast('✅ Notificación enviada','success')}});
+      return;
+    }
+    pushNotify('🔧 Prueba — Servicio próximo','VW Saveiro: faltan 450 km para el cambio de aceite.','test');
+    toast('✅ Notificación push enviada — revisá tu celu','success',5000);
+  },
+  async testMaintEmail(){
+    toast('📧 Enviando email de prueba...','info',3000);
+    const res=await fetch(`${API}/api/maintenance-alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleName:'VW Saveiro (PRUEBA)',vehicleIcon:'🚙',currentKm:125000,nextServiceKm:125450,kmLeft:450,userEmail:S.user?.email||''})}).catch(()=>null);
+    if(res?.ok)toast('✅ Email enviado a distribuidoramercadolimpio@gmail.com','success',6000);
+    else toast('❌ Error — verificá la API key de Brevo en Cloudflare','error',6000);
+  },
+  resetAllData(){
+    if(!confirm('⚠️ Esto borra TODOS los datos locales: usuarios, cargas, km, servicios. ¿Confirmar?'))return;
+    localStorage.clear();location.reload();
+  },
 };
 
 // Close modals on backdrop
-document.querySelectorAll('.mbk').forEach(bk=>{
-  bk.addEventListener('click',e=>{if(e.target===bk&&bk.id!=='m-veh'&&bk.id!=='m-km')bk.classList.remove('on')});
-});
+document.querySelectorAll('.mbk').forEach(bk=>{bk.addEventListener('click',e=>{if(e.target===bk&&bk.id!=='m-veh'&&bk.id!=='m-km')bk.classList.remove('on')})});
 
-// Init offline queue UI
+// Init
 OfflineQueue.updateUI();
 
-// ── PWA INSTALL + NOTIFICATIONS ───────────────────────────────────────────────
-const PWA = {
-  deferredPrompt: null,
-
-  init() {
-    // Capture install prompt
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      this.deferredPrompt = e;
-      // Show modal after 4 seconds if not installed
-      const installed = localStorage.getItem('fml_pwa_installed');
-      const dismissed = localStorage.getItem('fml_pwa_dismissed');
-      if (!installed && !dismissed) {
-        setTimeout(() => this.showInstall(), 4000);
-      }
-    });
-
-    window.addEventListener('appinstalled', () => {
-      localStorage.setItem('fml_pwa_installed', '1');
-      this.deferredPrompt = null;
-      document.getElementById('m-pwa').style.display = 'none';
-      toast('✅ App instalada correctamente', 'success');
-    });
-
-    // Notification modal after login if not granted
-    document.addEventListener('fml-loggedin', () => {
-      if ('Notification' in window && Notification.permission === 'default') {
-        const dismissedNotif = localStorage.getItem('fml_notif_dismissed');
-        if (!dismissedNotif) setTimeout(() => this.showNotif(), 6000);
-      }
-    });
+// ══════════════════════════════════════════════════════════════════════════════
+// PWA
+// ══════════════════════════════════════════════════════════════════════════════
+const PWA={
+  deferredPrompt:null,
+  init(){
+    window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.deferredPrompt=e;const installed=localStorage.getItem('fml_pwa_installed');const dismissed=localStorage.getItem('fml_pwa_dismissed');if(!installed&&!dismissed)setTimeout(()=>this.showInstall(),4000)});
+    window.addEventListener('appinstalled',()=>{localStorage.setItem('fml_pwa_installed','1');this.deferredPrompt=null;document.getElementById('m-pwa').style.display='none';toast('✅ App instalada','success')});
+    document.addEventListener('fml-loggedin',()=>{if('Notification' in window&&Notification.permission==='default'&&!localStorage.getItem('fml_notif_dismissed'))setTimeout(()=>this.showNotif(),6000)});
   },
-
-  showInstall() {
-    if (!this.deferredPrompt) return;
-    document.getElementById('m-pwa').style.display = 'flex';
-  },
-
-  async install() {
-    if (!this.deferredPrompt) {
-      // Fallback: show manual instructions
-      alert('Para instalar:\n\nAndroid Chrome: menú (⋮) → "Añadir a pantalla de inicio"\niPhone Safari: botón compartir → "Agregar a inicio"');
-      return;
-    }
-    document.getElementById('m-pwa').style.display = 'none';
+  showInstall(){if(!this.deferredPrompt)return;document.getElementById('m-pwa').style.display='flex'},
+  async install(){
+    if(!this.deferredPrompt){alert('Para instalar:\n\nAndroid Chrome: menú (⋮) → "Añadir a pantalla de inicio"\niPhone Safari: compartir → "Agregar a inicio"');return}
+    document.getElementById('m-pwa').style.display='none';
     this.deferredPrompt.prompt();
-    const { outcome } = await this.deferredPrompt.userChoice;
-    if (outcome === 'accepted') localStorage.setItem('fml_pwa_installed', '1');
-    this.deferredPrompt = null;
+    const{outcome}=await this.deferredPrompt.userChoice;
+    if(outcome==='accepted')localStorage.setItem('fml_pwa_installed','1');
+    this.deferredPrompt=null;
   },
-
-  dismiss() {
-    document.getElementById('m-pwa').style.display = 'none';
-    localStorage.setItem('fml_pwa_dismissed', '1');
+  dismiss(){document.getElementById('m-pwa').style.display='none';localStorage.setItem('fml_pwa_dismissed','1')},
+  showNotif(){document.getElementById('m-notif').style.display='flex'},
+  async requestNotif(){
+    document.getElementById('m-notif').style.display='none';
+    const perm=await Notification.requestPermission();
+    if(perm==='granted'){
+      toast('🔔 Notificaciones activadas','success');
+      localStorage.setItem('fml_notif_ok','1');
+      // Suscribir al push del servidor
+      if(S.user)await subscribePush().catch(()=>{});
+    }else toast('Notificaciones bloqueadas — activalas en ajustes','warning',6000);
   },
-
-  showNotif() {
-    document.getElementById('m-notif').style.display = 'flex';
-  },
-
-  async requestNotif() {
-    document.getElementById('m-notif').style.display = 'none';
-    const perm = await Notification.requestPermission();
-    if (perm === 'granted') {
-      toast('🔔 Notificaciones activadas', 'success');
-      localStorage.setItem('fml_notif_ok', '1');
-    } else {
-      toast('Notificaciones bloqueadas — activalas en ajustes del navegador', 'warning', 6000);
-    }
-  },
-
-  dismissNotif() {
-    document.getElementById('m-notif').style.display = 'none';
-    localStorage.setItem('fml_notif_dismissed', '1');
-  },
+  dismissNotif(){document.getElementById('m-notif').style.display='none';localStorage.setItem('fml_notif_dismissed','1')},
 };
-
 PWA.init();
-
-// ── FUNCIONES DE PRUEBA (borrar después de confirmar que andan) ────────────────
-App.testPushNotif = function() {
-  if (Notification.permission !== 'granted') {
-    toast('⚠️ Primero activá las notificaciones en el modal', 'warning', 5000);
-    Notification.requestPermission().then(p => {
-      if (p === 'granted') {
-        pushNotify('🔧 Prueba — Servicio próximo', 'VW Saveiro: faltan 450 km para el cambio de aceite y filtros.', 'test-maint');
-        toast('✅ Notificación enviada', 'success');
-      }
-    });
-    return;
-  }
-  pushNotify(
-    '🔧 Prueba — Servicio próximo',
-    'VW Saveiro: faltan 450 km para el cambio de aceite y filtros.',
-    'test-maint'
-  );
-  toast('✅ Notificación push enviada — revisá tu celu', 'success', 5000);
-};
-
-App.testMaintEmail = async function() {
-  toast('📧 Enviando email de prueba...', 'info', 3000);
-  try {
-    const res = await fetch(`${API}/api/maintenance-alert`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        vehicleName: 'VW Saveiro (PRUEBA)',
-        vehicleIcon: '🚙',
-        currentKm: 125000,
-        nextServiceKm: 125450,
-        kmLeft: 450,
-        userEmail: S.user?.email || '',
-      })
-    });
-    if (res.ok) toast('✅ Email de prueba enviado a distribuidoramercadolimpio@gmail.com', 'success', 6000);
-    else toast('❌ Error enviando email — verificá la API key de Brevo en Cloudflare', 'error', 6000);
-  } catch(e) {
-    toast('❌ Error de red: ' + e.message, 'error', 5000);
-  }
-};
-
-// Wire up install button (safe)
-const _pwaBtn = document.getElementById('pwa-install-btn');
-if(_pwaBtn) _pwaBtn.onclick = () => PWA.install();
-
+const _pwaBtn=document.getElementById('pwa-install-btn');
+if(_pwaBtn)_pwaBtn.onclick=()=>PWA.install();
 </script>
-
-<!-- ══ PWA INSTALL MODAL ══════════════════════════════════════════════════ -->
-<div id="m-pwa" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
-  backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;
-  padding:0 0 var(--sab) 0">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;
-    padding:2rem 1.75rem calc(2rem + var(--sab));width:100%;max-width:480px;
-    animation:mUp .3s cubic-bezier(.16,1,.3,1) both">
-    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem"></div>
-    <div style="text-align:center;margin-bottom:1.5rem">
-      <div style="width:72px;height:72px;background:var(--acc);border-radius:20px;
-        display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;
-        margin-bottom:1rem;box-shadow:0 8px 24px var(--acc-g)">🚛</div>
-      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;
-        letter-spacing:.04em;margin-bottom:.5rem">Instalar Flota ML</h2>
-      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">
-        Instalá la app en tu teléfono para acceso rápido, notificaciones y uso sin conexión.
-      </p>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem">
-      <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
-        background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
-        <span style="font-size:1.4rem">📲</span>
-        <div style="font-size:.875rem"><strong>Acceso directo</strong> desde la pantalla de inicio</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
-        background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
-        <span style="font-size:1.4rem">🔔</span>
-        <div style="font-size:.875rem"><strong>Notificaciones</strong> de mantenimiento automáticas</div>
-      </div>
-      <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
-        background:var(--bg3);border-radius:12px;border:1px solid var(--border)">
-        <span style="font-size:1.4rem">📶</span>
-        <div style="font-size:.875rem"><strong>Funciona sin señal</strong> y sincroniza automáticamente</div>
-      </div>
-    </div>
-    <button id="pwa-install-btn" class="btn btn-primary" style="margin-bottom:.625rem">
-      📲 Instalar ahora
-    </button>
-    <button class="btn btn-ghost" onclick="PWA.dismiss()">Ahora no</button>
-  </div>
-</div>
-
-<!-- ══ NOTIF PERMISSION MODAL ════════════════════════════════════════════ -->
-<div id="m-notif" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);
-  backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;
-  padding:0 0 var(--sab) 0">
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;
-    padding:2rem 1.75rem calc(2rem + var(--sab));width:100%;max-width:480px;
-    animation:mUp .3s cubic-bezier(.16,1,.3,1) both">
-    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem"></div>
-    <div style="text-align:center;margin-bottom:1.5rem">
-      <div style="font-size:3.5rem;margin-bottom:.875rem">🔔</div>
-      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;
-        letter-spacing:.04em;margin-bottom:.5rem">Activar notificaciones</h2>
-      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">
-        Recibí alertas automáticas cuando un vehículo se acerca al servicio de mantenimiento.
-      </p>
-    </div>
-    <div style="display:flex;align-items:center;gap:.875rem;padding:.875rem;
-      background:var(--acc-g);border-radius:12px;border:1px solid var(--acc);margin-bottom:1.25rem">
-      <span style="font-size:1.4rem">🔧</span>
-      <div style="font-size:.875rem;line-height:1.5">
-        <strong>Aviso a los 500 km</strong> del próximo servicio<br>
-        <span style="color:var(--muted)">+ email automático a los 1000 km</span>
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="PWA.requestNotif()" style="margin-bottom:.625rem">
-      🔔 Activar notificaciones
-    </button>
-    <button class="btn btn-ghost" onclick="PWA.dismissNotif()">Ahora no</button>
-  </div>
-</div>
-
 </body>
 </html>
