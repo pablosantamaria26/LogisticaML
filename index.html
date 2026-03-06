@@ -490,7 +490,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
           <div class="fl"><label>Tipo</label>
             <select id="sv-type">
               <option value="">Elegir...</option>
-              <option value="oil-change">🛢️ Cambio aceite + filtros</option>
+              <option value="oil-change">🛢️ Servicio completo (aceite + filtro)</option>
               <option value="tires">⚙️ Neumáticos</option>
               <option value="suspension">🔧 Suspensión</option>
               <option value="brakes">🛑 Frenos</option>
@@ -599,7 +599,7 @@ const VEHICLES = {
   fiat:    {id:'fiat',    name:'Fiat Uno Cargo', emoji:'🚗', desc:'Auto comercial',   fixedUser:'ramiro'},
 };
 const USER_V  = {martin:'saveiro', ramiro:'fiat', nicolas:'hiace'};
-const SV_NAMES = {'oil-change':'Aceite + filtros','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
+const SV_NAMES = {'oil-change':'Aceite + Filtro (servicio completo)','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
 const SV_ICONS = {'oil-change':'🛢️','tires':'⚙️','suspension':'🔧','brakes':'🛑','other':'🔩'};
 
 let S = {user:null, vid:null, pendingKmV:null};
@@ -869,21 +869,57 @@ const App = {
     const today=nowAR().date;
     const ovr=DB.overrides();const uOvr=ovr[S.user.username];
     const hasOvr=uOvr&&uOvr.expires>=today;
-    const assignedId=hasOvr?uOvr.vehicleId:(USER_V[S.user.username]||null);
+
+    // Buscar vehiculo — tolerante a mayusculas, espacios, nombre completo
+    const uKey  = (S.user.username||'').toLowerCase().trim();
+    const uName = (S.user.name||'').toLowerCase().trim();
+    const uFirst= uName.split(' ')[0];
+    let assignedId = null;
+    if(hasOvr){
+      assignedId = uOvr.vehicleId;
+    } else {
+      for(const [key,vid] of Object.entries(USER_V)){
+        const k=key.toLowerCase();
+        if(uKey===k||uName===k||uFirst===k||uKey.startsWith(k)||uFirst.startsWith(k)){
+          assignedId=vid; break;
+        }
+      }
+      // Tambien verificar fixedUser en VEHICLES
+      if(!assignedId){
+        for(const v of Object.values(VEHICLES)){
+          if(v.fixedUser){
+            const fu=v.fixedUser.toLowerCase();
+            if(uKey===fu||uFirst===fu||uName.startsWith(fu)){assignedId=v.id;break;}
+          }
+        }
+      }
+    }
+
     const isAdmin=localStorage.getItem('fml_adm')==='1';
     const cont=document.getElementById('vcards');cont.innerHTML='';
-    Object.values(VEHICLES).forEach(v=>{
-      const isAssigned=v.id===assignedId;
-      if(!isAdmin&&!isAssigned) return;
-      const card=document.createElement('div');card.className='vcard'+(isAssigned?' sel':'');
-      const badge=hasOvr&&isAssigned?'<span class="chip c-orange">Hoy especial</span>':isAssigned?'<span class="chip c-acc">Tu vehículo</span>':'';
-      card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb">${badge}</div>`;
-      card.onclick=()=>{haptic('medium');this.selectV(v.id)};
-      cont.appendChild(card);
-    });
+
+    if(assignedId){
+      Object.values(VEHICLES).forEach(v=>{
+        const isAssigned=v.id===assignedId;
+        if(!isAdmin&&!isAssigned) return;
+        const badge=hasOvr&&isAssigned?'<span class="chip c-orange">Hoy especial</span>':isAssigned?'<span class="chip c-acc">Tu vehiculo</span>':'';
+        const card=document.createElement('div');
+        card.className='vcard'+(isAssigned?' sel':'');
+        card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb">${badge}</div>`;
+        card.onclick=()=>{haptic('medium');this.selectV(v.id)};
+        cont.appendChild(card);
+      });
+    } else {
+      // Sin asignacion: mostrar todos
+      Object.values(VEHICLES).forEach(v=>{
+        const card=document.createElement('div');card.className='vcard';
+        card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb"><span class="chip c-orange">Elegir</span></div>`;
+        card.onclick=()=>{haptic('medium');this.selectV(v.id)};
+        cont.appendChild(card);
+      });
+    }
     document.getElementById('m-veh').classList.add('on');
   },
-
   selectV(vid){
     S.vid=vid;this.close('m-veh');
     const users=DB.users();
