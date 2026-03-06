@@ -489,6 +489,13 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
         </div>
         <button class="btn btn-primary" onclick="App.sendBroadcast()" style="background:var(--acc)">📢 Enviar a toda la flota</button>
       </div>
+
+      <!-- ZONA PELIGROSA -->
+      <div class="slabel" style="margin-top:1.5rem;color:var(--red)">⚠️ Zona de reinicio</div>
+      <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Borra <strong style="color:var(--text)">todos los datos del servidor</strong> (registros, tokens push, caché). Usá solo para reiniciar la app en producción. Cada usuario deberá reabrir la app para re-registrarse.</p>
+        <button class="btn" onclick="App.resetKV()" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);width:100%">🗑️ Borrar todo el servidor (KV)</button>
+      </div>
     </div>
 
   </div>
@@ -1664,6 +1671,28 @@ const App = {
   resetAllData(){
     if(!confirm('⚠️ Esto borra TODOS los datos locales: usuarios, cargas, km, servicios. ¿Confirmar?'))return;
     localStorage.clear();location.reload();
+  },
+
+  // Borrar todo el KV del servidor (admin only)
+  async resetKV(){
+    if(!confirm('⚠️ ATENCIÓN: Esto borra TODOS los datos del servidor: registros de cargas, tokens push de todos los dispositivos.\n\nDespués cada usuario deberá reabrir la app.\n\n¿Confirmar borrado total?'))return;
+    if(!confirm('Segunda confirmación — ¿Estás seguro? No hay vuelta atrás.'))return;
+    try{
+      toast('🗑️ Borrando servidor...','info',3000);
+      const res=await fetch(`${API}/api/reset-all`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({confirm:'BORRAR_TODO'})
+      });
+      const d=await res.json().catch(()=>({}));
+      if(d.ok){
+        // También limpiar localStorage local
+        localStorage.clear();
+        toast(`✅ Servidor limpio — ${d.deleted} keys borradas. Recargando...`,'success',3000);
+        setTimeout(()=>location.reload(),3000);
+      }else{
+        toast('❌ Error: '+JSON.stringify(d),'error',6000);
+      }
+    }catch(e){toast('❌ Error de red: '+e.message,'error',6000);}
   },
 };
 
