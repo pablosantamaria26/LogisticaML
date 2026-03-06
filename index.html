@@ -645,6 +645,9 @@ const DB = {
   savePriceHistory(h){this.save('fml_prices',h)},
   pushSubs(){return this.load('fml_push_subs',{})},
   savePushSubs(s){this.save('fml_push_subs',s)},
+  session(){return this.load('fml_session',null)},
+  saveSession(s){this.save('fml_session',s)},
+  clearSession(){try{localStorage.removeItem('fml_session')}catch(e){}},
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -855,7 +858,9 @@ const App = {
     if(p.length!==4){alert('El PIN debe tener 4 dígitos');return}
     // Admin virtual — PIN fijo 2817, usuario pablo
     if(u===ADMIN_USER&&p===ADMIN_PIN){
-      S.user=ADMIN_VIRTUAL;haptic('medium');this._enterAdminApp();
+      S.user=ADMIN_VIRTUAL;haptic('medium');
+      DB.saveSession({type:'admin'});
+      this._enterAdminApp();
       document.dispatchEvent(new Event('fml-loggedin'));
       return;
     }
@@ -863,7 +868,9 @@ const App = {
     const user=Object.values(users).find(x=>x.username===u);
     if(!user){alert('Usuario no encontrado');return}
     if(user.pin!==p){alert('PIN incorrecto');document.getElementById('lp').value='';return}
-    S.user=user;haptic('medium');this._enterApp();
+    S.user=user;haptic('medium');
+    DB.saveSession({type:'user',userId:user.id,vid:null});
+    this._enterApp();
     document.dispatchEvent(new Event('fml-loggedin'));
   },
 
@@ -882,7 +889,16 @@ const App = {
     this.showLogin();document.getElementById('lu').value=u;document.getElementById('lp').focus();
   },
 
-  logout(){S={user:null,vid:null,pendingKmV:null};document.getElementById('sc-app').classList.remove('on');document.getElementById('sc-login').classList.add('on');this.close('m-menu');document.getElementById('lu').value='';document.getElementById('lp').value=''},
+  logout(){
+    S={user:null,vid:null,pendingKmV:null};
+    DB.clearSession();
+    localStorage.removeItem('fml_adm');
+    document.getElementById('sc-app').classList.remove('on');
+    document.getElementById('sc-login').classList.add('on');
+    this.close('m-menu');
+    document.getElementById('lu').value='';
+    document.getElementById('lp').value='';
+  },
 
   _enterAdminApp(){
     document.getElementById('sc-login').classList.remove('on');
@@ -963,6 +979,8 @@ const App = {
 
   selectV(vid){
     S.vid=vid;this.close('m-veh');
+    // Persist vehicle in session
+    const sess=DB.session();if(sess&&sess.type==='user'){sess.vid=vid;DB.saveSession(sess);}
     const users=DB.users();
     if(!users[S.user.id].vehicles)users[S.user.id].vehicles={};
     if(!users[S.user.id].vehicles[vid])users[S.user.id].vehicles[vid]={currentKm:null,fuelRecords:[],maintenanceRecords:[]};
@@ -1475,7 +1493,16 @@ const App = {
 
   openMenu(){document.getElementById('m-menu').classList.add('on')},
   close(id){document.getElementById(id).classList.remove('on')},
-  logout(){S={user:null,vid:null,pendingKmV:null};document.getElementById('sc-app').classList.remove('on');document.getElementById('sc-login').classList.add('on');this.close('m-menu');document.getElementById('lu').value='';document.getElementById('lp').value=''},
+  logout(){
+    S={user:null,vid:null,pendingKmV:null};
+    DB.clearSession();
+    localStorage.removeItem('fml_adm');
+    document.getElementById('sc-app').classList.remove('on');
+    document.getElementById('sc-login').classList.add('on');
+    this.close('m-menu');
+    document.getElementById('lu').value='';
+    document.getElementById('lp').value='';
+  },
   exportData(){const blob=new Blob([JSON.stringify({user:S.user,priceHistory:DB.priceHistory(),at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`flota-ml-${S.user.username}-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href)},
   _b64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})},
 
@@ -1537,7 +1564,52 @@ const App = {
 // Close modals on backdrop
 document.querySelectorAll('.mbk').forEach(bk=>{bk.addEventListener('click',e=>{if(e.target===bk&&bk.id!=='m-veh'&&bk.id!=='m-km')bk.classList.remove('on')})});
 
-// Init
+// Init — restaurar sesión si existe
+(function restoreSession(){
+  const sess = DB.session();
+  if(!sess) return;
+  if(sess.type === 'admin'){
+    S.user = ADMIN_VIRTUAL;
+    App._enterAdminApp();
+    document.dispatchEvent(new Event('fml-loggedin'));
+    // Re-registrar push en background
+    setTimeout(()=>subscribePush().catch(()=>{}), 1500);
+    return;
+  }
+  if(sess.type === 'user'){
+    const users = DB.users();
+    const user = users[sess.userId];
+    if(!user){ DB.clearSession(); return; }
+    S.user = user;
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent = user.name;
+    const tabAdmin = document.getElementById('tab-admin');
+    if(isAdmin() && user.username === ADMIN_USER) tabAdmin.style.display=''; else tabAdmin.style.display='none';
+    OfflineQueue.updateUI();
+    if(navigator.onLine) setTimeout(()=>OfflineQueue.flush(), 2000);
+    // Restaurar vehículo si estaba seleccionado
+    if(sess.vid && user.vehicles && user.vehicles[sess.vid]){
+      S.vid = sess.vid;
+      const v = VEHICLES[sess.vid];
+      document.getElementById('nav-ve').textContent = v.emoji;
+      document.getElementById('nav-vn').textContent = v.name;
+      const ckm = user.vehicles[sess.vid].currentKm;
+      if(ckm){ document.getElementById('km-curr').value = ckm; }
+      App.renderDash();
+      // Re-registrar push en background silenciosamente
+      if(Notification.permission === 'granted'){
+        setTimeout(()=>subscribePush().catch(()=>{}), 1500);
+      }
+      document.dispatchEvent(new Event('fml-loggedin'));
+    } else {
+      // Vehículo no guardado — pedir selección
+      App.openVPicker();
+      document.dispatchEvent(new Event('fml-loggedin'));
+    }
+  }
+})();
+
 OfflineQueue.updateUI();
 
 // ══════════════════════════════════════════════════════════════════════════════
