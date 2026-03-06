@@ -1,5 +1,5 @@
-// Flota ML — Service Worker v17
-const CACHE = 'flota-ml-v17';
+// Flota ML — Service Worker v18
+const CACHE = 'flota-ml-v18';
 const STATIC = ['/LogisticaML/', '/LogisticaML/index.html'];
 
 self.addEventListener('install', e => {
@@ -45,17 +45,32 @@ self.addEventListener('sync', e => {
 
 // ── WEB PUSH ──────────────────────────────────────────────────────────────────
 self.addEventListener('push', e => {
-  let data = { title: '🚛 Flota ML', body: 'Nueva notificación', tag: 'fml' };
-  try { if (e.data) data = { ...data, ...e.data.json() }; }
-  catch (_) { if (e.data) data.body = e.data.text(); }
+  let title = '🚛 Flota ML';
+  let body = 'Nueva notificación';
+  let tag = 'fml';
+
+  try {
+    if (e.data) {
+      const d = e.data.json();
+      if (d.title) title = d.title;
+      if (d.body)  body  = d.body;
+      if (d.tag)   tag   = d.tag;
+    }
+  } catch (_) {
+    try { if (e.data) body = e.data.text(); } catch(__) {}
+  }
+
+  // Sin icon/badge para evitar fallo silencioso en iOS/Android cuando el archivo no existe
+  const options = {
+    body,
+    tag,
+    vibrate: [200, 100, 200],
+    requireInteraction: false,
+    data: { url: '/LogisticaML/' },
+  };
+
   e.waitUntil(
-    self.registration.showNotification(data.title, {
-      body: data.body, tag: data.tag || 'fml',
-      icon: '/LogisticaML/icon-192.png',
-      badge: '/LogisticaML/icon-192.png',
-      vibrate: [200, 100, 200],
-      data: { url: '/LogisticaML/' },
-    })
+    self.registration.showNotification(title, options)
   );
 });
 
