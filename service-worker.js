@@ -1,13 +1,10 @@
-// Flota ML — Service Worker v4.1
-const CACHE = 'flota-ml-v13';
+// Flota ML — Service Worker v5
+const CACHE = 'flota-ml-v5';
+const STATIC = ['/LogisticaML/', '/LogisticaML/index.html'];
 
 self.addEventListener('install', e => {
-  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE).then(c =>
-      c.addAll(['/LogisticaML/', '/LogisticaML/index.html', '/LogisticaML/manifest.json'])
-       .catch(()=>{})
-    )
+    caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting())
   );
 });
 
@@ -20,24 +17,18 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  // No interceptar API calls ni POST
   if (e.request.method !== 'GET') return;
-  if (e.request.url.includes('workers.dev')) return;
-  if (e.request.url.includes('fonts.googleapis')) return;
-
+  const url = new URL(e.request.url);
+  if (url.hostname.includes('workers.dev') || url.hostname.includes('googleapis') || url.hostname.includes('brevo')) return;
   e.respondWith(
     caches.match(e.request).then(cached => {
-      // Network first, cache fallback
-      return fetch(e.request)
-        .then(res => {
-          // Solo cachear respuestas válidas de github.io — sin clonar si ya se usó
-          if (res.ok && res.status === 200 && e.request.url.includes('github.io')) {
-            const resClone = res.clone(); // clonar ANTES de usar
-            caches.open(CACHE).then(c => c.put(e.request, resClone));
-          }
-          return res;
-        })
-        .catch(() => cached || caches.match('/LogisticaML/index.html'));
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (!res || res.status !== 200) return res;
+        const clone = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return res;
+      }).catch(() => cached);
     })
   );
 });
@@ -45,36 +36,37 @@ self.addEventListener('fetch', e => {
 self.addEventListener('sync', e => {
   if (e.tag === 'flush-queue') {
     e.waitUntil(
-      self.clients.matchAll({type:'window'}).then(clients =>
-        clients.forEach(c => c.postMessage({type:'FLUSH_QUEUE'}))
+      self.clients.matchAll().then(clients =>
+        clients.forEach(c => c.postMessage({ type: 'FLUSH_QUEUE' }))
       )
     );
   }
 });
 
+// ── WEB PUSH ──────────────────────────────────────────────────────────────────
 self.addEventListener('push', e => {
-  let d = {title:'Flota ML', body:'Notificación', tag:'fml'};
-  try { d = {...d, ...e.data.json()}; } catch(_) {}
+  let data = { title: '🚛 Flota ML', body: 'Nueva notificación', tag: 'fml' };
+  try { if (e.data) data = { ...data, ...e.data.json() }; }
+  catch (_) { if (e.data) data.body = e.data.text(); }
   e.waitUntil(
-    self.registration.showNotification(d.title, {
-      body: d.body, tag: d.tag,
+    self.registration.showNotification(data.title, {
+      body: data.body, tag: data.tag || 'fml',
       icon: '/LogisticaML/icon-192.png',
       badge: '/LogisticaML/icon-192.png',
-      vibrate: [100, 50, 100],
+      vibrate: [200, 100, 200],
+      data: { url: '/LogisticaML/' },
     })
   );
 });
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
+  const url = e.notification.data?.url || '/LogisticaML/';
   e.waitUntil(
-    self.clients.matchAll({type:'window', includeUncontrolled:true}).then(clients => {
-      const app = clients.find(c => c.url.includes('LogisticaML'));
-      return app ? app.focus() : self.clients.openWindow('/LogisticaML/');
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+      const existing = clients.find(c => c.url.includes('/LogisticaML/'));
+      if (existing) return existing.focus();
+      return self.clients.openWindow(url);
     })
   );
-});
-
-self.addEventListener('message', e => {
-  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
