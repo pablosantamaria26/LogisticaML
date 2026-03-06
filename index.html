@@ -1165,7 +1165,19 @@ const App = {
       const data=await res.json();
       if(data.ticket){
         const t=data.ticket;
-        if(t.fecha)document.getElementById('ff-date').value=t.fecha;
+        if(t.fecha){
+          // Validar que la fecha no sea de un año pasado (el OCR a veces lee mal el año)
+          const today=nowAR().date;
+          const fechaYear=parseInt((t.fecha||'').slice(0,4));
+          const todayYear=parseInt(today.slice(0,4));
+          if(fechaYear>=todayYear-1&&fechaYear<=todayYear){
+            document.getElementById('ff-date').value=t.fecha;
+          }else{
+            // Año raro (ej: 2020, 2030) → usar la fecha de hoy
+            document.getElementById('ff-date').value=today;
+            toast('⚠️ La fecha del ticket parece incorrecta — verificala','warning',5000);
+          }
+        }
         if(t.hora)document.getElementById('ff-time').value=t.hora.slice(0,5);
         const lit=t.combustible?.litros||t.combustible?.liters;
         if(lit)document.getElementById('ff-lit').value=parseFloat(lit);
