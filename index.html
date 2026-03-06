@@ -1314,8 +1314,9 @@ const PWA = {
 
 PWA.init();
 
-// Wire up install button
-document.getElementById('pwa-install-btn').onclick = () => PWA.install();
+// Wire up install button (safe)
+const _pwaBtn = document.getElementById('pwa-install-btn');
+if(_pwaBtn) _pwaBtn.onclick = () => PWA.install();
 
 </script>
 
