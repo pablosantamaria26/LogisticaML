@@ -272,14 +272,14 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
     <div id="f-login">
       <div class="lf"><label>Usuario</label><input type="text" id="lu" placeholder="tu usuario" autocomplete="username" autocorrect="off" autocapitalize="none" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()"></div>
       <div class="lf"><label>PIN</label><input type="password" id="lp" class="pin-f" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="current-password" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)" onkeydown="if(event.key==='Enter')App.login()"></div>
-      <button class="btn btn-primary" onclick="App.login()">Ingresar →</button>
+      <button id="btn-login" class="btn btn-primary" onclick="App.login()">Ingresar →</button>
       <div class="toggle-link">¿Primera vez? <button class="link-btn" onclick="App.showReg()">Crear cuenta</button></div>
     </div>
     <div id="f-reg" style="display:none">
       <div class="lf"><label>Nombre completo</label><input type="text" id="rn" placeholder="Juan García" autocomplete="name"></div>
       <div class="lf"><label>Usuario</label><input type="text" id="ru" placeholder="juangarcia" autocorrect="off" autocapitalize="none"></div>
       <div class="lf"><label>PIN (4 números)</label><input type="password" id="rp" class="pin-f" maxlength="4" inputmode="numeric" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)" onkeydown="if(event.key==='Enter')App.register()"></div>
-      <button class="btn btn-primary" onclick="App.register()" style="margin-bottom:.625rem">Crear cuenta</button>
+      <button id="btn-register" class="btn btn-primary" onclick="App.register()" style="margin-bottom:.625rem">Crear cuenta</button>
       <button class="btn btn-ghost" onclick="App.showLogin()">← Volver</button>
     </div>
   </div>
@@ -423,7 +423,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
           <div class="fl ffull"><label>Dirección</label><input type="text" id="ff-addr" placeholder="Av. Corrientes 1000"></div>
         </div>
         <div class="row2">
-          <button class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
+          <button id="btn-savefuel" class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
           <button class="btn btn-ghost" onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
         </div>
         <p style="text-align:center;font-size:.68rem;color:var(--muted);margin-top:.5rem">★ KM obligatorio para guardar</p>
@@ -498,7 +498,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
           <label>Mensaje para los choferes</label>
           <textarea id="broadcast-msg" placeholder="Ej: Reunión mañana a las 8am en el depósito..." style="min-height:80px;resize:vertical"></textarea>
         </div>
-        <button class="btn btn-primary" onclick="App.sendBroadcast()" style="background:var(--acc)">📢 Enviar a toda la flota</button>
+        <button id="btn-broadcast" class="btn btn-primary" onclick="App.sendBroadcast()" style="background:var(--acc)">📢 Enviar a toda la flota</button>
       </div>
 
       <!-- REPORTE SEMANAL -->
@@ -823,6 +823,7 @@ function setTheme(n){document.body.className='t'+n;localStorage.setItem('fml_the
 (()=>{const t=localStorage.getItem('fml_theme')||'t1';setTheme(parseInt(t.replace('t','')))})();
 function toast(msg,type='info',ms=4500){const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};const el=document.createElement('div');el.className=`toast t-${type}`;el.innerHTML=`<span>${icons[type]}</span><span style="flex:1">${msg}</span>`;document.getElementById('toasts').appendChild(el);setTimeout(()=>{el.classList.add('bye');setTimeout(()=>el.remove(),230)},ms)}
 function haptic(t='light'){if(navigator.vibrate){const p={light:30,medium:60,heavy:100};navigator.vibrate(p[t]||30)}}
+function setBtn(id,loading,label){const b=document.getElementById(id);if(!b)return;b.disabled=loading;b.innerHTML=loading?`<span class="spin" style="border-color:currentColor;border-right-color:transparent;width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:6px"></span>`+label:label;}
 function addRipple(btn,e){const rect=btn.getBoundingClientRect();const r=document.createElement('span');const d=Math.max(rect.width,rect.height);r.className='ripple';r.style.cssText=`width:${d}px;height:${d}px;left:${(e.clientX||rect.left+rect.width/2)-rect.left-d/2}px;top:${(e.clientY||rect.top+rect.height/2)-rect.top-d/2}px`;btn.appendChild(r);setTimeout(()=>r.remove(),650)}
 function isAdmin(){return S.user?.username===ADMIN_USER||localStorage.getItem('fml_adm')==='1'}
 
@@ -926,22 +927,25 @@ const App = {
     const p=document.getElementById('lp').value.trim();
     if(!u){alert('Ingresá tu usuario');return}
     if(p.length!==4){alert('El PIN debe tener 4 dígitos');return}
+    setBtn('btn-login',true,'Ingresando...');
     // Admin virtual — PIN fijo 2817, usuario pablo
     if(u===ADMIN_USER&&p===ADMIN_PIN){
       S.user=ADMIN_VIRTUAL;haptic('medium');
       DB.saveSession({type:'admin'});
       this._enterAdminApp();
       document.dispatchEvent(new Event('fml-loggedin'));
+      setBtn('btn-login',false,'Ingresar →');
       return;
     }
     const users=DB.users();
     const user=Object.values(users).find(x=>x.username===u);
-    if(!user){alert('Usuario no encontrado');return}
-    if(user.pin!==p){alert('PIN incorrecto');document.getElementById('lp').value='';return}
+    if(!user){setBtn('btn-login',false,'Ingresar →');alert('Usuario no encontrado');return}
+    if(user.pin!==p){setBtn('btn-login',false,'Ingresar →');alert('PIN incorrecto');document.getElementById('lp').value='';return}
     S.user=user;haptic('medium');
     DB.saveSession({type:'user',userId:user.id,vid:null});
     this._enterApp();
     document.dispatchEvent(new Event('fml-loggedin'));
+    setBtn('btn-login',false,'Ingresar →');
   },
 
   register(){
@@ -951,9 +955,11 @@ const App = {
     if(!name||!u||!/^\d{4}$/.test(p)){alert('Completá todos los campos con PIN de 4 dígitos');return}
     const users=DB.users();
     if(Object.values(users).find(x=>x.username===u)){alert('Ese usuario ya existe');return}
+    setBtn('btn-register',true,'Creando...');
     const id=Date.now().toString();
     users[id]={id,name,username:u,pin:p,email:'',vehicles:{},createdAt:new Date().toISOString()};
     DB.saveUsers(users);
+    setBtn('btn-register',false,'Crear cuenta');
     alert(`✅ Cuenta creada. Iniciá sesión con "${u}".`);
     document.getElementById('rn').value='';document.getElementById('ru').value='';document.getElementById('rp').value='';
     this.showLogin();document.getElementById('lu').value=u;document.getElementById('lp').focus();
@@ -1392,8 +1398,10 @@ const App = {
     const ppl=liters>0?amount/liters:0;
     if(ppl>0)recordPrice(ppl,date);
 
+    setBtn('btn-savefuel',true,'Guardando...');
     this.cancelFuel();this.renderDash();haptic('heavy');
     if(kmVal)this._updateKmBar(kmVal);
+    setBtn('btn-savefuel',false,'Guardar carga');
     toast('✅ Carga guardada','success');
     setSyncStatus('pending');
 
@@ -1741,7 +1749,7 @@ const App = {
   async sendBroadcast(){
     const msg=document.getElementById('broadcast-msg')?.value?.trim();
     if(!msg){toast('Escribí un mensaje primero','warning');return}
-    toast('📤 Enviando mensaje a toda la flota...','info',3000);
+    setBtn('btn-broadcast',true,'Enviando...');
     let totalSent=0;
     for(const v of Object.values(VEHICLES)){
       try{
@@ -1754,6 +1762,7 @@ const App = {
       }catch(e){}
     }
     document.getElementById('broadcast-msg').value='';
+    setBtn('btn-broadcast',false,'📢 Enviar a toda la flota');
     toast(totalSent>0?`✅ Mensaje enviado a ${totalSent} dispositivo(s)`:'⚠️ Sin dispositivos registrados','success',8000);
   },
   async sendWeeklyNow(){
@@ -1812,6 +1821,7 @@ const App = {
       }
     }catch(e){toast('❌ Error de red','error',5000)}
   },
+  async testEmail(){
     toast('📧 Enviando email de prueba...','info',3000);
     const res=await fetch(`${API}/api/maintenance-alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleName:'VW Saveiro (PRUEBA)',vehicleIcon:'🚙',currentKm:125000,nextServiceKm:125450,kmLeft:450,userEmail:S.user?.email||''})}).catch(()=>null);
     if(res?.ok)toast('✅ Email enviado a distribuidoramercadolimpio@gmail.com','success',6000);
