@@ -290,6 +290,9 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
   <nav class="topnav">
     <div class="nav-brand"><div class="dot-live"></div>Flota ML</div>
     <div class="nav-vbadge"><span id="nav-ve">🚛</span><span class="vn" id="nav-vn">Sin vehículo</span></div>
+    <div id="sync-indicator" style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2;display:none">
+      <div id="sync-icon">✅</div><div id="sync-text">Sync</div>
+    </div>
     <button class="icon-btn" id="offline-icon" title="Sin conexión" style="display:none;color:var(--orange)">📶</button>
     <button class="icon-btn" onclick="App.openMenu()">⋮</button>
   </nav>
@@ -479,6 +482,14 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       <div class="slabel">Últimas cargas — toda la flota</div>
       <div id="adm-recent"></div>
 
+      <!-- ASIGNACIÓN DE VEHÍCULOS -->
+      <div class="slabel" style="margin-top:1.5rem">🚗 Asignación de vehículos</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem" id="adm-assignments">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Cambiá el vehículo asignado a cada conductor. El cambio se aplica la próxima vez que el usuario abre la app.</p>
+        <div id="adm-assign-list"></div>
+        <button class="btn btn-ghost btn-sm" onclick="App._loadAssignments()" style="margin-top:.5rem">🔄 Actualizar asignaciones</button>
+      </div>
+
       <!-- BROADCAST MESSAGE -->
       <div class="slabel" style="margin-top:1.5rem">Mensaje a toda la flota</div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
@@ -488,6 +499,14 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
           <textarea id="broadcast-msg" placeholder="Ej: Reunión mañana a las 8am en el depósito..." style="min-height:80px;resize:vertical"></textarea>
         </div>
         <button class="btn btn-primary" onclick="App.sendBroadcast()" style="background:var(--acc)">📢 Enviar a toda la flota</button>
+      </div>
+
+      <!-- REPORTE SEMANAL -->
+      <div class="slabel" style="margin-top:1.5rem">📊 Reportes IA</div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">El reporte semanal se envía automáticamente todos los <strong style="color:var(--text)">viernes</strong> a tu email. Incluye rankings, anomalías, proyecciones y análisis IA. También podés enviarlo ahora.</p>
+        <button class="btn btn-ghost btn-sm" onclick="App.sendWeeklyNow()" style="border-color:var(--acc);color:var(--acc);margin-bottom:.5rem">📧 Enviar reporte semanal ahora</button>
+        <button class="btn btn-ghost btn-sm" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange)">📧 Probar email mantenimiento</button>
       </div>
 
       <!-- ZONA PELIGROSA -->
@@ -786,6 +805,18 @@ function pushNotify(title,body,tag='fml'){
 // HELPERS
 // ══════════════════════════════════════════════════════════════════════════════
 function nowAR(){const now=new Date();return{date:now.toLocaleDateString('en-CA',{timeZone:TZ}),time:now.toLocaleTimeString('es-AR',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false})}}
+
+function setSyncStatus(state){
+  const ind=document.getElementById('sync-indicator');
+  const icon=document.getElementById('sync-icon');
+  const text=document.getElementById('sync-text');
+  if(!ind)return;
+  ind.style.display='';
+  if(state==='ok'){icon.textContent='✅';text.textContent='Sincronizado';ind.style.color='var(--green)';}
+  else if(state==='pending'){icon.textContent='⏳';text.textContent='Enviando...';ind.style.color='var(--muted)';}
+  else if(state==='offline'){icon.textContent='📴';text.textContent='Sin conexión';ind.style.color='var(--orange)';}
+  else if(state==='error'){icon.textContent='⚠️';text.textContent='Error sync';ind.style.color='var(--red)';}
+}
 function fmt$(n){return'$'+(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
 function fmtN(n){return(n||0).toLocaleString('es-AR')}
 function setTheme(n){document.body.className='t'+n;localStorage.setItem('fml_theme','t'+n);document.querySelectorAll('.tp').forEach((el,i)=>el.classList.toggle('on',i===n-1));document.querySelectorAll('.tb').forEach((el,i)=>{el.style.borderColor=i===n-1?'var(--acc)':'var(--border)';el.style.transform=i===n-1?'scale(1.1)':'scale(1)'})}
@@ -964,14 +995,43 @@ const App = {
     document.getElementById('sc-login').classList.remove('on');
     document.getElementById('sc-app').classList.add('on');
     document.getElementById('menu-uname').textContent=S.user.name;
-    // Mostrar tab admin si es pablo
     const tabAdmin=document.getElementById('tab-admin');
     if(isAdmin()&&S.user.username===ADMIN_USER) tabAdmin.style.display='';
     else tabAdmin.style.display='none';
     const q=DB.queue().filter(x=>x.type==='sync-record');
     DB.saveQueue(q);OfflineQueue.updateUI();
     if(navigator.onLine)setTimeout(()=>OfflineQueue.flush(),2000);
-    this.openVPicker();
+    // Consultar asignación en servidor primero, luego entrar
+    this._resolveVehicleAndEnter();
+  },
+
+  async _resolveVehicleAndEnter(){
+    if(isAdmin()){this.openVPicker();return;}
+    // 1. Intentar obtener asignación del KV (tiene prioridad sobre todo)
+    let serverVid=null;
+    try{
+      const res=await fetch(`${API}/api/assignments`);
+      if(res.ok){
+        const d=await res.json();
+        const ukey=S.user.username.toLowerCase();
+        serverVid=d.assignments?.[ukey]||null;
+      }
+    }catch(e){}
+    // 2. Fallback: asignación local USER_V
+    const uKey=(S.user.username||'').toLowerCase().trim();
+    const uFirst=(S.user.name||'').toLowerCase().split(' ')[0];
+    let localVid=null;
+    for(const [key,vid] of Object.entries(USER_V)){
+      if(uKey===key.toLowerCase()||uFirst===key.toLowerCase()){localVid=vid;break}
+    }
+    const finalVid=serverVid||localVid;
+    if(finalVid){
+      // Auto-seleccionar sin mostrar modal
+      this.selectV(finalVid,true);
+    }else{
+      // Sin asignación conocida → mostrar picker
+      this.openVPicker();
+    }
   },
 
   openVPicker(){
@@ -987,11 +1047,6 @@ const App = {
       for(const [key,vid] of Object.entries(USER_V)){
         if(uKey===key.toLowerCase()||uFirst===key.toLowerCase()){assignedId=vid;break}
       }
-      if(!assignedId){
-        for(const v of Object.values(VEHICLES)){
-          if(v.fixedUser&&(uKey===v.fixedUser.toLowerCase()||uFirst===v.fixedUser.toLowerCase())){assignedId=v.id;break}
-        }
-      }
     }
     const admin=isAdmin();
     const cont=document.getElementById('vcards');cont.innerHTML='';
@@ -999,7 +1054,7 @@ const App = {
       Object.values(VEHICLES).forEach(v=>{
         const isAssigned=v.id===assignedId;
         if(!admin&&!isAssigned)return;
-        const badge=hasOvr&&isAssigned?'<span class="chip c-orange">Hoy especial</span>':isAssigned?'<span class="chip c-acc">Tu vehículo</span>':'';
+        const badge=isAssigned?'<span class="chip c-acc">Tu vehículo</span>':'';
         const card=document.createElement('div');card.className='vcard'+(isAssigned?' sel':'');
         card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb">${badge}</div>`;
         card.onclick=()=>{haptic('medium');this.selectV(v.id)};
@@ -1016,9 +1071,8 @@ const App = {
     document.getElementById('m-veh').classList.add('on');
   },
 
-  selectV(vid){
-    S.vid=vid;this.close('m-veh');
-    // Persist vehicle in session
+  selectV(vid, silent=false){
+    S.vid=vid;if(!silent)this.close('m-veh');else this.close('m-veh');
     const sess=DB.session();if(sess&&sess.type==='user'){sess.vid=vid;DB.saveSession(sess);}
     const users=DB.users();
     if(!users[S.user.id].vehicles)users[S.user.id].vehicles={};
@@ -1027,7 +1081,6 @@ const App = {
     const v=VEHICLES[vid];
     document.getElementById('nav-ve').textContent=v.emoji;
     document.getElementById('nav-vn').textContent=v.name;
-    // Pre-fill KM widget with current value
     const ckm=S.user.vehicles[vid].currentKm;
     if(ckm){document.getElementById('km-curr').value=ckm;this._updateKmBar(ckm)}
     if(!ckm){
@@ -1035,7 +1088,6 @@ const App = {
       document.getElementById('km-in').value='';document.getElementById('m-km').classList.add('on');
       setTimeout(()=>document.getElementById('km-in').focus(),300);
     } else {
-      // Suscribir push para este vehículo
       if(Notification.permission==='granted')subscribePush().catch(()=>{});
       this.renderDash();
     }
@@ -1076,9 +1128,27 @@ const App = {
     if(bar)bar.style.display='';
     const label=document.getElementById('km-maint-label');
     const fill=document.getElementById('km-maint-fill');
-    const pct=Math.max(0,Math.min(100,Math.round((km-st.lastKm)/st.interval*100)));
-    if(label)label.textContent=st.kmLeft>0?`Faltan ${fmtN(st.kmLeft)} km`:'⚠️ Vencido';
-    if(fill){fill.style.width=pct+'%';fill.style.background=pct>80?'linear-gradient(90deg,var(--orange),var(--red))':'linear-gradient(90deg,var(--green),var(--acc))'}
+    // Calcular KM recorridos desde último service
+    const kmDone=km-(st.lastKm||0);
+    const interval=st.interval||10000;
+    const pct=Math.max(0,Math.min(100,Math.round(kmDone/interval*100)));
+    // Colores por tramo: 0-70% verde, 70-85% amarillo, 85-95% naranja, 95%+ rojo
+    let color,statusText;
+    if(pct>=95||st.kmLeft<=0){
+      color='linear-gradient(90deg,#dc2626,#ef4444)';
+      statusText=st.kmLeft<=0?'⚠️ SERVICE VENCIDO':'🚨 '+fmtN(st.kmLeft)+' km restantes';
+    }else if(pct>=85){
+      color='linear-gradient(90deg,#ea580c,#f97316)';
+      statusText='⚠️ Faltan '+fmtN(st.kmLeft)+' km — PRÓXIMO';
+    }else if(pct>=70){
+      color='linear-gradient(90deg,#ca8a04,#eab308)';
+      statusText='Faltan '+fmtN(st.kmLeft)+' km';
+    }else{
+      color='linear-gradient(90deg,#059669,#10b981)';
+      statusText='Faltan '+fmtN(st.kmLeft)+' km';
+    }
+    if(label)label.textContent=statusText;
+    if(fill){fill.style.width=pct+'%';fill.style.background=color;fill.style.transition='width .6s ease,background .4s ease';}
   },
 
   // ── OCR tablero ──────────────────────────────────────────────────────────
@@ -1296,6 +1366,25 @@ const App = {
     // Save locally
     const users=DB.users();const vd=users[S.user.id].vehicles[S.vid];
     if(!vd.fuelRecords)vd.fuelRecords=[];
+
+    // ── Detección de anomalías ────────────────────────────────────────────
+    // 1. Capacidad máxima del tanque
+    const TANK_MAX={hiace:70,saveiro:55,fiat:45};
+    const maxTank=TANK_MAX[S.vid]||70;
+    if(liters>maxTank){
+      toast(`🚨 Atención: ${liters.toFixed(1)}L supera la capacidad del tanque (${maxTank}L) — verificá el ticket`,'warning',8000);
+    }
+    // 2. Consumo anormal vs promedio histórico
+    if(vd.fuelRecords.length>=3){
+      const lastRecs=vd.fuelRecords.slice(-3);
+      const avgLit=lastRecs.reduce((s,r)=>s+(r.liters||0),0)/lastRecs.length;
+      if(avgLit>0&&liters>avgLit*1.3){
+        const pct=Math.round((liters/avgLit-1)*100);
+        toast(`⚠️ Consumo +${pct}% respecto al promedio — posible anomalía`,'warning',7000);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     vd.fuelRecords.push(record);
     if(kmVal)vd.currentKm=kmVal;
     DB.saveUsers(users);S.user=users[S.user.id];
@@ -1304,18 +1393,21 @@ const App = {
     if(ppl>0)recordPrice(ppl,date);
 
     this.cancelFuel();this.renderDash();haptic('heavy');
-    // Update KM display
     if(kmVal)this._updateKmBar(kmVal);
     toast('✅ Carga guardada','success');
+    setSyncStatus('pending');
 
     // Sync + email
     const v=VEHICLES[S.vid];
     const syncData={userId:S.user.id,userName:S.user.name,vehicleId:S.vid,vehicleName:v.name,vehicleIcon:v.emoji,record};
     if(navigator.onLine){
-      fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)}).catch(()=>OfflineQueue.add({type:'sync-record',data:syncData}));
+      fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)})
+        .then(r=>{if(r.ok)setSyncStatus('ok');else setSyncStatus('error');})
+        .catch(()=>{OfflineQueue.add({type:'sync-record',data:syncData});setSyncStatus('offline');});
       this._sendConfirmEmail(record).catch(console.error);
     }else{
       OfflineQueue.add({type:'sync-record',data:syncData});
+      setSyncStatus('offline');
       toast('📴 Sin conexión — se sincronizará automáticamente','warning');
     }
     await checkMaintenanceAlerts(S.user.vehicles[S.vid],S.vid);
@@ -1486,6 +1578,8 @@ const App = {
     document.getElementById('adm-total-gasto').textContent=fmt$(totalAmt);
     document.getElementById('adm-total-lit').textContent=totalLit.toFixed(1)+'L';
     document.getElementById('adm-total-km').textContent=totalKmFlota?fmtN(totalKmFlota)+'km':'—';
+    // Cargar panel de asignaciones
+    this._loadAssignments();
 
     // Ultimas cargas de toda la flota
     const recent=allFuelForRecent.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
@@ -1662,7 +1756,62 @@ const App = {
     document.getElementById('broadcast-msg').value='';
     toast(totalSent>0?`✅ Mensaje enviado a ${totalSent} dispositivo(s)`:'⚠️ Sin dispositivos registrados','success',8000);
   },
-  async testMaintEmail(){
+  async sendWeeklyNow(){
+    toast('📊 Generando reporte semanal...','info',4000);
+    try{
+      const res=await fetch(`${API}/api/weekly-report`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      if(res.ok)toast('✅ Reporte semanal enviado a tu email','success',6000);
+      else toast('❌ Error enviando reporte','error',5000);
+    }catch(e){toast('❌ Error de red','error',5000)}
+  },
+
+  async _loadAssignments(){
+    const cont=document.getElementById('adm-assign-list');
+    if(!cont)return;
+    cont.innerHTML='<p class="muted" style="font-size:.78rem">Cargando...</p>';
+    // Traer asignaciones del servidor
+    let serverAssignments={};
+    try{
+      const res=await fetch(`${API}/api/assignments`);
+      if(res.ok){const d=await res.json();serverAssignments=d.assignments||{};}
+    }catch(e){}
+    // Combinar con USER_V como base
+    const allUsers={...Object.fromEntries(Object.entries(USER_V))};
+    Object.entries(serverAssignments).forEach(([u,v])=>{allUsers[u]=v;});
+    cont.innerHTML='';
+    const knownUsers=['martin','nicolas','ramiro'];
+    knownUsers.forEach(uname=>{
+      const currentVid=serverAssignments[uname]||USER_V[uname]||null;
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:.75rem;padding:.625rem 0;border-bottom:1px solid var(--border)';
+      row.innerHTML=`
+        <div style="flex:1;font-size:.9rem;font-weight:600;text-transform:capitalize">${uname}</div>
+        <select id="assign-${uname}" style="flex:1;padding:.35rem .5rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem">
+          ${Object.values(VEHICLES).map(v=>`<option value="${v.id}"${currentVid===v.id?' selected':''}>${v.emoji} ${v.name}</option>`).join('')}
+        </select>
+        <button onclick="App._saveAssignment('${uname}')" style="background:var(--acc);color:var(--bg);border:none;border-radius:8px;padding:.35rem .75rem;font-size:.78rem;cursor:pointer;font-weight:700">Guardar</button>`;
+      cont.appendChild(row);
+    });
+  },
+
+  async _saveAssignment(uname){
+    const sel=document.getElementById(`assign-${uname}`);
+    if(!sel)return;
+    const vehicleId=sel.value;
+    try{
+      const res=await fetch(`${API}/api/assign-vehicle`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({adminPin:'2817',username:uname,vehicleId})
+      });
+      const d=await res.json();
+      if(d.ok){
+        haptic('medium');
+        toast(`✅ ${uname} → ${VEHICLES[vehicleId]?.name} guardado. Se aplica al próximo ingreso.`,'success',5000);
+      }else{
+        toast('❌ Error: '+d.error,'error',5000);
+      }
+    }catch(e){toast('❌ Error de red','error',5000)}
+  },
     toast('📧 Enviando email de prueba...','info',3000);
     const res=await fetch(`${API}/api/maintenance-alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleName:'VW Saveiro (PRUEBA)',vehicleIcon:'🚙',currentKm:125000,nextServiceKm:125450,kmLeft:450,userEmail:S.user?.email||''})}).catch(()=>null);
     if(res?.ok)toast('✅ Email enviado a distribuidoramercadolimpio@gmail.com','success',6000);
