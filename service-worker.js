@@ -1,5 +1,5 @@
-// Flota ML — Service Worker v30
-const CACHE = 'flota-ml-v30';
+// Flota ML — Service Worker v01
+const CACHE = 'flota-ml-v01';
 const STATIC = ['/LogisticaML/', '/LogisticaML/index.html'];
 
 self.addEventListener('install', e => {
@@ -66,7 +66,7 @@ self.addEventListener('push', e => {
 
   // PNG hosteado en GitHub Pages — requerido por Android NotificationManager
   // iOS (Safari/WebKit) ignora icon en push; lo omitimos para evitar errores
-  const ICON_PNG = 'https://pablosantamaria26.github.io/LogisticaML/icon-192.png';
+  const ICON_PNG = '/LogisticaML/icon-192.png';
   const isIOS = /iphone|ipad|ipod/i.test(self.navigator?.userAgent || '');
 
   const options = {
