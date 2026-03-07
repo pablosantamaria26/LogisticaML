@@ -4,13 +4,27 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 # ─── CRON TRIGGERS ────────────────────────────────────────────────────────────
-# Día 25 a las 12:00 UTC = 09:00 AR → Resumen contador (crédito fiscal)
-# Día  1 a las 11:00 UTC = 08:00 AR → Reporte dueño (mes anterior)
-# Viernes a las 18:00 UTC = 15:00 AR → Reporte semanal IA
+# Todos los horarios en UTC (Argentina = UTC-3, no tiene horario de verano)
+#
+#  UTC → AR:  hora_ar = hora_utc - 3
+#
+#  "0 11 * * 1-5"   → lun-vie 08:00 AR → push diario revisión vehículo
+#  "30 16 * * 5"    → vie 13:30 AR     → push limpieza personalizada
+#  "0 12 15 * *"    → día 15 09:00 AR  → push calibración neumáticos
+#  "0 12 20 * *"    → día 20 09:00 AR  → push revisión auxilio
+#  "30 11 1 * *"    → día 1  08:30 AR  → push papeles al día
+#  "0 11 1  * *"    → día 1  08:00 AR  → reporte email dueño
+#  "0 12 25 * *"    → día 25 09:00 AR  → resumen email contador
+#  "0 18 * * 5"     → vie 15:00 AR     → reporte semanal IA email
 [triggers]
 crons = [
-  "0 12 25 * *",
+  "0 11 * * 1-5",
+  "30 16 * * 5",
+  "0 12 15 * *",
+  "0 12 20 * *",
+  "30 11 1 * *",
   "0 11 1  * *",
+  "0 12 25 * *",
   "0 18 * * 5"
 ]
 
@@ -20,7 +34,7 @@ crons = [
 # Luego pegar el ID del namespace en "id":
 [[kv_namespaces]]
 binding = "FLOTA_KV"
-id      = "c33c0e4c860c4a3cbbca28ff13be1541"
+id      = "REEMPLAZAR_CON_TU_KV_ID"
 # preview_id = "REEMPLAZAR_CON_TU_KV_PREVIEW_ID"
 
 # ─── SECRETS (NO poner valores reales aquí — usar wrangler secret put) ────────
