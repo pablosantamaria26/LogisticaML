@@ -20,7 +20,7 @@ crons = [
 # Luego pegar el ID del namespace en "id":
 [[kv_namespaces]]
 binding = "FLOTA_KV"
-id      = "REEMPLAZAR_CON_TU_KV_ID"
+id      = "c33c0e4c860c4a3cbbca28ff13be1541"
 # preview_id = "REEMPLAZAR_CON_TU_KV_PREVIEW_ID"
 
 # ─── SECRETS (NO poner valores reales aquí — usar wrangler secret put) ────────
