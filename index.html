@@ -26,7 +26,7 @@ body.t3{--bg:#030a05;--bg2:#071a0c;--bg3:#0c2412;--border:#112a18;--border2:#1a4
 body.t3::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 100% 60% at 50% 100%,rgba(57,255,20,.04) 0%,transparent 65%);pointer-events:none;z-index:0}
 
 /* ══ SCREENS ══════════════════════════════════════════════════════════════ */
-.screen{display:none;flex-direction:column;position:fixed;inset:0;padding-top:var(--sat);z-index:1}
+.screen{display:none;flex-direction:column;position:fixed;inset:0;padding-top:var(--sat);z-index:1;height:100vh;height:calc(var(--real-vh,1vh)*100)}
 .screen.on{display:flex}
 #sc-login{align-items:center;justify-content:flex-start;padding:calc(var(--sat)+1.5rem) 1.25rem calc(1.5rem + var(--sab));overflow-y:auto;-webkit-overflow-scrolling:touch}
 .login-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:2.25rem 1.875rem;width:100%;max-width:380px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.45);animation:lbIn .45s cubic-bezier(.16,1,.3,1) both}
@@ -58,7 +58,7 @@ body.t3::before{content:'';position:fixed;inset:0;background:radial-gradient(ell
 .btn-sm{min-height:40px;padding:.6rem 1rem;font-size:.82rem}
 
 /* ══ TOAST ════════════════════════════════════════════════════════════════ */
-.toast-stack{position:fixed;top:calc(var(--sat)+.75rem);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 2rem);max-width:400px;pointer-events:none;padding-bottom:env(safe-area-inset-bottom,0px)}
+.toast-stack{position:fixed;top:calc(var(--sat)+.75rem);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 2rem);max-width:400px;pointer-events:none}
 .toast{padding:.875rem 1.125rem;border-radius:14px;font-size:.875rem;font-weight:600;display:flex;align-items:center;gap:.625rem;backdrop-filter:blur(16px);pointer-events:auto;animation:tIn .28s cubic-bezier(.16,1,.3,1) both;box-shadow:0 8px 24px rgba(0,0,0,.3)}
 @keyframes tIn{from{opacity:0;transform:translateY(-10px) scale(.95)}to{opacity:1;transform:none}}
 @keyframes tOut{to{opacity:0;transform:translateY(-8px) scale(.95)}}
@@ -67,6 +67,13 @@ body.t3::before{content:'';position:fixed;inset:0;background:radial-gradient(ell
 .t-error{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.3);color:var(--red)}
 .t-warning{background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.3);color:var(--orange)}
 .t-info{background:var(--acc-g);border:1px solid rgba(255,255,255,.12);color:var(--acc)}
+/* ── CONFIRM OVERLAY (centrado en pantalla) ─────────────────────────── */
+#fuel-confirm-overlay{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:env(safe-area-inset-top,16px) 1.25rem env(safe-area-inset-bottom,16px)}
+#fuel-confirm-overlay.on{display:flex;animation:mfade .25s ease both;-webkit-animation:mfade .25s ease both}
+.fco-card{background:var(--bg2);border:2px solid var(--acc);border-radius:20px;padding:1.5rem 1.25rem;width:100%;max-width:min(360px,calc(100vw - 2.5rem));box-shadow:0 24px 60px rgba(0,0,0,.5);animation:fcoIn .3s cubic-bezier(.16,1,.3,1) both}
+@keyframes fcoIn{from{opacity:0;transform:scale(.88) translateY(20px)}to{opacity:1;transform:none}}
+@keyframes fcoOut{to{opacity:0;transform:scale(.92) translateY(10px)}}
+.fco-card.bye{animation:fcoOut .2s ease forwards}
 
 /* ══ APP LAYOUT ═══════════════════════════════════════════════════════════ */
 #sc-app{flex-direction:column;overflow:hidden}
@@ -87,7 +94,7 @@ body.t3::before{content:'';position:fixed;inset:0;background:radial-gradient(ell
 .tab:active{transform:scale(.88)}
 
 /* ══ MAIN SCROLL ══════════════════════════════════════════════════════════ */
-.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:1.25rem;padding-bottom:calc(1.25rem + var(--sab))}
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:1.25rem;padding-bottom:calc(1.25rem + max(env(safe-area-inset-bottom,0px),8px))}
 .panel{display:none;animation:pIn .22s ease both}
 .panel.on{display:block}
 @keyframes pIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
@@ -230,11 +237,11 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 .adm-d-sl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.35rem;display:block}
 
 /* ══ MODALS ═══════════════════════════════════════════════════════════════ */
-.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);z-index:500;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}
+.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:500;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}
 .mbk.on{display:flex;animation:mfade .2s ease}
 @keyframes mfade{from{opacity:0}to{opacity:1}}
-.modal{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem calc(1.5rem + max(var(--sab),16px));width:100%;max-width:500px;max-height:min(88vh, calc(100dvh - var(--sat) - 20px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -16px 50px rgba(0,0,0,.55);animation:mUp .28s cubic-bezier(.16,1,.3,1) both;position:relative}
-@media(min-width:600px){.mbk{align-items:center;padding:1rem}.modal{border-radius:22px;padding:1.75rem;max-height:90vh;animation:mIn .28s cubic-bezier(.16,1,.3,1) both}}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem calc(1.5rem + max(env(safe-area-inset-bottom,0px),20px));width:100%;max-width:500px;max-height:85vh;max-height:85dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -16px 50px rgba(0,0,0,.55);animation:mUp .28s cubic-bezier(.16,1,.3,1) both;position:relative}
+@media(min-width:600px){.mbk{align-items:center;padding:1rem}.modal{border-radius:22px;padding:1.75rem;max-height:90vh;max-height:90dvh;animation:mIn .28s cubic-bezier(.16,1,.3,1) both}}
 @keyframes mIn{from{opacity:0;transform:scale(.93) translateY(14px)}to{opacity:1;transform:none}}
 @keyframes mUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:none}}
 .modal::before{content:'';display:block;width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.25rem}
@@ -259,13 +266,14 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 
 /* PWA modals */
 #m-pwa,#m-notif{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}
-.pwa-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:2rem 1.75rem calc(2rem + max(var(--sab),16px));width:100%;max-width:480px;max-height:min(88vh,calc(100dvh - 40px));overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:mUp .3s cubic-bezier(.16,1,.3,1) both}
+.pwa-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:2rem 1.75rem calc(2rem + max(var(--sab),16px));width:100%;max-width:480px;max-height:85vh;max-height:85dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:mUp .3s cubic-bezier(.16,1,.3,1) both}
 .pwa-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem}
 .pwa-feature{display:flex;align-items:center;gap:.875rem;padding:.875rem;background:var(--bg3);border-radius:12px;border:1px solid var(--border);font-size:.875rem}
 </style>
 </head>
 <body class="t1">
 <div class="toast-stack" id="toasts"></div>
+<div id="fuel-confirm-overlay"></div>
 
 <!-- ══ LOGIN ══════════════════════════════════════════════════════════════ -->
 <div id="sc-login" class="screen on">
@@ -615,6 +623,16 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 
 
 <script>
+// ── Mobile viewport height fix (Android Chrome address bar) ─────────────
+(function fixVH(){
+  function setVH(){
+    document.documentElement.style.setProperty('--real-vh', window.innerHeight*0.01+'px');
+  }
+  setVH();
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', ()=>setTimeout(setVH, 200));
+})();
+
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIG
 // ══════════════════════════════════════════════════════════════════════════════
@@ -978,9 +996,18 @@ const App = {
     document.getElementById('sc-login').classList.remove('on');
     document.getElementById('sc-app').classList.add('on');
     document.getElementById('menu-uname').textContent=S.user.name;
-    const tabAdmin=document.getElementById('tab-admin');
-    if(isAdmin()&&S.user.username===ADMIN_USER) tabAdmin.style.display='';
-    else tabAdmin.style.display='none';
+    // Reset COMPLETO del layout — por si venía de una sesión admin previa
+    // (admin oculta los tabs normales; hay que restaurarlos)
+    localStorage.removeItem('fml_adm'); // siempre limpiar flag admin para no-admin
+    document.querySelectorAll('.tab').forEach(t=>t.style.display=''); // mostrar todos
+    document.getElementById('tab-admin').style.display='none'; // admin siempre oculto por defecto
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('panel-dash').classList.add('on');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelector('.tab[onclick*="dash"]').classList.add('on');
+    // Restablecer botón "Cambiar vehículo" en menú (admin lo ocultaba)
+    const vpBtn=document.querySelector('#m-menu .btn-ghost[onclick*="openVPicker"]');
+    if(vpBtn)vpBtn.style.display='';
     const q=DB.queue().filter(x=>x.type==='sync-record');
     DB.saveQueue(q);OfflineQueue.updateUI();
     if(navigator.onLine)setTimeout(()=>OfflineQueue.flush(),2000);
@@ -1379,47 +1406,65 @@ const App = {
 
   _ffCDTimer:null,
   _ffShowConfirmToast(liters,amount,km){
-    // Actualizar botón → "Procesando registro..."
+    // Actualizar botón
     document.getElementById('fhb-icon').textContent='✅';
-    document.getElementById('fhb-title').textContent='¡Todo registrado!';
+    document.getElementById('fhb-title').textContent='¡Registrado!';
     document.getElementById('fhb-sub').textContent='Guardando en segundo plano...';
     document.getElementById('fuel-hero-btn').onclick=null;
 
-    // Crear toast de confirmación especial con countdown
-    const existing=document.getElementById('toast-confirm-fuel');
-    if(existing)existing.remove();
+    const vname=VEHICLES[S.vid]?.name||'';
+    const vicon=VEHICLES[S.vid]?.emoji||'⛽';
+    const litStr=liters>0?liters.toFixed(1)+'L':'—';
+    const amtStr=amount>0?'$'+Math.round(amount).toLocaleString('es-AR'):'—';
+    const kmStr=km>0?fmtN(km)+' km':'Sin KM';
+    const hasWarn=(!liters||!amount||!km);
 
-    const litStr=liters>0?`<strong>${liters.toFixed(1)}L</strong>`:'<span style="color:var(--orange)">—L</span>';
-    const amtStr=amount>0?`<strong>$${Math.round(amount).toLocaleString('es-AR')}</strong>`:'<span style="color:var(--orange)">—</span>';
-    const kmStr=km>0?`<strong>${fmtN(km)} km</strong>`:'<span style="color:var(--orange)">Sin KM</span>';
-
-    const tEl=document.createElement('div');
-    tEl.id='toast-confirm-fuel';
-    tEl.style.cssText='pointer-events:auto;background:var(--bg2);border:1.5px solid var(--acc);border-radius:16px;padding:1rem 1.125rem;box-shadow:0 8px 32px rgba(0,0,0,.35);animation:tIn .28s cubic-bezier(.16,1,.3,1) both';
-    tEl.innerHTML=`
-      <div style="display:flex;align-items:center;gap:.625rem;margin-bottom:.75rem">
-        <span style="font-size:1.2rem">⛽</span>
-        <div style="flex:1">
-          <div style="font-weight:700;font-size:.9rem">Carga registrada</div>
-          <div style="font-size:.7rem;color:var(--muted)">${VEHICLES[S.vid]?.name||''}</div>
+    // Usar overlay centrado en pantalla
+    const overlay=document.getElementById('fuel-confirm-overlay');
+    overlay.innerHTML='';
+    const card=document.createElement('div');
+    card.className='fco-card';
+    card.id='toast-confirm-fuel';
+    card.innerHTML=`
+      <div style="text-align:center;margin-bottom:1.25rem">
+        <div style="font-size:3rem;line-height:1;margin-bottom:.5rem">${vicon}</div>
+        <div style="font-family:var(--font-h);font-size:1.4rem;text-transform:uppercase;letter-spacing:.04em;color:var(--green);margin-bottom:.2rem">✅ Carga registrada</div>
+        <div style="font-size:.78rem;color:var(--muted)">${vname}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1.25rem">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem .5rem;text-align:center">
+          <div style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);line-height:1">${litStr}</div>
+          <div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.3rem">Litros</div>
         </div>
-        <div id="tcf-num" style="font-family:var(--font-m);font-size:1.1rem;font-weight:800;color:var(--acc)">4</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem .5rem;text-align:center">
+          <div style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);line-height:1;word-break:break-all">${amtStr}</div>
+          <div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.3rem">Total</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem .5rem;text-align:center">
+          <div style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);line-height:1">${kmStr}</div>
+          <div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.3rem">KM</div>
+        </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.75rem;text-align:center">
-        <div style="background:var(--bg3);border-radius:10px;padding:.5rem"><div style="font-size:.85rem">${litStr}</div><div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem">Litros</div></div>
-        <div style="background:var(--bg3);border-radius:10px;padding:.5rem"><div style="font-size:.85rem">${amtStr}</div><div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem">Total</div></div>
-        <div style="background:var(--bg3);border-radius:10px;padding:.5rem"><div style="font-size:.85rem">${kmStr}</div><div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem">KM</div></div>
+      ${hasWarn?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.625rem .875rem;margin-bottom:1rem;font-size:.75rem;color:var(--orange)">⚠️ Algunos datos no pudieron leerse de la foto — revisá en el panel.</div>`:''}
+      <div style="margin-bottom:.875rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.35rem">
+          <span style="font-size:.68rem;color:var(--muted)">Cerrando automáticamente...</span>
+          <span id="tcf-num" style="font-family:var(--font-m);font-size:.75rem;font-weight:700;color:var(--acc)">4s</span>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;height:5px;overflow:hidden">
+          <div id="tcf-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green),var(--acc));width:100%;transition:width 1s linear"></div>
+        </div>
       </div>
-      <div style="background:var(--bg3);border-radius:6px;height:4px;overflow:hidden;margin-bottom:.625rem">
-        <div id="tcf-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--acc),var(--green));width:100%;transition:width 1s linear"></div>
-      </div>
-      <button onclick="App._ffDismissToast()" style="width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:.4rem;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:var(--font-b)">Cerrar</button>`;
-    document.getElementById('toasts').appendChild(tEl);
+      <button onclick="App._ffDismissToast()" style="width:100%;background:var(--acc);color:#000;border:none;border-radius:12px;padding:.875rem;font-size:.9rem;font-weight:700;cursor:pointer;font-family:var(--font-b);min-height:48px">Ver en el panel →</button>`;
+    overlay.appendChild(card);
+    overlay.classList.add('on');
+    // Cerrar al tocar el backdrop (fuera de la card)
+    overlay.onclick=(e)=>{if(e.target===overlay)App._ffDismissToast();};
 
     // Guardar inmediatamente en background
     this._ffDoSave();
 
-    // Countdown visual 4 seg luego desaparece
+    // Countdown visual 4 seg
     clearInterval(this._ffCDTimer);
     let secs=4;
     const bar=document.getElementById('tcf-bar');
@@ -1427,16 +1472,20 @@ const App = {
     setTimeout(()=>{if(bar)bar.style.width='0%'},30);
     this._ffCDTimer=setInterval(()=>{
       secs--;
-      if(num)num.textContent=secs;
+      if(num)num.textContent=secs+'s';
       if(secs<=0){clearInterval(this._ffCDTimer);this._ffDismissToast();}
     },1000);
   },
 
   _ffDismissToast(){
     clearInterval(this._ffCDTimer);
-    const tEl=document.getElementById('toast-confirm-fuel');
-    if(tEl){tEl.style.animation='tOut .2s ease forwards';setTimeout(()=>tEl.remove(),230);}
-    // Resetear UI al estado inicial listo para nueva carga
+    const overlay=document.getElementById('fuel-confirm-overlay');
+    const card=document.getElementById('toast-confirm-fuel');
+    if(card)card.classList.add('bye');
+    setTimeout(()=>{
+      if(overlay){overlay.classList.remove('on');overlay.innerHTML='';}
+    },220);
+    // Resetear UI y volver al dashboard
     this._ffReset();
   },
 
@@ -2012,8 +2061,16 @@ document.querySelectorAll('.mbk').forEach(bk=>{bk.addEventListener('click',e=>{i
     document.getElementById('sc-login').classList.remove('on');
     document.getElementById('sc-app').classList.add('on');
     document.getElementById('menu-uname').textContent = user.name;
-    const tabAdmin = document.getElementById('tab-admin');
-    if(isAdmin() && user.username === ADMIN_USER) tabAdmin.style.display=''; else tabAdmin.style.display='none';
+    // Reset completo del layout (puede haber quedado en modo admin)
+    localStorage.removeItem('fml_adm');
+    document.querySelectorAll('.tab').forEach(t=>t.style.display='');
+    document.getElementById('tab-admin').style.display='none';
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('panel-dash').classList.add('on');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelector('.tab[onclick*="dash"]').classList.add('on');
+    const vpBtn=document.querySelector('#m-menu .btn-ghost[onclick*="openVPicker"]');
+    if(vpBtn)vpBtn.style.display='';
     OfflineQueue.updateUI();
     if(navigator.onLine) setTimeout(()=>OfflineQueue.flush(), 2000);
     // Restaurar vehículo si estaba seleccionado
