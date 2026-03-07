@@ -187,6 +187,18 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--acc-g);border-top-color:var(--acc);border-radius:50%;animation:rot .5s linear infinite}
 @keyframes rot{to{transform:rotate(360deg)}}
 .offline-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;display:none;align-items:center;gap:.625rem;font-size:.82rem;color:var(--orange)}
+.fuel-step{display:flex;align-items:center;gap:.875rem;padding:.875rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:14px;transition:all .3s}
+.fuel-step.active{border-color:var(--acc);background:var(--acc-g)}
+.fuel-step.done{border-color:var(--green);background:rgba(34,197,94,.08)}
+.fuel-step.error{border-color:var(--orange);background:rgba(245,158,11,.08)}
+.fstep-dot{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:var(--muted);flex-shrink:0;transition:all .3s}
+.fuel-step.active .fstep-dot{background:var(--acc);border-color:var(--acc);color:#000}
+.fuel-step.done .fstep-dot{background:var(--green);border-color:var(--green);color:#000}
+.fstep-body{flex:1;min-width:0}
+.fstep-title{font-weight:700;font-size:.88rem;margin-bottom:.1rem}
+.fstep-sub{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fstep-icon{font-size:1.4rem;flex-shrink:0}
+.fstep-connector{width:2px;height:14px;background:var(--border);margin:0 0 0 20px}
 .offline-banner.show{display:flex}
 
 /* ══ ADMIN DASHBOARD ══════════════════════════════════════════════════════ */
@@ -345,88 +357,62 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 
     <!-- ── PANEL COMBUSTIBLE ────────────────────────────────────────────── -->
     <div id="panel-fuel" class="panel">
-      <input type="file" id="file-in" accept="image/*" capture="environment" style="display:none" onchange="App.handlePhoto(event)">
-      <input type="file" id="file-km" accept="image/*" capture="environment" style="display:none" onchange="App.handleKmPhoto(event)">
-
-      <div class="fuel-section-header">
-        <div class="fsh-icon">⛽</div>
-        <div class="fsh-text"><h3>Carga de combustible</h3><p>Fotografiá el ticket y la IA extrae todo</p></div>
-        <div class="fsh-badge">IA activa</div>
-      </div>
+      <!-- inputs ocultos para captura de fotos -->
+      <input type="file" id="file-in"  accept="image/*" capture="environment" style="display:none" onchange="App._onTicketPhoto(event)">
+      <input type="file" id="file-km"  accept="image/*" capture="environment" style="display:none" onchange="App._onKmPhoto(event)">
+      <!-- campos ocultos del formulario (se llenan en background) -->
+      <input type="hidden" id="ff-date"><input type="hidden" id="ff-time">
+      <input type="hidden" id="ff-lit"><input type="hidden" id="ff-amt">
+      <input type="hidden" id="ff-iva"><input type="hidden" id="ff-cuit">
+      <input type="hidden" id="ff-loc"><input type="hidden" id="ff-addr">
+      <input type="hidden" id="km-curr">
 
       <div class="offline-banner" id="offline-banner">
         <span>📶</span>
         <div><strong>Sin conexión</strong> — <span id="queue-count">0</span> carga(s) en cola.</div>
       </div>
 
-      <!-- KM WIDGET — siempre visible en combustible -->
-      <div class="km-widget" id="km-widget">
-        <div class="km-header">
-          <div class="km-header-icon">🛣️</div>
-          <div class="km-header-text">
-            <h4>Kilómetros actuales <span style="color:var(--red);font-size:.7rem;font-family:var(--font-b);text-transform:none;letter-spacing:0;font-weight:700"> ★ Obligatorio</span></h4>
-            <p>Fotografiá el tablero o ingresalos manualmente — necesario para guardar</p>
-          </div>
-        </div>
-        <div class="km-input-row">
-          <div class="km-input-wrap">
-            <input type="number" id="km-curr" placeholder="125000" inputmode="numeric"
-              style="font-size:1.3rem" oninput="App.onKmInput(this.value)">
-          </div>
-          <button class="km-photo-btn" onclick="document.getElementById('file-km').click()" title="Fotografiar tablero">
-            📷
-          </button>
-        </div>
-        <div class="km-prev" id="km-prev">
-          <img id="km-prev-img" src="" alt="Tablero">
-          <div class="km-prev-badge" id="km-prev-badge">analizando...</div>
-        </div>
-        <!-- Barra de progreso al próximo servicio -->
-        <div id="km-maint-bar" style="display:none;margin-top:.75rem">
-          <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:.35rem">
-            <span>Próximo servicio</span><span id="km-maint-label" style="color:var(--acc);font-family:var(--font-m)"></span>
-          </div>
-          <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
-            <div id="km-maint-fill" style="height:100%;border-radius:4px;transition:width .5s"></div>
-          </div>
-        </div>
-      </div>
-
-      <button class="fuel-hero" id="fuel-hero-btn" onclick="App.triggerFuelScan(event)">
+      <!-- BOTÓN ÚNICO DE CARGA -->
+      <button class="fuel-hero" id="fuel-hero-btn" onclick="App.startFuelFlow(event)">
         <div class="queue-badge" id="queue-badge"></div>
         <div class="fuel-hero-inner">
-          <div class="fuel-hero-icon">📷</div>
+          <div class="fuel-hero-icon" id="fhb-icon">⛽</div>
           <div class="fuel-hero-text">
-            <h2>Fotografiar Ticket</h2>
-            <p>Toque para abrir la cámara</p>
+            <h2 id="fhb-title">Registrar carga</h2>
+            <p id="fhb-sub">Fotografiá ticket + tablero</p>
           </div>
         </div>
       </button>
 
-      <div id="tprev-wrap" style="display:none"></div>
-      <div id="retry-btn-wrap" style="display:none;margin-bottom:1rem">
-        <div style="display:flex;gap:.625rem">
-          <button class="btn btn-primary" onclick="App._retryPhoto()" style="flex:1;min-height:48px;font-size:.875rem">🔄 Reintentar foto</button>
-          <button class="btn btn-ghost" onclick="App._retakePhoto()" style="flex:1;min-height:48px;font-size:.875rem">📷 Nueva foto</button>
+      <!-- FLOW STEPS — aparecen debajo del botón durante el proceso -->
+      <div id="fuel-steps" style="display:none;margin-top:-.5rem;margin-bottom:1rem">
+        <div id="fstep-ticket" class="fuel-step">
+          <div class="fstep-dot" id="fdot-ticket">1</div>
+          <div class="fstep-body">
+            <div class="fstep-title" id="ftitle-ticket">Foto del ticket</div>
+            <div class="fstep-sub" id="fsub-ticket">Esperando foto...</div>
+          </div>
+          <div class="fstep-icon" id="ficon-ticket">📷</div>
+        </div>
+        <div class="fstep-connector"></div>
+        <div id="fstep-km" class="fuel-step" style="opacity:.4">
+          <div class="fstep-dot" id="fdot-km">2</div>
+          <div class="fstep-body">
+            <div class="fstep-title" id="ftitle-km">Foto del tablero</div>
+            <div class="fstep-sub" id="fsub-km">Foto del odómetro</div>
+          </div>
+          <div class="fstep-icon" id="ficon-km">🛣️</div>
         </div>
       </div>
-      <div id="fuel-form" style="display:none">
-        <div class="slabel">Datos del ticket</div>
-        <div class="fgrid">
-          <div class="fl"><label>Fecha</label><input type="date" id="ff-date"></div>
-          <div class="fl"><label>Hora</label><input type="time" id="ff-time"></div>
-          <div class="fl"><label>Litros</label><input type="number" id="ff-lit" step="0.01" placeholder="0.00" inputmode="decimal"></div>
-          <div class="fl"><label>Monto total ($)</label><input type="number" id="ff-amt" step="0.01" placeholder="0.00" inputmode="decimal"></div>
-          <div class="fl"><label>IVA 21% ($)</label><input type="number" id="ff-iva" step="0.01" placeholder="0.00" inputmode="decimal"></div>
-          <div class="fl"><label>CUIT surtidor</label><input type="text" id="ff-cuit" placeholder="XX-XXXXXXXX-X" inputmode="numeric"></div>
-          <div class="fl ffull"><label>Localidad</label><input type="text" id="ff-loc" placeholder="Buenos Aires"></div>
-          <div class="fl ffull"><label>Dirección</label><input type="text" id="ff-addr" placeholder="Av. Corrientes 1000"></div>
+
+      <!-- BARRA DE PROGRESO KM (mantenimiento) — se muestra cuando hay KM -->
+      <div id="km-maint-bar" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.875rem;margin-bottom:.75rem">
+        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:.35rem">
+          <span>Próximo servicio</span><span id="km-maint-label" style="color:var(--acc);font-family:var(--font-m)"></span>
         </div>
-        <div class="row2">
-          <button id="btn-savefuel" class="btn btn-primary" onclick="App.saveFuel()" style="flex:2">Guardar carga</button>
-          <button class="btn btn-ghost" onclick="App.cancelFuel()" style="flex:1">Cancelar</button>
+        <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+          <div id="km-maint-fill" style="height:100%;border-radius:4px;transition:width .5s"></div>
         </div>
-        <p style="text-align:center;font-size:.68rem;color:var(--muted);margin-top:.5rem">★ KM obligatorio para guardar</p>
       </div>
     </div>
 
@@ -629,60 +615,6 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 </div>
 
 
-<!-- ══ QUICK SAVE MODAL ══════════════════════════════════════════════════ -->
-<div id="m-quicksave" style="display:none;position:fixed;inset:0;z-index:800;align-items:flex-end;justify-content:center;padding:0 0 var(--sab) 0">
-  <div id="m-quicksave-bk" style="position:absolute;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(12px)"></div>
-  <div id="m-quicksave-sheet" style="position:relative;width:100%;max-width:480px;background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem calc(1.5rem + var(--sab));animation:mUp .3s cubic-bezier(.16,1,.3,1) both">
-    <!-- Handle -->
-    <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.25rem"></div>
-    <!-- Status row -->
-    <div id="qs-status" style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem">
-      <div id="qs-status-icon" style="width:40px;height:40px;border-radius:12px;background:var(--acc-g);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0">⛽</div>
-      <div>
-        <div id="qs-status-title" style="font-family:var(--font-h);font-size:1.1rem;text-transform:uppercase;letter-spacing:.04em">Leyendo ticket...</div>
-        <div id="qs-status-sub" style="font-size:.72rem;color:var(--muted);margin-top:.1rem">Analizando imagen con IA</div>
-      </div>
-      <div id="qs-spin" style="margin-left:auto"><span class="spin" style="width:20px;height:20px;border-width:2.5px"></span></div>
-    </div>
-    <!-- Data cards -->
-    <div id="qs-cards" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.625rem;margin-bottom:1.25rem;opacity:0;transition:opacity .3s">
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:.875rem;text-align:center">
-        <div id="qs-lit" style="font-family:var(--font-m);font-size:1.3rem;font-weight:700;color:var(--acc);line-height:1">—</div>
-        <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.3rem">Litros</div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:.875rem;text-align:center">
-        <div id="qs-amt" style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--green);line-height:1">—</div>
-        <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.3rem">Total</div>
-      </div>
-      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:.875rem;text-align:center">
-        <div id="qs-km" style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--blue);line-height:1">—</div>
-        <div style="font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.3rem">KM</div>
-      </div>
-    </div>
-    <!-- Countdown bar -->
-    <div id="qs-countdown-wrap" style="display:none;margin-bottom:1rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">
-        <span style="font-size:.72rem;color:var(--muted)">Guardando automáticamente...</span>
-        <span id="qs-countdown-num" style="font-family:var(--font-m);font-size:.8rem;font-weight:700;color:var(--acc)">4</span>
-      </div>
-      <div style="background:var(--bg3);border-radius:4px;height:5px;overflow:hidden">
-        <div id="qs-countdown-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--acc),var(--green));width:100%;transition:width 1s linear"></div>
-      </div>
-    </div>
-    <!-- Error state -->
-    <div id="qs-error" style="display:none;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.25);border-radius:14px;padding:1rem;margin-bottom:1rem;text-align:center">
-      <div style="font-size:1.5rem;margin-bottom:.5rem">📷</div>
-      <div style="font-weight:700;font-size:.9rem;margin-bottom:.25rem" id="qs-error-msg">No se pudo leer el ticket</div>
-      <div style="font-size:.75rem;color:var(--muted)">Tomá una foto más nítida y con buena iluminación</div>
-    </div>
-    <!-- Buttons -->
-    <div id="qs-btns" style="display:flex;gap:.625rem">
-      <button id="qs-btn-retake" onclick="App._qsRetake()" class="btn btn-ghost" style="flex:1;display:none">📷 Nueva foto</button>
-      <button id="qs-btn-review" onclick="App._qsReview()" class="btn btn-ghost" style="flex:1;display:none">✏️ Revisar datos</button>
-      <button id="qs-btn-cancel" onclick="App._qsCancel()" class="btn btn-ghost" style="flex:1;font-size:.82rem">Cancelar</button>
-    </div>
-  </div>
-</div>
 <script>
 // ══════════════════════════════════════════════════════════════════════════════
 // CONFIG
@@ -1212,43 +1144,7 @@ const App = {
     if(fill){fill.style.width=pct+'%';fill.style.background=color;fill.style.transition='width .6s ease,background .4s ease';}
   },
 
-  // ── OCR tablero ──────────────────────────────────────────────────────────
-  async handleKmPhoto(e){
-    const file=e.target.files[0];if(!file)return;
-    const b64=await this._b64(file);
-    document.getElementById('km-prev').style.display='';
-    document.getElementById('km-prev-img').src=b64;
-    document.getElementById('km-prev-badge').innerHTML='<span class="spin"></span> leyendo...';
-    const apiKey=localStorage.getItem('fml_akey')||'';
-    try{
-      const res=await fetch(`${API}/api/process-odometer`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,apiKey})});
-      if(!res.ok)throw new Error('HTTP '+res.status);
-      const data=await res.json();
-      if(data.km){
-        document.getElementById('km-curr').value=data.km;
-        document.getElementById('km-prev-badge').innerHTML='✅ '+fmtN(data.km)+' km';
-        this._updateKmBar(data.km);
-        haptic('medium');
-        // Auto-update modal cards si está abierto
-        const qs=document.getElementById('m-quicksave');
-        if(qs&&qs.style.display!=='none'){
-          document.getElementById('qs-km').textContent=fmtN(data.km)+' km';
-        }
-        // Toast con opción de corregir
-        const tEl=document.createElement('div');
-        tEl.className='toast t-success';
-        tEl.innerHTML=`<span>✅</span><span style="flex:1">KM leídos: <strong>${fmtN(data.km)} km</strong></span><button onclick="document.getElementById('km-curr').focus();this.closest('.toast').remove()" style="background:rgba(255,255,255,.15);border:none;color:inherit;border-radius:6px;padding:.2rem .5rem;font-size:.72rem;cursor:pointer;font-weight:700">Corregir</button>`;
-        document.getElementById('toasts').appendChild(tEl);
-        setTimeout(()=>{tEl.classList.add('bye');setTimeout(()=>tEl.remove(),230)},5000);
-      }else throw new Error('No se pudo leer el odómetro');
-    }catch(err){
-      document.getElementById('km-prev-badge').innerHTML='📷 Foto poco legible — intentá de nuevo';
-      document.getElementById('km-prev-badge').style.cssText='background:rgba(245,158,11,.9);color:#000;cursor:pointer;padding:.4rem .75rem;border-radius:8px;font-size:.72rem;font-weight:700';
-      document.getElementById('km-prev-badge').onclick=()=>document.getElementById('file-km').click();
-      toast('📷 No se pudo leer el tablero — tomá otra foto más nítida','warning',6000);
-    }
-    document.getElementById('file-km').value='';
-  },
+  // handleKmPhoto → replaced by _onKmPhoto in new fuel pipeline
 
   // ── DASHBOARD ────────────────────────────────────────────────────────────
   renderDash(){
@@ -1321,304 +1217,350 @@ const App = {
     document.getElementById('dash-alerts').innerHTML=html;
   },
 
-  // ── FUEL SCAN — nuevo flujo con QuickSave Modal ─────────────────────────
-  triggerFuelScan(e){haptic('heavy');addRipple(document.getElementById('fuel-hero-btn'),e);setTimeout(()=>document.getElementById('file-in').click(),150)},
+  // ══════════════════════════════════════════════════════════════════════════
+  // FUEL FLOW — pipeline de 2 fotos en paralelo
+  // ══════════════════════════════════════════════════════════════════════════
+  // Estado del flujo
+  _ff:{ticketDone:false,kmDone:false,ticketData:null,kmData:null,active:false},
 
-  async handlePhoto(e){
+  startFuelFlow(e){
+    if(!S.vid){toast('Seleccioná un vehículo primero','warning');return}
+    haptic('heavy');
+    addRipple(document.getElementById('fuel-hero-btn'),e);
+    // Reset estado
+    this._ff={ticketDone:false,kmDone:false,ticketData:null,kmData:null,active:true};
+    // Resetear campos ocultos
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','km-curr']
+      .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    // Mostrar steps
+    document.getElementById('fuel-steps').style.display='';
+    this._ffSetStep('ticket','active','Esperando foto del ticket...');
+    this._ffSetStep('km','idle','Foto del odómetro');
+    // Actualizar botón principal
+    document.getElementById('fhb-icon').textContent='📷';
+    document.getElementById('fhb-title').textContent='Foto del ticket';
+    document.getElementById('fhb-sub').textContent='Enfocá bien el ticket de nafta';
+    document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);setTimeout(()=>document.getElementById('file-in').click(),120)};
+    setTimeout(()=>document.getElementById('file-in').click(),200);
+  },
+
+  async _onTicketPhoto(e){
     const file=e.target.files[0];if(!file)return;
     document.getElementById('file-in').value='';
     const b64=await this._b64(file);
-    this._lastPhoto=b64;
-    // Llenar hidden form con fecha/hora actual como base
-    const ar=nowAR();
-    document.getElementById('ff-date').value=ar.date;
-    document.getElementById('ff-time').value=ar.time;
-    // Abrir modal quicksave en estado "cargando"
-    this._qsOpen('loading');
-    // Procesar en background
-    this._processPhoto(b64);
+    this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
+    // Actualizar botón para foto del tablero
+    document.getElementById('fhb-icon').textContent='🛣️';
+    document.getElementById('fhb-title').textContent='Foto del tablero';
+    document.getElementById('fhb-sub').textContent='Fotografiá el odómetro';
+    document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);setTimeout(()=>document.getElementById('file-km').click(),120)};
+    this._ffSetStep('km','active','Esperando foto del tablero...');
+    haptic('light');
+    // Arrancar OCR del ticket en background INMEDIATAMENTE
+    this._processTicketBg(b64);
+    // Abrir cámara del tablero automáticamente
+    setTimeout(()=>document.getElementById('file-km').click(),400);
   },
 
-  // ── QuickSave Modal controls ─────────────────────────────────────────────
-  _qsOpen(state){
-    const m=document.getElementById('m-quicksave');
-    m.style.display='flex';
-    document.getElementById('fuel-hero-btn').style.display='none';
-    this._qsSetState(state);
+  async _onKmPhoto(e){
+    const file=e.target.files[0];if(!file)return;
+    document.getElementById('file-km').value='';
+    const b64=await this._b64(file);
+    this._ffSetStep('km','active','Leyendo odómetro con IA...',true);
+    // Restaurar botón principal a estado de espera
+    document.getElementById('fhb-icon').textContent='⏳';
+    document.getElementById('fhb-title').textContent='Procesando...';
+    document.getElementById('fhb-sub').textContent='La IA está analizando las fotos';
+    document.getElementById('fuel-hero-btn').onclick=null;
+    // OCR del tablero en background
+    this._processKmBg(b64);
   },
 
-  _qsSetState(state){
-    const title=document.getElementById('qs-status-title');
-    const sub=document.getElementById('qs-status-sub');
-    const icon=document.getElementById('qs-status-icon');
-    const spin=document.getElementById('qs-spin');
-    const cards=document.getElementById('qs-cards');
-    const countdown=document.getElementById('qs-countdown-wrap');
-    const error=document.getElementById('qs-error');
-    const btnRetake=document.getElementById('qs-btn-retake');
-    const btnReview=document.getElementById('qs-btn-review');
-    const btnCancel=document.getElementById('qs-btn-cancel');
-
-    // Reset
-    btnRetake.style.display='none';btnReview.style.display='none';
-    countdown.style.display='none';error.style.display='none';
-
-    if(state==='loading'){
-      icon.textContent='⛽';icon.style.background='var(--acc-g)';
-      title.textContent='Leyendo ticket...';sub.textContent='Analizando imagen con IA';
-      spin.style.display='';cards.style.opacity='0';
-      document.getElementById('qs-lit').textContent='—';
-      document.getElementById('qs-amt').textContent='—';
-      document.getElementById('qs-km').textContent='—';
-    }
-    else if(state==='success'){
-      icon.textContent='✅';icon.style.background='rgba(34,197,94,.15)';
-      title.textContent='¡Ticket leído!';sub.textContent='Guardando automáticamente...';
-      spin.style.display='none';cards.style.opacity='1';
-      countdown.style.display='';btnReview.style.display='';
-      this._qsStartCountdown();
-    }
-    else if(state==='error'){
-      icon.textContent='⚠️';icon.style.background='rgba(245,158,11,.15)';
-      title.textContent='No se pudo leer';sub.textContent='Tomá una foto más nítida';
-      spin.style.display='none';cards.style.opacity='0';
-      error.style.display='';btnRetake.style.display='';
-    }
-    else if(state==='saving'){
-      icon.textContent='💾';icon.style.background='rgba(59,130,246,.15)';
-      title.textContent='Guardando...';sub.textContent='Registrando carga en el sistema';
-      spin.style.display='';btnReview.style.display='none';
-      countdown.style.display='none';
-    }
-    else if(state==='saved'){
-      icon.textContent='✅';icon.style.background='rgba(34,197,94,.15)';
-      title.textContent='¡Carga guardada!';sub.textContent='Sincronizando en segundo plano';
-      spin.style.display='none';btnCancel.style.display='none';
-      setTimeout(()=>this._qsClose(),1600);
+  async _processTicketBg(b64){
+    const apiKey=localStorage.getItem('fml_akey')||'';
+    try{
+      const res=await fetch(`${API}/api/process-ticket`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image:b64,apiKey})
+      });
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(!data.ticket)throw new Error('Sin datos');
+      const t=data.ticket;
+      const today=nowAR().date;
+      const todayYear=parseInt(today.slice(0,4));
+      // Llenar campos ocultos
+      let fecha=today;
+      if(t.fecha){const fy=parseInt((t.fecha||'').slice(0,4));if(fy>=todayYear-1&&fy<=todayYear)fecha=t.fecha;}
+      document.getElementById('ff-date').value=fecha;
+      if(t.hora)document.getElementById('ff-time').value=t.hora.slice(0,5);
+      const lit=t.combustible?.litros||t.combustible?.liters;
+      if(lit)document.getElementById('ff-lit').value=parseFloat(lit);
+      if(t.monto?.total)document.getElementById('ff-amt').value=parseFloat(t.monto.total);
+      if(t.monto?.iva)document.getElementById('ff-iva').value=parseFloat(t.monto.iva);
+      if(t.surtidor?.cuit)document.getElementById('ff-cuit').value=t.surtidor.cuit;
+      if(t.surtidor?.localidad)document.getElementById('ff-loc').value=t.surtidor.localidad;
+      if(t.surtidor?.direccion)document.getElementById('ff-addr').value=t.surtidor.direccion;
+      this._ff.ticketData={liters:parseFloat(lit)||0,amount:parseFloat(t.monto?.total)||0};
+      this._ff.ticketDone=true;
+      this._ffSetStep('ticket','done',`${parseFloat(lit)||'?'} L · $${Math.round(parseFloat(t.monto?.total)||0).toLocaleString('es-AR')}`);
+      haptic('light');
+      this._ffTryFinish();
+    }catch(err){
+      this._ff.ticketDone=true; // marcamos done aunque sea con error para no bloquear
+      this._ff.ticketData=null;
+      this._ffSetStep('ticket','error','No se pudo leer — podés reintentar');
+      // Ofrecer reintentar la foto del ticket
+      document.getElementById('fhb-icon').textContent='🔄';
+      document.getElementById('fhb-title').textContent='Reintentar ticket';
+      document.getElementById('fhb-sub').textContent='La foto salió poco legible';
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{
+        haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);
+        this._ff.ticketDone=false;this._ff.ticketData=null;
+        this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
+        setTimeout(()=>document.getElementById('file-in').click(),120);
+      };
+      this._ffTryFinish();
     }
   },
 
-  _qsCDTimer:null,
-  _qsStartCountdown(){
-    clearInterval(this._qsCDTimer);
+  async _processKmBg(b64){
+    const apiKey=localStorage.getItem('fml_akey')||'';
+    try{
+      const res=await fetch(`${API}/api/process-odometer`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image:b64,apiKey})
+      });
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(!data.km)throw new Error('Sin KM');
+      document.getElementById('km-curr').value=data.km;
+      this._updateKmBar(data.km);
+      this._ff.kmData={km:data.km};
+      this._ff.kmDone=true;
+      this._ffSetStep('km','done',`${fmtN(data.km)} km leídos ✓`);
+      haptic('light');
+      this._ffTryFinish();
+    }catch(err){
+      this._ff.kmDone=true;
+      this._ff.kmData=null;
+      this._ffSetStep('km','error','Foto poco legible — reintentar');
+      document.getElementById('fhb-icon').textContent='🔄';
+      document.getElementById('fhb-title').textContent='Reintentar tablero';
+      document.getElementById('fhb-sub').textContent='Sacá una foto más nítida del odómetro';
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{
+        haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);
+        this._ff.kmDone=false;this._ff.kmData=null;
+        this._ffSetStep('km','active','Leyendo odómetro...',true);
+        setTimeout(()=>document.getElementById('file-km').click(),120);
+      };
+      this._ffTryFinish();
+    }
+  },
+
+  _ffTryFinish(){
+    if(!this._ff.ticketDone||!this._ff.kmDone)return;
+    // Ambas fotos procesadas — ¿tenemos los datos mínimos?
+    const liters=parseFloat(document.getElementById('ff-lit').value)||0;
+    const amount=parseFloat(document.getElementById('ff-amt').value)||0;
+    const km=parseInt(document.getElementById('km-curr').value)||0;
+    // Si falta ticket Y falta km → ambos fallaron → pedir de nuevo desde el inicio
+    if(!liters&&!km){
+      document.getElementById('fhb-icon').textContent='⚠️';
+      document.getElementById('fhb-title').textContent='Fotos poco legibles';
+      document.getElementById('fhb-sub').textContent='Volvé a intentar con mejor luz';
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');this.startFuelFlow(ev);};
+      return;
+    }
+    // Si alguno falló pero el otro OK → mostrar toast de confirmación con lo que hay
+    haptic('heavy');
+    this._ffShowConfirmToast(liters,amount,km);
+  },
+
+  _ffCDTimer:null,
+  _ffShowConfirmToast(liters,amount,km){
+    // Actualizar botón → "Procesando registro..."
+    document.getElementById('fhb-icon').textContent='✅';
+    document.getElementById('fhb-title').textContent='¡Todo registrado!';
+    document.getElementById('fhb-sub').textContent='Guardando en segundo plano...';
+    document.getElementById('fuel-hero-btn').onclick=null;
+
+    // Crear toast de confirmación especial con countdown
+    const existing=document.getElementById('toast-confirm-fuel');
+    if(existing)existing.remove();
+
+    const litStr=liters>0?`<strong>${liters.toFixed(1)}L</strong>`:'<span style="color:var(--orange)">—L</span>';
+    const amtStr=amount>0?`<strong>$${Math.round(amount).toLocaleString('es-AR')}</strong>`:'<span style="color:var(--orange)">—</span>';
+    const kmStr=km>0?`<strong>${fmtN(km)} km</strong>`:'<span style="color:var(--orange)">Sin KM</span>';
+
+    const tEl=document.createElement('div');
+    tEl.id='toast-confirm-fuel';
+    tEl.style.cssText='pointer-events:auto;background:var(--bg2);border:1.5px solid var(--acc);border-radius:16px;padding:1rem 1.125rem;box-shadow:0 8px 32px rgba(0,0,0,.35);animation:tIn .28s cubic-bezier(.16,1,.3,1) both';
+    tEl.innerHTML=`
+      <div style="display:flex;align-items:center;gap:.625rem;margin-bottom:.75rem">
+        <span style="font-size:1.2rem">⛽</span>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:.9rem">Carga registrada</div>
+          <div style="font-size:.7rem;color:var(--muted)">${VEHICLES[S.vid]?.name||''}</div>
+        </div>
+        <div id="tcf-num" style="font-family:var(--font-m);font-size:1.1rem;font-weight:800;color:var(--acc)">4</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.75rem;text-align:center">
+        <div style="background:var(--bg3);border-radius:10px;padding:.5rem"><div style="font-size:.85rem">${litStr}</div><div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem">Litros</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:.5rem"><div style="font-size:.85rem">${amtStr}</div><div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem">Total</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:.5rem"><div style="font-size:.85rem">${kmStr}</div><div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;margin-top:.2rem">KM</div></div>
+      </div>
+      <div style="background:var(--bg3);border-radius:6px;height:4px;overflow:hidden;margin-bottom:.625rem">
+        <div id="tcf-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--acc),var(--green));width:100%;transition:width 1s linear"></div>
+      </div>
+      <button onclick="App._ffDismissToast()" style="width:100%;background:none;border:1px solid var(--border);border-radius:8px;padding:.4rem;font-size:.72rem;color:var(--muted);cursor:pointer;font-family:var(--font-b)">Cerrar</button>`;
+    document.getElementById('toasts').appendChild(tEl);
+
+    // Guardar inmediatamente en background
+    this._ffDoSave();
+
+    // Countdown visual 4 seg luego desaparece
+    clearInterval(this._ffCDTimer);
     let secs=4;
-    const bar=document.getElementById('qs-countdown-bar');
-    const num=document.getElementById('qs-countdown-num');
-    bar.style.transition='none';bar.style.width='100%';
-    setTimeout(()=>{bar.style.transition='width 1s linear';bar.style.width='0%'},30);
-    num.textContent=secs;
-    this._qsCDTimer=setInterval(()=>{
+    const bar=document.getElementById('tcf-bar');
+    const num=document.getElementById('tcf-num');
+    setTimeout(()=>{if(bar)bar.style.width='0%'},30);
+    this._ffCDTimer=setInterval(()=>{
       secs--;
-      num.textContent=secs;
-      if(secs<=0){
-        clearInterval(this._qsCDTimer);
-        this._qsExecuteSave();
-      }
+      if(num)num.textContent=secs;
+      if(secs<=0){clearInterval(this._ffCDTimer);this._ffDismissToast();}
     },1000);
   },
 
-  _qsStopCountdown(){clearInterval(this._qsCDTimer);this._qsCDTimer=null;},
-
-  _qsReview(){
-    // Parar countdown y abrir el form completo para edición
-    this._qsStopCountdown();
-    document.getElementById('m-quicksave').style.display='none';
-    document.getElementById('tprev-wrap').style.display='';
-    const b64=this._lastPhoto;
-    if(b64)document.getElementById('tprev-wrap').innerHTML=`<div class="tprev"><img src="${b64}" alt="Ticket"><div class="tprev-badge" style="color:var(--green)">✅ Datos extraídos</div></div>`;
-    document.getElementById('fuel-form').style.display='';
-    document.getElementById('fuel-hero-btn').style.display='none';
+  _ffDismissToast(){
+    clearInterval(this._ffCDTimer);
+    const tEl=document.getElementById('toast-confirm-fuel');
+    if(tEl){tEl.style.animation='tOut .2s ease forwards';setTimeout(()=>tEl.remove(),230);}
+    // Resetear UI al estado inicial listo para nueva carga
+    this._ffReset();
   },
 
-  _qsRetake(){
-    this._qsStopCountdown();
-    document.getElementById('m-quicksave').style.display='none';
-    document.getElementById('fuel-hero-btn').style.display='';
-    this._lastPhoto=null;
-    // Limpiar campos
-    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr'].forEach(id=>document.getElementById(id).value='');
-    setTimeout(()=>document.getElementById('file-in').click(),100);
+  _ffReset(){
+    this._ff={ticketDone:false,kmDone:false,ticketData:null,kmData:null,active:false};
+    document.getElementById('fuel-steps').style.display='none';
+    document.getElementById('fhb-icon').textContent='⛽';
+    document.getElementById('fhb-title').textContent='Registrar carga';
+    document.getElementById('fhb-sub').textContent='Fotografiá ticket + tablero';
+    document.getElementById('fuel-hero-btn').onclick=(ev)=>App.startFuelFlow(ev);
   },
 
-  _qsCancel(){
-    this._qsStopCountdown();
-    document.getElementById('m-quicksave').style.display='none';
-    document.getElementById('fuel-hero-btn').style.display='';
-    this._lastPhoto=null;
-    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr'].forEach(id=>document.getElementById(id).value='');
-  },
+  async _ffDoSave(){
+    if(!S.vid)return;
+    const liters=parseFloat(document.getElementById('ff-lit').value)||0;
+    const amount=parseFloat(document.getElementById('ff-amt').value)||0;
+    const date=document.getElementById('ff-date').value||nowAR().date;
+    const kmVal=parseInt(document.getElementById('km-curr').value)||0;
+    if(!liters||!amount)return; // ticket falló completamente, nada que guardar
 
-  _qsClose(){
-    document.getElementById('m-quicksave').style.display='none';
-    document.getElementById('fuel-hero-btn').style.display='';
-    document.getElementById('qs-btn-cancel').style.display='';
-  },
-
-  async _qsExecuteSave(){
-    this._qsSetState('saving');
-    await this.saveFuel(true); // true = viene del quicksave, no mostrar errores de UI
-  },
-
-  async _processPhoto(b64){
-    const apiKey=localStorage.getItem('fml_akey')||'';
-    try{
-      const res=await fetch(`${API}/api/process-ticket`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image:b64,apiKey})});
-      if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err.error||'HTTP '+res.status)}
-      const data=await res.json();
-      if(data.ticket){
-        const t=data.ticket;
-        // Fecha con validación de año
-        const today=nowAR().date;
-        const todayYear=parseInt(today.slice(0,4));
-        if(t.fecha){
-          const fechaYear=parseInt((t.fecha||'').slice(0,4));
-          document.getElementById('ff-date').value=(fechaYear>=todayYear-1&&fechaYear<=todayYear)?t.fecha:today;
-        }
-        if(t.hora)document.getElementById('ff-time').value=t.hora.slice(0,5);
-        const lit=t.combustible?.litros||t.combustible?.liters;
-        if(lit)document.getElementById('ff-lit').value=parseFloat(lit);
-        if(t.monto?.total)document.getElementById('ff-amt').value=parseFloat(t.monto.total);
-        if(t.monto?.iva)document.getElementById('ff-iva').value=parseFloat(t.monto.iva);
-        if(t.surtidor?.cuit)document.getElementById('ff-cuit').value=t.surtidor.cuit;
-        if(t.surtidor?.localidad)document.getElementById('ff-loc').value=t.surtidor.localidad;
-        if(t.surtidor?.direccion)document.getElementById('ff-addr').value=t.surtidor.direccion;
-        // Actualizar cards del modal
-        const litVal=parseFloat(document.getElementById('ff-lit').value)||0;
-        const amtVal=parseFloat(document.getElementById('ff-amt').value)||0;
-        const kmVal=parseInt(document.getElementById('km-curr').value)||0;
-        document.getElementById('qs-lit').textContent=litVal>0?litVal.toFixed(1)+'L':'—';
-        document.getElementById('qs-amt').textContent=amtVal>0?'$'+Math.round(amtVal).toLocaleString('es-AR'):'—';
-        document.getElementById('qs-km').textContent=kmVal>0?fmtN(kmVal)+' km':'—';
-        haptic('medium');
-        this._qsSetState('success');
-      }else throw new Error('Respuesta vacía');
-    }catch(err){
-      this._qsSetState('error');
-    }
-  },
-
-  _retryPhoto(){if(this._lastPhoto){this._qsSetState('loading');this._processPhoto(this._lastPhoto)}},
-  _retakePhoto(){this._qsRetake()},
-
-  // ── SAVE FUEL ────────────────────────────────────────────────────────────
-  async saveFuel(fromQuickSave=false){
-    if(!S.vid){if(!fromQuickSave)alert('Seleccioná un vehículo');return}
-    const liters=parseFloat(document.getElementById('ff-lit').value);
-    const amount=parseFloat(document.getElementById('ff-amt').value);
-    const date=document.getElementById('ff-date').value;
-    if(!date||!liters||!amount){if(fromQuickSave){App._qsSetState('error');document.getElementById('qs-error-msg').textContent='Faltan datos del ticket — revisá manualmente';}else alert('Completá: Fecha, Litros y Monto');return}
-
-    // KM OBLIGATORIO — sin KM no se puede guardar
-    const kmVal=parseInt(document.getElementById('km-curr').value)||null;
-    if(!kmVal||kmVal<=0){
-      // Marcar campo en rojo y hacer scroll hacia él
-      const kmInput=document.getElementById('km-curr');
-      const kmWidget=document.getElementById('km-widget');
-      kmInput.style.borderColor='var(--red)';
-      kmInput.style.boxShadow='0 0 0 3px rgba(239,68,68,.25)';
-      kmWidget.style.borderColor='var(--red)';
-      kmWidget.scrollIntoView({behavior:'smooth',block:'center'});
-      setTimeout(()=>kmInput.focus(),400);
-      setTimeout(()=>{
-        kmInput.style.borderColor='';
-        kmInput.style.boxShadow='';
-        kmWidget.style.borderColor='var(--acc)';
-      },3000);
-      if(fromQuickSave){
-        App._qsStopCountdown();
-        document.getElementById('m-quicksave').style.display='none';
-        document.getElementById('qs-btn-cancel').style.display='';
-        App._qsReview();
-      }
-      toast('🛣️ KM obligatorio — fotografiá el tablero o ingresalos manualmente','error',6000);
-      return;
-    }
-
-    // Validar que KM sea MAYOR al anterior registrado (no igual, no menor)
+    // Validar KM
     const vd0=DB.users()[S.user.id].vehicles[S.vid];
     const lastKm=vd0?.currentKm||0;
-    if(lastKm>0&&kmVal<=lastKm){
-      const kmInput=document.getElementById('km-curr');
-      kmInput.style.borderColor='var(--orange)';
-      kmInput.style.boxShadow='0 0 0 3px rgba(245,158,11,.25)';
-      kmInput.scrollIntoView({behavior:'smooth',block:'center'});
-      setTimeout(()=>kmInput.focus(),400);
-      setTimeout(()=>{kmInput.style.borderColor='';kmInput.style.boxShadow=''},3000);
-      const msg=kmVal===lastKm
-        ?`⚠️ KM igual al anterior (${fmtN(lastKm)} km) — el odómetro debe avanzar`
-        :`⚠️ KM menor al anterior (${fmtN(lastKm)} km) — verificá el odómetro`;
-      toast(msg,'warning',7000);
-      return;
+    if(kmVal>0&&lastKm>0&&kmVal<=lastKm){
+      toast(`⚠️ KM ${kmVal<=lastKm?'igual o menor':'inválido'} al anterior (${fmtN(lastKm)} km) — verificalo`,'warning',7000);
     }
 
     const record={
       id:Date.now(),date,time:document.getElementById('ff-time').value,
-      liters,amount,iva:parseFloat(document.getElementById('ff-iva').value)||0,
+      liters,amount,
+      iva:parseFloat(document.getElementById('ff-iva').value)||0,
       cuit:document.getElementById('ff-cuit').value,
       location:document.getElementById('ff-loc').value,
       address:document.getElementById('ff-addr').value,
-      km:kmVal,createdAt:new Date().toISOString(),
+      km:kmVal>0?kmVal:null,
+      createdAt:new Date().toISOString(),
     };
 
-    // Save locally
+    // Guardar localmente
     const users=DB.users();const vd=users[S.user.id].vehicles[S.vid];
     if(!vd.fuelRecords)vd.fuelRecords=[];
 
-    // ── Detección de anomalías ────────────────────────────────────────────
-    // 1. Capacidad máxima del tanque
+    // Anomalías
     const TANK_MAX={hiace:70,saveiro:55,fiat:45};
     const maxTank=TANK_MAX[S.vid]||70;
-    if(liters>maxTank){
-      toast(`🚨 Atención: ${liters.toFixed(1)}L supera la capacidad del tanque (${maxTank}L) — verificá el ticket`,'warning',8000);
-    }
-    // 2. Consumo anormal vs promedio histórico
+    if(liters>maxTank)toast(`🚨 ${liters.toFixed(1)}L supera capacidad del tanque (${maxTank}L) — verificá`,'warning',8000);
     if(vd.fuelRecords.length>=3){
-      const lastRecs=vd.fuelRecords.slice(-3);
-      const avgLit=lastRecs.reduce((s,r)=>s+(r.liters||0),0)/lastRecs.length;
-      if(avgLit>0&&liters>avgLit*1.3){
-        const pct=Math.round((liters/avgLit-1)*100);
-        toast(`⚠️ Consumo +${pct}% respecto al promedio — posible anomalía`,'warning',7000);
-      }
+      const avgLit=vd.fuelRecords.slice(-3).reduce((s,r)=>s+(r.liters||0),0)/3;
+      if(avgLit>0&&liters>avgLit*1.3)toast(`⚠️ Consumo +${Math.round((liters/avgLit-1)*100)}% sobre promedio`,'warning',7000);
     }
-    // ─────────────────────────────────────────────────────────────────────
 
     vd.fuelRecords.push(record);
-    if(kmVal)vd.currentKm=kmVal;
+    if(kmVal>0)vd.currentKm=kmVal;
     DB.saveUsers(users);S.user=users[S.user.id];
 
     const ppl=liters>0?amount/liters:0;
     if(ppl>0)recordPrice(ppl,date);
-
-    if(fromQuickSave){
-      this._qsSetState('saved');
-    }else{
-      setBtn('btn-savefuel',true,'Guardando...');
-      this.cancelFuel();
-      setBtn('btn-savefuel',false,'Guardar carga');
-      toast('✅ Carga guardada','success');
-    }
-    this.renderDash();haptic('heavy');
-    if(kmVal)this._updateKmBar(kmVal);
+    if(kmVal>0)this._updateKmBar(kmVal);
+    this.renderDash();
     setSyncStatus('pending');
 
-    // Sync + email
+    // Sync al servidor en background — continúa aunque el usuario cierre la app
     const v=VEHICLES[S.vid];
-    // vehicleBaseKm: KM previo del vehículo para calcular recorrido en el worker
     const _prevRecs=(DB.users()[S.user.id]?.vehicles?.[S.vid]?.fuelRecords||[]).filter(r=>r.km>0&&r.id!==record.id);
     const _prevKm=_prevRecs.length>0?_prevRecs.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0].km:0;
     const syncData={userId:S.user.id,userName:S.user.name,vehicleId:S.vid,vehicleName:v.name,vehicleIcon:v.emoji,vehicleBaseKm:_prevKm,record};
-    if(navigator.onLine){
-      fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)})
-        .then(r=>{if(r.ok)setSyncStatus('ok');else setSyncStatus('error');})
-        .catch(()=>{OfflineQueue.add({type:'sync-record',data:syncData});setSyncStatus('offline');});
+
+    const doSync=async()=>{
+      try{
+        const r=await fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)});
+        if(r.ok)setSyncStatus('ok');else setSyncStatus('error');
+      }catch(){OfflineQueue.add({type:'sync-record',data:syncData});setSyncStatus('offline');}
       this._sendConfirmEmail(record).catch(console.error);
+      await checkMaintenanceAlerts(S.user.vehicles[S.vid],S.vid);
+    };
+
+    // Usar keepalive fetch si el SW está disponible, sino normal
+    if(navigator.onLine){
+      if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+        doSync(); // SW mantendrá la conexión viva
+      }else{
+        doSync();
+      }
     }else{
       OfflineQueue.add({type:'sync-record',data:syncData});
       setSyncStatus('offline');
-      toast('📴 Sin conexión — se sincronizará automáticamente','warning');
     }
-    await checkMaintenanceAlerts(S.user.vehicles[S.vid],S.vid);
   },
+
+  _ffSetStep(step,state,sub,spin=false){
+    const el=document.getElementById('fstep-'+step);
+    const dot=document.getElementById('fdot-'+step);
+    const subEl=document.getElementById('fsub-'+step);
+    const iconEl=document.getElementById('ficon-'+step);
+    if(!el)return;
+    el.className='fuel-step'+(state==='active'?' active':state==='done'?' done':state==='error'?' error':'');
+    el.style.opacity='1';
+    if(sub)subEl.textContent=sub;
+    if(spin)dot.innerHTML='<span class="spin" style="width:14px;height:14px;border-width:2px;border-color:var(--acc-g);border-top-color:var(--acc)"></span>';
+    else if(state==='done')dot.textContent='✓';
+    else if(state==='error')dot.textContent='!';
+    else dot.textContent=step==='ticket'?'1':'2';
+    if(state==='done')iconEl.textContent=step==='ticket'?'✅':'✅';
+    else if(state==='error')iconEl.textContent='⚠️';
+  },
+
+  // Compatibilidad con cancelFuel llamado desde otros lugares
+  cancelFuel(){
+    this._ffReset();
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','km-curr']
+      .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  },
+
+  // KM input manual — ya no hay widget visible, pero se puede poner desde configuración o maint
+  onKmInput(val){const km=parseInt(val);if(km>0)this._updateKmBar(km);},
+
+  // Legacy compat
+  triggerFuelScan(e){this.startFuelFlow(e);},
+  handlePhoto(e){this._onTicketPhoto(e);},
+  handleKmPhoto(e){this._onKmPhoto(e);},
+  _retryPhoto(){},_retakePhoto(){},
+
+  // ── SAVE FUEL ────────────────────────────────────────────────────────────
+
 
   async _sendConfirmEmail(record){
     const v=VEHICLES[S.vid];
