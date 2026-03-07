@@ -1821,7 +1821,7 @@ const App = {
       }
     }catch(e){toast('❌ Error de red','error',5000)}
   },
-  async testEmail(){
+  async testMaintEmail(){
     toast('📧 Enviando email de prueba...','info',3000);
     const res=await fetch(`${API}/api/maintenance-alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleName:'VW Saveiro (PRUEBA)',vehicleIcon:'🚙',currentKm:125000,nextServiceKm:125450,kmLeft:450,userEmail:S.user?.email||''})}).catch(()=>null);
     if(res?.ok)toast('✅ Email enviado a distribuidoramercadolimpio@gmail.com','success',6000);
