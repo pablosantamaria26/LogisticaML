@@ -1,5 +1,5 @@
-// Flota ML — Service Worker v23
-const CACHE = 'flota-ml-v23';
+// Flota ML — Service Worker v24
+const CACHE = 'flota-ml-v24';
 const STATIC = ['/LogisticaML/', '/LogisticaML/index.html'];
 
 self.addEventListener('install', e => {
@@ -19,7 +19,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
-  if (url.hostname.includes('workers.dev') || url.hostname.includes('googleapis') || url.hostname.includes('brevo')) return;
+  if (
+    url.hostname.includes('workers.dev') ||
+    url.hostname.includes('googleapis') ||
+    url.hostname.includes('brevo')
+  ) return;
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
@@ -46,8 +50,8 @@ self.addEventListener('sync', e => {
 // ── WEB PUSH ──────────────────────────────────────────────────────────────────
 self.addEventListener('push', e => {
   let title = '🚛 Flota ML';
-  let body = 'Nueva notificación';
-  let tag = 'fml';
+  let body  = 'Nueva notificación';
+  let tag   = 'fml';
 
   try {
     if (e.data) {
@@ -60,22 +64,27 @@ self.addEventListener('push', e => {
     try { if (e.data) body = e.data.text(); } catch(__) {}
   }
 
-  // Ícono PNG para Android (SVG no es soportado por el NotificationManager nativo de Android)
-  // Usamos el ícono hosteado en GitHub Pages para no depender de CDNs externos
+  // PNG hosteado en GitHub Pages — requerido por Android NotificationManager
+  // iOS (Safari/WebKit) ignora icon en push; lo omitimos para evitar errores
   const ICON_PNG = 'https://pablosantamaria26.github.io/LogisticaML/icon-192.png';
+  const isIOS = /iphone|ipad|ipod/i.test(self.navigator?.userAgent || '');
 
   const options = {
     body,
     tag,
-    icon: ICON_PNG,
-    badge: ICON_PNG,
+    ...(isIOS ? {} : { icon: ICON_PNG, badge: ICON_PNG }),
     vibrate: [200, 100, 200],
     requireInteraction: false,
     data: { url: '/LogisticaML/' },
   };
 
+  // Fallback sin ícono si el PNG no carga (red offline, etc.)
   e.waitUntil(
-    self.registration.showNotification(title, options)
+    self.registration.showNotification(title, options).catch(() =>
+      self.registration.showNotification(title, {
+        body, tag, vibrate: [200, 100, 200], data: { url: '/LogisticaML/' }
+      })
+    )
   );
 });
 
