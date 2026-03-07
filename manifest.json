@@ -10,6 +10,12 @@
   "theme_color": "#ff6b00",
   "icons": [
     {
+      "src": "https://pablosantamaria26.github.io/LogisticaML/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23ff6b00' width='192' height='192' rx='40'/><text x='96' y='130' font-size='110' text-anchor='middle' font-family='Arial'>🚛</text></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
