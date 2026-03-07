@@ -1,5 +1,5 @@
-// Flota ML — Service Worker v01
-const CACHE = 'flota-ml-v01';
+// Flota ML — Service Worker v02
+const CACHE = 'flota-ml-v02';
 const STATIC = ['/LogisticaML/', '/LogisticaML/index.html'];
 
 self.addEventListener('install', e => {
