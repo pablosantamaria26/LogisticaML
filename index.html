@@ -952,16 +952,7 @@ const App = {
     this.showLogin();document.getElementById('lu').value=u;document.getElementById('lp').focus();
   },
 
-  logout(){
-    S={user:null,vid:null,pendingKmV:null};
-    DB.clearSession();
-    localStorage.removeItem('fml_adm');
-    document.getElementById('sc-app').classList.remove('on');
-    document.getElementById('sc-login').classList.add('on');
-    this.close('m-menu');
-    document.getElementById('lu').value='';
-    document.getElementById('lp').value='';
-  },
+
 
   _enterAdminApp(){
     document.getElementById('sc-login').classList.remove('on');
@@ -1369,7 +1360,7 @@ const App = {
       document.getElementById('fhb-icon').textContent='⚠️';
       document.getElementById('fhb-title').textContent='Fotos poco legibles';
       document.getElementById('fhb-sub').textContent='Volvé a intentar con mejor luz';
-      document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');this.startFuelFlow(ev);};
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');App.startFuelFlow(ev);};
       return;
     }
     // Si alguno falló pero el otro OK → mostrar toast de confirmación con lo que hay
@@ -1508,7 +1499,7 @@ const App = {
       try{
         const r=await fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)});
         if(r.ok)setSyncStatus('ok');else setSyncStatus('error');
-      }catch(){OfflineQueue.add({type:'sync-record',data:syncData});setSyncStatus('offline');}
+      }catch(e){OfflineQueue.add({type:'sync-record',data:syncData});setSyncStatus('offline');}
       this._sendConfirmEmail(record).catch(console.error);
       await checkMaintenanceAlerts(S.user.vehicles[S.vid],S.vid);
     };
@@ -1554,13 +1545,10 @@ const App = {
   onKmInput(val){const km=parseInt(val);if(km>0)this._updateKmBar(km);},
 
   // Legacy compat
-  triggerFuelScan(e){this.startFuelFlow(e);},
+  triggerFuelScan(e){App.startFuelFlow(e);},
   handlePhoto(e){this._onTicketPhoto(e);},
   handleKmPhoto(e){this._onKmPhoto(e);},
   _retryPhoto(){},_retakePhoto(){},
-
-  // ── SAVE FUEL ────────────────────────────────────────────────────────────
-
 
   async _sendConfirmEmail(record){
     const v=VEHICLES[S.vid];
@@ -1575,15 +1563,7 @@ const App = {
     }catch(err){if(!navigator.onLine)OfflineQueue.add({type:'send-confirmation',data:body})}
   },
 
-  cancelFuel(){
-    document.getElementById('file-in').value='';
-    document.getElementById('tprev-wrap').style.display='none';document.getElementById('tprev-wrap').innerHTML='';
-    document.getElementById('fuel-form').style.display='none';
-    document.getElementById('fuel-hero-btn').style.display='';
-    document.getElementById('retry-btn-wrap').style.display='none';
-    this._lastPhoto=null;
-    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr'].forEach(id=>document.getElementById(id).value='');
-  },
+
 
   // ── MAINTENANCE ──────────────────────────────────────────────────────────
   saveMaint(){
