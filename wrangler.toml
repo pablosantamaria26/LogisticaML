@@ -4,40 +4,50 @@ compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
 # ─── CRON TRIGGERS ────────────────────────────────────────────────────────────
-# Día 25 a las 12:00 UTC = 09:00 Argentina → Resumen para el contador (crédito fiscal)
-# Día  1 a las 11:00 UTC = 08:00 Argentina → Reporte para el dueño (mes anterior)
+# Día 25 a las 12:00 UTC = 09:00 AR → Resumen contador (crédito fiscal)
+# Día  1 a las 11:00 UTC = 08:00 AR → Reporte dueño (mes anterior)
+# Viernes a las 18:00 UTC = 15:00 AR → Reporte semanal IA
 [triggers]
 crons = [
   "0 12 25 * *",
-  "0 11 1  * *"
+  "0 11 1  * *",
+  "0 18 * * 5"
 ]
 
 # ─── KV NAMESPACE ─────────────────────────────────────────────────────────────
-# Crear en Cloudflare Dashboard → Workers & Pages → KV
-# Pegar el ID del namespace aquí:
+# Crear en: Cloudflare Dashboard → Workers & Pages → KV → Create namespace
+# Nombre sugerido: flota-ml-kv
+# Luego pegar el ID del namespace en "id":
 [[kv_namespaces]]
-binding = "FLEET_KV"
+binding = "FLOTA_KV"
 id      = "REEMPLAZAR_CON_TU_KV_ID"
-# id para preview (desarrollo local):
 # preview_id = "REEMPLAZAR_CON_TU_KV_PREVIEW_ID"
 
 # ─── SECRETS (NO poner valores reales aquí — usar wrangler secret put) ────────
-# Configurar con estos comandos:
 #
 #   wrangler secret put SENDGRID_API_KEY
-#   → Pegar tu API Key de SendGrid (empieza con SG.)
+#   → API Key de Brevo (xkeysib-...)
 #
 #   wrangler secret put GEMINI_API_KEY
-#   → Pegar tu API Key de Gemini (empieza con AIza)
+#   → API Key de Gemini (AIza...)
 #
 #   wrangler secret put FROM_EMAIL
-#   → santamariapablodaniel@gmail.com  (el email VERIFICADO en SendGrid)
+#   → santamariapablodaniel@gmail.com (email VERIFICADO en Brevo)
 #
 #   wrangler secret put OWNER_EMAIL
-#   → tu email como dueño (recibe reporte el día 1)
+#   → tu email personal (recibe reporte día 1 y reporte semanal)
 #
 #   wrangler secret put CONTADOR_EMAIL
-#   → email del contador (recibe resumen el día 25)
+#   → email del contador (recibe resumen día 25)
 #
-#   wrangler secret put FIREBASE_CREDENTIALS   (OPCIONAL)
+#   wrangler secret put VAPID_PRIVATE_KEY
+#   → WOK81I1NZLa_s0jVeiAAwse63eptGYjnbM1JD3zXlVo
+#
+#   wrangler secret put VAPID_PUBLIC_KEY
+#   → BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY
+#
+#   wrangler secret put FLEET_EMAIL        (opcional)
+#   → distribuidoramercadolimpio@gmail.com
+#
+#   wrangler secret put FIREBASE_CREDENTIALS   (opcional)
 #   → {"projectId":"tu-proyecto","apiKey":"AIza..."}
