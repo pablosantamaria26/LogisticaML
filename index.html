@@ -495,7 +495,7 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
       </div>
 
       <!-- REPORTE SEMANAL -->
-      <div class="slabel" style="margin-top:1.5rem">📊 Reporte</div>
+      <div class="slabel" style="margin-top:1.5rem">📊 Reportes IA</div>
       <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
         <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">El reporte semanal se envía automáticamente todos los <strong style="color:var(--text)">viernes</strong> a tu email. Incluye rankings, anomalías, proyecciones y análisis IA. También podés enviarlo ahora.</p>
         <button class="btn btn-ghost btn-sm" onclick="App.sendWeeklyNow()" style="border-color:var(--acc);color:var(--acc);margin-bottom:.5rem">📧 Enviar reporte semanal ahora</button>
@@ -1275,7 +1275,7 @@ const App = {
     const file=e.target.files[0];if(!file)return;
     document.getElementById('file-in').value='';
     const b64=await this._b64(file);
-    this._ffSetStep('ticket','active','Leyendo ticket...',true);
+    this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
     // Actualizar botón para foto del tablero
     document.getElementById('fhb-icon').textContent='🛣️';
     document.getElementById('fhb-title').textContent='Foto del tablero';
@@ -1293,11 +1293,11 @@ const App = {
     const file=e.target.files[0];if(!file)return;
     document.getElementById('file-km').value='';
     const b64=await this._b64(file);
-    this._ffSetStep('km','active','Leyendo odómetro...',true);
+    this._ffSetStep('km','active','Leyendo odómetro con IA...',true);
     // Restaurar botón principal a estado de espera
     document.getElementById('fhb-icon').textContent='⏳';
     document.getElementById('fhb-title').textContent='Procesando...';
-    document.getElementById('fhb-sub').textContent='Se está analizando las fotos';
+    document.getElementById('fhb-sub').textContent='La IA está analizando las fotos';
     document.getElementById('fuel-hero-btn').onclick=null;
     // OCR del tablero en background
     this._processKmBg(b64);
@@ -1344,7 +1344,7 @@ const App = {
       document.getElementById('fuel-hero-btn').onclick=(ev)=>{
         haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);
         this._ff.ticketDone=false;this._ff.ticketData=null;
-        this._ffSetStep('ticket','active','Leyendo ticket...',true);
+        this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
         setTimeout(()=>document.getElementById('file-in').click(),120);
       };
       this._ffTryFinish();
@@ -1902,7 +1902,38 @@ const App = {
     document.getElementById('lp').value='';
   },
   exportData(){const blob=new Blob([JSON.stringify({user:S.user,priceHistory:DB.priceHistory(),at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`flota-ml-${S.user.username}-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href)},
-  _b64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file)})},
+  _b64(file){
+    // Comprime antes de convertir — evita "Memoria insuficiente" en celulares viejos
+    return new Promise((res,rej)=>{
+      const MAX_PX=1280; // lado largo máx en px — suficiente para que la IA lea bien
+      const QUALITY=0.82;
+      const reader=new FileReader();
+      reader.onerror=rej;
+      reader.onload=ev=>{
+        const img=new Image();
+        img.onerror=()=>res(ev.target.result); // fallback: enviar original
+        img.onload=()=>{
+          try{
+            let w=img.width,h=img.height;
+            if(w>MAX_PX||h>MAX_PX){
+              if(w>h){h=Math.round(h*MAX_PX/w);w=MAX_PX;}
+              else{w=Math.round(w*MAX_PX/h);h=MAX_PX;}
+            }
+            const canvas=document.createElement('canvas');
+            canvas.width=w;canvas.height=h;
+            const ctx=canvas.getContext('2d');
+            ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
+            ctx.drawImage(img,0,0,w,h);
+            const out=canvas.toDataURL('image/jpeg',QUALITY);
+            canvas.width=0;canvas.height=0; // liberar RAM
+            res(out);
+          }catch(e){res(ev.target.result);}
+        };
+        img.src=ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  },
 
   // ── TEST FUNCTIONS (borrar después) ──────────────────────────────────────
   async testPushNotif(){
