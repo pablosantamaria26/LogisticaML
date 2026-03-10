@@ -1273,34 +1273,32 @@ const App = {
 
   async _onTicketPhoto(e){
     const file=e.target.files[0];if(!file)return;
-    document.getElementById('file-in').value='';
-    const b64=await this._b64(file);
+    document.getElementById('file-in').value=''; // limpiar input para que no retenga ref al file
+    let b64=await this._b64(file);
     this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
-    // Actualizar botón para foto del tablero
     document.getElementById('fhb-icon').textContent='🛣️';
     document.getElementById('fhb-title').textContent='Foto del tablero';
     document.getElementById('fhb-sub').textContent='Fotografiá el odómetro';
     document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);setTimeout(()=>document.getElementById('file-km').click(),120)};
     this._ffSetStep('km','active','Esperando foto del tablero...');
     haptic('light');
-    // Arrancar OCR del ticket en background INMEDIATAMENTE
+    // Mandar a background y soltar la referencia — el GC puede liberar los ~300KB
     this._processTicketBg(b64);
-    // Abrir cámara del tablero automáticamente
+    b64=null; // liberar string base64 del scope local
     setTimeout(()=>document.getElementById('file-km').click(),400);
   },
 
   async _onKmPhoto(e){
     const file=e.target.files[0];if(!file)return;
-    document.getElementById('file-km').value='';
-    const b64=await this._b64(file);
+    document.getElementById('file-km').value=''; // limpiar input
+    let b64=await this._b64(file);
     this._ffSetStep('km','active','Leyendo odómetro con IA...',true);
-    // Restaurar botón principal a estado de espera
     document.getElementById('fhb-icon').textContent='⏳';
     document.getElementById('fhb-title').textContent='Procesando...';
     document.getElementById('fhb-sub').textContent='La IA está analizando las fotos';
     document.getElementById('fuel-hero-btn').onclick=null;
-    // OCR del tablero en background
     this._processKmBg(b64);
+    b64=null; // liberar string base64 del scope local
   },
 
   async _processTicketBg(b64){
@@ -1310,6 +1308,7 @@ const App = {
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({image:b64,apiKey})
       });
+      b64=null; // foto enviada — liberar string (~300KB) inmediatamente
       if(!res.ok)throw new Error('HTTP '+res.status);
       const data=await res.json();
       if(!data.ticket)throw new Error('Sin datos');
@@ -1358,6 +1357,7 @@ const App = {
         method:'POST',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({image:b64,apiKey})
       });
+      b64=null; // foto enviada — liberar string inmediatamente
       if(!res.ok)throw new Error('HTTP '+res.status);
       const data=await res.json();
       if(!data.km)throw new Error('Sin KM');
@@ -1903,35 +1903,91 @@ const App = {
   },
   exportData(){const blob=new Blob([JSON.stringify({user:S.user,priceHistory:DB.priceHistory(),at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`flota-ml-${S.user.username}-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href)},
   _b64(file){
-    // Comprime antes de convertir — evita "Memoria insuficiente" en celulares viejos
+    // Comprime + libera memoria agresivamente — soporta celulares con poco RAM
+    // Estrategia: ObjectURL → Image → Canvas → toDataURL → limpiar TODO
     return new Promise((res,rej)=>{
-      const MAX_PX=1280; // lado largo máx en px — suficiente para que la IA lea bien
-      const QUALITY=0.82;
-      const reader=new FileReader();
-      reader.onerror=rej;
-      reader.onload=ev=>{
-        const img=new Image();
-        img.onerror=()=>res(ev.target.result); // fallback: enviar original
-        img.onload=()=>{
-          try{
-            let w=img.width,h=img.height;
-            if(w>MAX_PX||h>MAX_PX){
-              if(w>h){h=Math.round(h*MAX_PX/w);w=MAX_PX;}
-              else{w=Math.round(w*MAX_PX/h);h=MAX_PX;}
-            }
-            const canvas=document.createElement('canvas');
-            canvas.width=w;canvas.height=h;
-            const ctx=canvas.getContext('2d');
-            ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);
-            ctx.drawImage(img,0,0,w,h);
-            const out=canvas.toDataURL('image/jpeg',QUALITY);
-            canvas.width=0;canvas.height=0; // liberar RAM
-            res(out);
-          }catch(e){res(ev.target.result);}
-        };
-        img.src=ev.target.result;
+      const MAX_PX=1280;   // px máximo en lado largo — la IA lee perfecto a esta res
+      const QUALITY=0.80;  // JPEG 80% — buen balance legibilidad/peso (≈200-400KB)
+
+      // Usamos ObjectURL en vez de FileReader+base64 para no tener dos copias en RAM
+      let objectUrl=null;
+      let img=null;
+      let canvas=null;
+
+      const cleanup=()=>{
+        // Limpiar en orden: primero canvas (GPU memory), luego img, luego objectURL
+        if(canvas){canvas.width=0;canvas.height=0;canvas=null;}
+        if(img){img.onload=null;img.onerror=null;img.src='';img=null;}
+        if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null;}
       };
-      reader.readAsDataURL(file);
+
+      try{
+        objectUrl=URL.createObjectURL(file);
+      }catch(e){
+        // createObjectURL no disponible (raro) — fallback a FileReader
+        const reader=new FileReader();
+        reader.onerror=rej;
+        reader.onload=ev=>res(ev.target.result);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      img=new Image();
+
+      img.onerror=()=>{
+        // La imagen no cargó — limpiar y rechazar
+        cleanup();
+        rej(new Error('No se pudo cargar la imagen'));
+      };
+
+      img.onload=()=>{
+        try{
+          // 1. Calcular dimensiones finales manteniendo proporción
+          let w=img.naturalWidth||img.width;
+          let h=img.naturalHeight||img.height;
+          if(!w||!h){cleanup();rej(new Error('Imagen sin dimensiones'));return;}
+          if(w>MAX_PX||h>MAX_PX){
+            if(w>=h){h=Math.round(h*MAX_PX/w);w=MAX_PX;}
+            else{w=Math.round(w*MAX_PX/h);h=MAX_PX;}
+          }
+
+          // 2. Dibujar en canvas
+          canvas=document.createElement('canvas');
+          canvas.width=w;
+          canvas.height=h;
+          const ctx=canvas.getContext('2d',{alpha:false}); // alpha:false ahorra RAM
+          ctx.fillStyle='#ffffff';
+          ctx.fillRect(0,0,w,h);
+          ctx.drawImage(img,0,0,w,h);
+
+          // 3. Ya no necesitamos la imagen original — liberar ANTES de toDataURL
+          // (esto libera la memoria de la foto full-res antes de crear la string b64)
+          cleanup(); // libera img y objectUrl, canvas todavía se usa
+
+          // 4. Exportar el canvas comprimido
+          const out=canvas.toDataURL('image/jpeg',QUALITY);
+
+          // 5. Limpiar canvas (fue preservado por cleanup())
+          if(canvas){canvas.width=0;canvas.height=0;canvas=null;}
+
+          res(out);
+        }catch(e){
+          cleanup();
+          if(canvas){canvas.width=0;canvas.height=0;canvas=null;}
+          // Si falló canvas (memoria muy baja), intentar enviar igualcon ObjectURL directo
+          // En ese caso creamos un nuevo ObjectURL temporal
+          try{
+            const fb=URL.createObjectURL(file);
+            // Leer como base64 via FileReader como último recurso
+            const fr=new FileReader();
+            fr.onerror=()=>{URL.revokeObjectURL(fb);rej(e);};
+            fr.onload=ev=>{URL.revokeObjectURL(fb);res(ev.target.result);};
+            fr.readAsDataURL(file);
+          }catch(e2){rej(e2);}
+        }
+      };
+
+      img.src=objectUrl;
     });
   },
 
