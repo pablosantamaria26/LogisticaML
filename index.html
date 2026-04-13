@@ -747,17 +747,32 @@ async function subscribePush(){
     const currentEndpoint=sub.endpoint;
     const currentVid=S.vid||'__admin__';
 
-    const alreadyRegistered=(
+    const cacheRecent=(
       lastReg.endpoint===currentEndpoint &&
       lastReg.vid===currentVid &&
       lastReg.username===username &&
-      // Re-registrar si pasaron más de 7 días (por si el server limpió las subs)
       lastReg.ts && (Date.now()-lastReg.ts < 7*24*60*60*1000)
     );
 
-    if(alreadyRegistered){
-      console.log('✅ Push ya registrada, sin cambios — omitiendo re-registro');
-      return sub;
+    if(cacheRecent){
+      // Verificar en servidor que la sub sigue vigente (recovery automático tras reset-all)
+      try{
+        const chk=await fetch(`${API}/api/push-check?username=${encodeURIComponent(username)}`);
+        if(chk.ok){
+          const chkData=await chk.json().catch(()=>({}));
+          if(chkData.exists){
+            console.log('✅ Push ya registrada en KV — omitiendo re-registro');
+            return sub;
+          }
+          console.log('⚠️ Push no encontrada en servidor — re-registrando...');
+          // Limpiar caché local para forzar re-registro
+          localStorage.removeItem(cacheKey);
+        }
+      }catch(e){
+        // Sin internet: confiar en caché local
+        console.log('✅ Push cache local válida (offline)');
+        return sub;
+      }
     }
 
     // Guardar sub localmente con ID del usuario
