@@ -236,6 +236,67 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 .adm-d-sv{font-family:var(--font-m);font-size:1.2rem;font-weight:700;color:var(--acc);display:block;line-height:1}
 .adm-d-sl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.35rem;display:block}
 
+/* ══ ADMIN PRO ════════════════════════════════════════════════════════════ */
+.adm-month-nav{display:flex;align-items:center;gap:.375rem;margin-bottom:1.25rem;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.5rem .75rem}
+.adm-mnav-btn{min-width:36px;height:36px;border:none;background:var(--bg3);border-radius:9px;color:var(--muted);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0;font-family:var(--font-b);font-weight:700}
+.adm-mnav-btn:active{background:var(--acc);color:#000}
+.adm-mnav-btn[disabled]{opacity:.3;pointer-events:none}
+.adm-mnav-lbl{flex:1;text-align:center;font-family:var(--font-h);font-size:1.05rem;text-transform:uppercase;letter-spacing:.06em}
+.adm-live-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .65rem;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);border-radius:20px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);margin-bottom:.875rem}
+.adm-live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 6px var(--green);animation:blink 1.5s ease-in-out infinite;flex-shrink:0}
+.adm-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:1.25rem}
+.adm-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.875rem;position:relative;overflow:hidden}
+.adm-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent);opacity:.7}
+.adm-kpi-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.3rem}
+.adm-kpi-val{font-family:var(--font-m);font-size:1.15rem;font-weight:700;color:var(--acc);line-height:1;word-break:break-all}
+.adm-kpi-delta{font-size:.68rem;font-weight:700;margin-top:.35rem}
+.dlt-up{color:var(--red)}.dlt-dn{color:var(--green)}.dlt-eq{color:var(--muted)}
+.adm-alert{border-radius:14px;padding:.875rem 1rem;margin-bottom:1.25rem;border:1px solid;display:flex;align-items:flex-start;gap:.75rem;font-size:.82rem}
+.adm-alert.cls-up{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.25);color:var(--red)}
+.adm-alert.cls-ok{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.25);color:var(--green)}
+.adm-alert.cls-warn{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.25);color:var(--orange)}
+.adm-alert .ai{font-size:1.35rem;flex-shrink:0;line-height:1.2}
+.adm-alert strong{display:block;font-weight:700;margin-bottom:.2rem}
+.adm-alert p{opacity:.9;line-height:1.5;font-size:.78rem}
+.adm-trend-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1rem 1rem .75rem;margin-bottom:1.25rem}
+.adm-trend-hdr{display:flex;align-items:center;justify-content:space-between;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.875rem}
+.adm-trend-legend{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.adm-trend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;display:inline-block}
+.adm-trend-chart{display:flex;align-items:flex-end;gap:.375rem;height:80px}
+.adm-trend-col{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex:1;min-width:0}
+.adm-trend-bars{width:100%;flex:1;display:flex;align-items:flex-end;gap:1px}
+.adm-trend-bar{flex:1;border-radius:4px 4px 0 0;min-height:3px;transition:height .5s ease;cursor:pointer}
+.adm-trend-col.is-curr .adm-trend-lbl{color:var(--acc);font-weight:900}
+.adm-trend-lbl{font-size:.54rem;font-weight:700;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.adm-trend-amt{font-family:var(--font-m);font-size:.5rem;color:var(--muted);white-space:nowrap}
+.adm-rank-list{display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.25rem}
+.adm-rank-item{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.875rem;display:flex;align-items:center;gap:.75rem;transition:border-color .2s}
+.adm-rank-item.top1{border-color:var(--acc)}
+.adm-rank-pos{width:26px;font-size:1.1rem;text-align:center;flex-shrink:0;line-height:1}
+.adm-rank-info{flex:1;min-width:0}
+.adm-rank-name{font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap}
+.adm-rank-bar-bg{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:.35rem}
+.adm-rank-bar-fill{height:100%;border-radius:2px;transition:width .7s ease}
+.adm-rank-meta{font-size:.68rem;color:var(--muted);display:flex;gap:.5rem;flex-wrap:wrap}
+.adm-rank-right{text-align:right;flex-shrink:0}
+.adm-rank-gasto{font-family:var(--font-m);font-size:.95rem;font-weight:700;color:var(--acc)}
+.adm-rank-delta{font-size:.68rem;font-weight:700;margin-top:.2rem}
+.adm-rank-litros{font-size:.62rem;color:var(--muted);margin-top:.1rem}
+.adm-comp-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:1.25rem}
+.adm-comp-hdr,.adm-comp-row{display:grid;grid-template-columns:1fr repeat(5,minmax(0,auto));gap:.2rem;padding:.6rem .875rem;align-items:center}
+.adm-comp-hdr{background:var(--bg3);font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.adm-comp-row{border-top:1px solid var(--border);font-size:.75rem}
+.adm-comp-row.total-row{background:var(--bg3);font-weight:700}
+.adm-comp-veh{display:flex;align-items:center;gap:.35rem;font-weight:700;white-space:nowrap;overflow:hidden;min-width:0}
+.adm-comp-cell{font-family:var(--font-m);font-size:.72rem;font-weight:700;text-align:right;white-space:nowrap}
+.adm-comp-cell.acc{color:var(--acc)}
+.adm-sec{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:.875rem 0 .75rem;display:flex;align-items:center;gap:.5rem}
+.adm-sec::after{content:'';flex:1;height:1px;background:var(--border)}
+.adm-tool-toggle{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:.82rem;font-weight:600;user-select:none;transition:border-color .2s;-webkit-tap-highlight-color:transparent}
+.adm-tool-toggle:active{opacity:.75}
+.adm-tool-toggle.danger{border-color:rgba(239,68,68,.3);color:var(--red)}
+.adm-tool-body{background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:.875rem;margin-top:-.5rem;margin-bottom:.75rem}
+
 /* ══ MODALS ═══════════════════════════════════════════════════════════════ */
 .mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:500;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}
 .mbk.on{display:flex;animation:mfade .2s ease}
@@ -452,62 +513,106 @@ td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
 
     <!-- ── PANEL ADMIN MONITOR ──────────────────────────────────────────── -->
     <div id="panel-admin" class="panel">
+
+      <!-- HEADER -->
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
         <div>
-          <div style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em">Monitor de Flota</div>
-          <div style="color:var(--muted);font-size:.78rem" id="adm-updated"></div>
+          <div style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em">Monitor Pro</div>
+          <div style="color:var(--muted);font-size:.72rem" id="adm-updated">Cargando...</div>
         </div>
         <button class="icon-btn" onclick="App.renderAdmin()" title="Actualizar">🔄</button>
       </div>
 
-      <!-- Resumen global -->
-      <div class="sgrid" style="margin-bottom:1.5rem">
-        <div class="sc"><div class="sv" id="adm-total-cargas">0</div><div class="sl">Cargas totales</div></div>
-        <div class="sc"><div class="sv" id="adm-total-gasto">$0</div><div class="sl">Gasto mes</div></div>
-        <div class="sc"><div class="sv" id="adm-total-lit">0L</div><div class="sl">Litros mes</div></div>
-        <div class="sc"><div class="sv" id="adm-total-km">—</div><div class="sl">KM totales</div></div>
+      <!-- MONTH NAVIGATOR -->
+      <div class="adm-month-nav">
+        <button class="adm-mnav-btn" onclick="App.admPrevMonth()">‹</button>
+        <div class="adm-mnav-lbl" id="adm-month-lbl">—</div>
+        <button class="adm-mnav-btn" id="adm-month-next" onclick="App.admNextMonth()">›</button>
+        <button class="adm-mnav-btn" id="adm-today-btn" onclick="App.admGoToday()" title="Mes actual" style="font-size:.7rem;min-width:44px">HOY</button>
       </div>
 
-      <div class="slabel">Estado de cada vehículo</div>
-      <div class="adm-grid" id="adm-vcards"></div>
+      <!-- LIVE badge (solo mes actual) -->
+      <div id="adm-live-badge" class="adm-live-badge" style="display:none">
+        <span class="adm-live-dot"></span>EN VIVO — Datos acumulando
+      </div>
 
-      <!-- Últimas cargas de toda la flota -->
-      <div class="slabel">Últimas cargas — toda la flota</div>
-      <div id="adm-recent"></div>
+      <!-- KPI cards -->
+      <div class="adm-kpi-grid" id="adm-kpis"></div>
 
-      <!-- ASIGNACIÓN DE VEHÍCULOS -->
-      <div class="slabel" style="margin-top:1.5rem">🚗 Asignación de vehículos</div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem" id="adm-assignments">
+      <!-- ALERTA DE PRECIO / TRASLADO -->
+      <div id="adm-price-alert"></div>
+
+      <!-- TREND CHART -->
+      <div class="adm-sec">Tendencia — últimos 6 meses</div>
+      <div class="adm-trend-wrap">
+        <div class="adm-trend-hdr">
+          <span>Gasto combustible flota</span>
+          <div class="adm-trend-legend" id="adm-trend-legend"></div>
+        </div>
+        <div class="adm-trend-chart" id="adm-trend"></div>
+      </div>
+
+      <!-- VEHICLE RANKING -->
+      <div class="adm-sec">Ranking — mayor gastador</div>
+      <div class="adm-rank-list" id="adm-ranking"></div>
+
+      <!-- COMPARISON TABLE -->
+      <div class="adm-sec">Detalle por vehículo</div>
+      <div class="adm-comp-wrap" id="adm-comp-table"></div>
+
+      <!-- HERRAMIENTAS (colapsables) -->
+      <div class="adm-sec" style="margin-top:1.75rem">Herramientas</div>
+
+      <!-- Cargas recientes -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-recent','chv-recent')">
+        <span>🕐 Cargas del período</span><span id="chv-recent">▾</span>
+      </div>
+      <div id="adm-t-recent" class="adm-tool-body" style="display:none">
+        <div id="adm-recent"></div>
+      </div>
+
+      <!-- Asignación de vehículos -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-assign','chv-assign',()=>App._loadAssignments())">
+        <span>🚗 Asignación de vehículos</span><span id="chv-assign">▾</span>
+      </div>
+      <div id="adm-t-assign" class="adm-tool-body" style="display:none">
         <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Cambiá el vehículo asignado a cada conductor. El cambio se aplica la próxima vez que el usuario abre la app.</p>
         <div id="adm-assign-list"></div>
-        <button class="btn btn-ghost btn-sm" onclick="App._loadAssignments()" style="margin-top:.5rem">🔄 Actualizar asignaciones</button>
+        <button class="btn btn-ghost btn-sm" onclick="App._loadAssignments()" style="margin-top:.5rem">🔄 Actualizar</button>
       </div>
 
-      <!-- BROADCAST MESSAGE -->
-      <div class="slabel" style="margin-top:1.5rem">Mensaje a toda la flota</div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
-        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Escribí un mensaje y llegará como notificación push a <strong style="color:var(--text)">todos los dispositivos</strong> de los choferes.</p>
+      <!-- Broadcast -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-broadcast','chv-broadcast')">
+        <span>📢 Mensaje a la flota</span><span id="chv-broadcast">▾</span>
+      </div>
+      <div id="adm-t-broadcast" class="adm-tool-body" style="display:none">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Llegará como notificación push a <strong style="color:var(--text)">todos los choferes</strong>.</p>
         <div class="fl" style="margin-bottom:.75rem">
-          <label>Mensaje para los choferes</label>
-          <textarea id="broadcast-msg" placeholder="Ej: Reunión mañana a las 8am en el depósito..." style="min-height:80px;resize:vertical"></textarea>
+          <label>Mensaje</label>
+          <textarea id="broadcast-msg" placeholder="Ej: Reunión mañana a las 8am en el depósito..." style="min-height:70px;resize:vertical"></textarea>
         </div>
-        <button id="btn-broadcast" class="btn btn-primary" onclick="App.sendBroadcast()" style="background:var(--acc)">📢 Enviar a toda la flota</button>
+        <button id="btn-broadcast" class="btn btn-primary" onclick="App.sendBroadcast()">📢 Enviar a toda la flota</button>
       </div>
 
-      <!-- REPORTE SEMANAL -->
-      <div class="slabel" style="margin-top:1.5rem">📊 Reportes IA</div>
-      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
-        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">El reporte semanal se envía automáticamente todos los <strong style="color:var(--text)">viernes</strong> a tu email. Incluye rankings, anomalías, proyecciones y análisis IA. También podés enviarlo ahora.</p>
+      <!-- Reportes IA -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-reports','chv-reports')">
+        <span>📊 Reportes IA</span><span id="chv-reports">▾</span>
+      </div>
+      <div id="adm-t-reports" class="adm-tool-body" style="display:none">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">El reporte semanal se envía automáticamente todos los <strong style="color:var(--text)">viernes</strong> a tu email.</p>
         <button class="btn btn-ghost btn-sm" onclick="App.sendWeeklyNow()" style="border-color:var(--acc);color:var(--acc);margin-bottom:.5rem">📧 Enviar reporte semanal ahora</button>
         <button class="btn btn-ghost btn-sm" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange)">📧 Probar email mantenimiento</button>
       </div>
 
-      <!-- ZONA PELIGROSA -->
-      <div class="slabel" style="margin-top:1.5rem;color:var(--red)">⚠️ Zona de reinicio</div>
-      <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.25);border-radius:16px;padding:1.125rem;margin-bottom:1rem">
-        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Borra <strong style="color:var(--text)">todos los datos del servidor</strong> (registros, tokens push, caché). Usá solo para reiniciar la app en producción. Cada usuario deberá reabrir la app para re-registrarse.</p>
+      <!-- Zona peligrosa -->
+      <div class="adm-tool-toggle danger" onclick="App.admToggleTool('adm-t-reset','chv-reset')">
+        <span>⚠️ Zona de reinicio</span><span id="chv-reset">▾</span>
+      </div>
+      <div id="adm-t-reset" class="adm-tool-body" style="display:none;border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.04)">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Borra <strong style="color:var(--text)">todos los datos del servidor</strong> (registros, tokens push, caché). No hay vuelta atrás.</p>
         <button class="btn" onclick="App.resetKV()" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);width:100%">🗑️ Borrar todo el servidor (KV)</button>
       </div>
+
     </div>
 
   </div>
@@ -1683,123 +1788,361 @@ const App = {
   // ── ADMIN MONITOR ────────────────────────────────────────────────────────
   _adminRefreshTimer:null,
 
+  // ── ADMIN PRO: state ─────────────────────────────────────────────────────
+  _admMonth: null,  // YYYY-MM del mes visualizado
+  _admAllRecs: [],  // cache de todos los registros
+
+  _admCurrMonth(){
+    const n=new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+  },
+
+  admPrevMonth(){
+    const m=this._admMonth||this._admCurrMonth();
+    const [y,mo]=m.split('-').map(Number);
+    const d=new Date(y,mo-2,1);
+    this._admMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    this.renderAdmin();
+  },
+
+  admNextMonth(){
+    const curr=this._admCurrMonth();
+    const m=this._admMonth||curr;
+    if(m>=curr)return;
+    const [y,mo]=m.split('-').map(Number);
+    const d=new Date(y,mo,1);
+    const next=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    this._admMonth=next<=curr?next:curr;
+    this.renderAdmin();
+  },
+
+  admGoToday(){
+    this._admMonth=null;
+    this.renderAdmin();
+  },
+
+  admToggleTool(bodyId,chevId,onOpen){
+    const el=document.getElementById(bodyId);
+    if(!el)return;
+    const chv=document.getElementById(chevId);
+    const opening=el.style.display==='none';
+    el.style.display=opening?'':'none';
+    if(chv)chv.textContent=opening?'▴':'▾';
+    if(opening&&onOpen)onOpen();
+  },
+
+  // Computa métricas para un mes dado a partir de todos los registros
+  _admMonthStats(allRecs,month){
+    const res={};
+    Object.keys(VEHICLES).forEach(vid=>{res[vid]={fuel:[],litros:0,gasto:0,iva:0,km:{start:0,end:0,traveled:0},cpm:0,kpl:null,ppl:null,drivers:[]}});
+    // Cargas de ese mes
+    allRecs.forEach(entry=>{
+      const r=entry.record;if(!r?.date)return;
+      const vid=entry.vehicleId;if(!res[vid])return;
+      if(r.date.slice(0,7)!==month)return;
+      res[vid].fuel.push(r);
+      res[vid].litros+=(r.liters||0);
+      res[vid].gasto+=(r.amount||0);
+      res[vid].iva+=(r.iva||0);
+      if(entry.userName&&!res[vid].drivers.includes(entry.userName))res[vid].drivers.push(entry.userName);
+    });
+    // KM por vehículo — usando todos los registros para calcular el rango
+    Object.keys(VEHICLES).forEach(vid=>{
+      const allVRecs=allRecs.filter(e=>e.vehicleId===vid&&(e.record?.km||0)>0)
+        .map(e=>({km:e.record.km,date:e.record.date}))
+        .sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const moRecs=allVRecs.filter(r=>r.date.slice(0,7)===month);
+      const prevRecs=allVRecs.filter(r=>r.date.slice(0,7)<month);
+      if(moRecs.length>0){
+        const endKm=Math.max(...moRecs.map(r=>r.km));
+        let startKm=0;
+        if(prevRecs.length>0)startKm=Math.max(...prevRecs.map(r=>r.km));
+        else if(moRecs.length>1)startKm=Math.min(...moRecs.map(r=>r.km));
+        res[vid].km={start:startKm,end:endKm,traveled:startKm>0?Math.max(0,endKm-startKm):0};
+      }
+      const vd=res[vid];
+      vd.cpm=vd.km.traveled>0?Math.round(vd.gasto/vd.km.traveled):0;
+      vd.kpl=(vd.litros>0&&vd.km.traveled>0)?(vd.km.traveled/vd.litros).toFixed(2):null;
+      vd.ppl=vd.litros>0?(vd.gasto/vd.litros).toFixed(2):null;
+    });
+    return res;
+  },
+
   async renderAdmin(){
     document.getElementById('adm-updated').textContent='Actualizando...';
-    // Auto-refresh cada 30 segundos
-    if(this._adminRefreshTimer) clearInterval(this._adminRefreshTimer);
+    if(this._adminRefreshTimer)clearInterval(this._adminRefreshTimer);
     this._adminRefreshTimer=setInterval(()=>{
       const p=document.getElementById('panel-admin');
       if(p&&p.classList.contains('on'))this.renderAdmin();
       else clearInterval(this._adminRefreshTimer);
-    },30000);
+    },60000);
 
-    // Cargar registros desde KV (datos de TODOS los dispositivos)
+    // Obtener registros KV
     let kvRecords=[];
     try{
       const res=await fetch(`${API}/api/get-records`);
       if(res.ok){const d=await res.json();kvRecords=d.records||[];}
     }catch(e){console.warn('get-records:',e)}
 
-    document.getElementById('adm-updated').textContent='Actualizado: '+new Date().toLocaleTimeString('es-AR',{timeZone:TZ})+(kvRecords.length?` · ${kvRecords.length} reg`:'');
-
-    const now=new Date();
+    // Fusionar con datos locales (deduplicar por id)
     const localUsers=DB.users();
-    const vData={};
-    Object.values(VEHICLES).forEach(v=>{vData[v.id]={fuel:[],maint:[],currentKm:0,drivers:[]}});
-
-    // 1. localStorage (datos locales)
+    const seenIds=new Set(kvRecords.map(e=>e.record?.id).filter(Boolean));
+    const allRecs=[...kvRecords];
     Object.values(localUsers).forEach(u=>{
       if(!u.vehicles)return;
       Object.entries(u.vehicles).forEach(([vid,vd])=>{
-        if(!vData[vid])return;
-        if(vd.fuelRecords?.length)vData[vid].fuel.push(...vd.fuelRecords.map(r=>({...r,_user:u.name})));
-        if(vd.maintenanceRecords?.length)vData[vid].maint.push(...vd.maintenanceRecords);
-        if(vd.currentKm>vData[vid].currentKm)vData[vid].currentKm=vd.currentKm;
-        if(!vData[vid].drivers.includes(u.name))vData[vid].drivers.push(u.name);
+        (vd.fuelRecords||[]).forEach(r=>{
+          if(!seenIds.has(r.id)){
+            seenIds.add(r.id);
+            allRecs.push({vehicleId:vid,vehicleName:VEHICLES[vid]?.name,vehicleIcon:VEHICLES[vid]?.emoji,userName:u.name,record:r});
+          }
+        });
       });
     });
+    this._admAllRecs=allRecs;
 
-    // 2. KV nube — deduplicar por record.id
-    const seenIds=new Set(Object.values(vData).flatMap(vd=>vd.fuel.map(r=>r.id)));
-    kvRecords.forEach(entry=>{
-      const vid=entry.vehicleId;const r=entry.record;
-      if(!vData[vid]||!r)return;
-      if(!seenIds.has(r.id)){seenIds.add(r.id);vData[vid].fuel.push({...r,_user:entry.userName});}
-      if(r.km&&r.km>vData[vid].currentKm)vData[vid].currentKm=r.km;
-      if(entry.userName&&!vData[vid].drivers.includes(entry.userName))vData[vid].drivers.push(entry.userName);
+    // Mes seleccionado
+    const curr=this._admCurrMonth();
+    if(!this._admMonth)this._admMonth=curr;
+    const isCurr=this._admMonth===curr;
+
+    // Label del mes
+    const [y,mo]=this._admMonth.split('-').map(Number);
+    const lbl=new Date(y,mo-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric',timeZone:TZ});
+    document.getElementById('adm-month-lbl').textContent=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+    const nextBtn=document.getElementById('adm-month-next');
+    if(nextBtn)nextBtn.disabled=isCurr;
+    const liveBadge=document.getElementById('adm-live-badge');
+    if(liveBadge)liveBadge.style.display=isCurr?'':'none';
+
+    // Mes anterior
+    const prevDate=new Date(y,mo-2,1);
+    const prevMonth=`${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+
+    const currStats=this._admMonthStats(allRecs,this._admMonth);
+    const prevStats=this._admMonthStats(allRecs,prevMonth);
+
+    // Totales flota
+    const fleet={
+      cargas:Object.values(currStats).reduce((s,v)=>s+v.fuel.length,0),
+      litros:Object.values(currStats).reduce((s,v)=>s+v.litros,0),
+      gasto:Object.values(currStats).reduce((s,v)=>s+v.gasto,0),
+      km:Object.values(currStats).reduce((s,v)=>s+v.km.traveled,0),
+    };
+    const prevFleet={
+      cargas:Object.values(prevStats).reduce((s,v)=>s+v.fuel.length,0),
+      litros:Object.values(prevStats).reduce((s,v)=>s+v.litros,0),
+      gasto:Object.values(prevStats).reduce((s,v)=>s+v.gasto,0),
+      km:Object.values(prevStats).reduce((s,v)=>s+v.km.traveled,0),
+    };
+
+    document.getElementById('adm-updated').textContent=`Act: ${new Date().toLocaleTimeString('es-AR',{timeZone:TZ})} · ${allRecs.length} reg`;
+
+    this._admRenderKPIs(fleet,prevFleet);
+    this._admRenderPriceAlert(fleet,prevFleet,currStats,prevStats);
+    this._admRenderTrend(allRecs,this._admMonth);
+    this._admRenderRanking(currStats,prevStats,fleet.gasto);
+    this._admRenderCompTable(currStats,prevStats);
+    this._admRenderRecent(allRecs,this._admMonth);
+  },
+
+  _admDeltaHtml(curr,prev,invertColor=false){
+    if(!prev||prev===0)return '';
+    const pct=Math.round((curr/prev-1)*100);
+    if(pct===0)return '<span class="dlt-eq">→ Sin cambio</span>';
+    const up=pct>0;
+    const cls=invertColor?(up?'dlt-dn':'dlt-up'):(up?'dlt-up':'dlt-dn');
+    return `<span class="${cls}">${up?'▲':'▼'} ${Math.abs(pct)}% vs mes ant.</span>`;
+  },
+
+  _admRenderKPIs(fleet,prevFleet){
+    document.getElementById('adm-kpis').innerHTML=`
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">Gasto total</div>
+        <div class="adm-kpi-val">${fmt$(fleet.gasto)}</div>
+        <div class="adm-kpi-delta">${this._admDeltaHtml(fleet.gasto,prevFleet.gasto)}</div>
+      </div>
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">Litros</div>
+        <div class="adm-kpi-val">${fleet.litros.toFixed(1)}L</div>
+        <div class="adm-kpi-delta">${this._admDeltaHtml(fleet.litros,prevFleet.litros)}</div>
+      </div>
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">KM recorridos</div>
+        <div class="adm-kpi-val">${fleet.km>0?fmtN(fleet.km)+'km':'—'}</div>
+        <div class="adm-kpi-delta">${fleet.km>0?this._admDeltaHtml(fleet.km,prevFleet.km,true):''}</div>
+      </div>
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">Cargas</div>
+        <div class="adm-kpi-val">${fleet.cargas}</div>
+        <div class="adm-kpi-delta">${this._admDeltaHtml(fleet.cargas,prevFleet.cargas)}</div>
+      </div>`;
+  },
+
+  _admRenderPriceAlert(fleet,prevFleet,currStats,prevStats){
+    const el=document.getElementById('adm-price-alert');
+    if(!el||!prevFleet.gasto||!fleet.gasto){if(el)el.innerHTML='';return;}
+    const gastoPct=((fleet.gasto/prevFleet.gasto)-1)*100;
+    const currPpl=fleet.litros>0?fleet.gasto/fleet.litros:0;
+    const prevLit=Object.values(prevStats).reduce((s,v)=>s+v.litros,0);
+    const prevGas=Object.values(prevStats).reduce((s,v)=>s+v.gasto,0);
+    const prevPpl=prevLit>0?prevGas/prevLit:0;
+    const pplPct=prevPpl>0?((currPpl/prevPpl)-1)*100:0;
+    let cls,icon,title,msg;
+    if(gastoPct>15){
+      cls='cls-up';icon='🚨';
+      title=`Gasto +${gastoPct.toFixed(1)}% vs mes anterior`;
+      msg=`Incremento significativo en combustible.${pplPct>5?` El precio/litro subió ${pplPct.toFixed(1)}% ($${currPpl.toFixed(2)}/L vs $${prevPpl.toFixed(2)}/L).`:''} Considerá trasladar el incremento a tu precio de venta.`;
+    }else if(gastoPct>5){
+      cls='cls-warn';icon='⚠️';
+      title=`Gasto +${gastoPct.toFixed(1)}% vs mes anterior`;
+      msg=`Incremento moderado. Precio promedio actual: $${currPpl.toFixed(2)}/L${prevPpl>0?` (era $${prevPpl.toFixed(2)}/L)`:''}.`;
+    }else if(gastoPct<-5){
+      cls='cls-ok';icon='✅';
+      title=`Gasto ${gastoPct.toFixed(1)}% vs mes anterior`;
+      msg=`Mes con menor gasto de combustible. Precio promedio: $${currPpl.toFixed(2)}/L. Buena eficiencia operativa.`;
+    }else{
+      el.innerHTML='';return;
+    }
+    el.innerHTML=`<div class="adm-alert ${cls}"><div class="ai">${icon}</div><div><strong>${title}</strong><p>${msg}</p></div></div>`;
+  },
+
+  _admRenderTrend(allRecs,currMonth){
+    const el=document.getElementById('adm-trend');
+    const leg=document.getElementById('adm-trend-legend');
+    if(!el)return;
+    const [cy,cm]=currMonth.split('-').map(Number);
+    const months=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(cy,cm-1-i,1);
+      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const lbl=d.toLocaleDateString('es-AR',{month:'short',timeZone:TZ}).replace('.','').slice(0,3);
+      months.push({key,lbl,byV:{hiace:0,saveiro:0,fiat:0},total:0});
+    }
+    allRecs.forEach(entry=>{
+      const r=entry.record;if(!r?.date)return;
+      const rm=r.date.slice(0,7);
+      const mo=months.find(m=>m.key===rm);if(!mo)return;
+      const vid=entry.vehicleId;
+      if(mo.byV[vid]!==undefined)mo.byV[vid]+=(r.amount||0);
+      mo.total+=(r.amount||0);
     });
+    const maxTotal=Math.max(...months.map(m=>m.total),1);
+    const VCOLS={hiace:'var(--acc)',saveiro:'var(--blue)',fiat:'var(--green)'};
+    // Leyenda
+    if(leg)leg.innerHTML=Object.entries(VCOLS).map(([vid,col])=>`<span style="display:flex;align-items:center;gap:.25rem;font-size:.56rem;color:var(--muted)"><span class="adm-trend-dot" style="background:${col}"></span>${VEHICLES[vid]?.name.split(' ')[0]||vid}</span>`).join('');
+    el.innerHTML=months.map(mo=>{
+      const colPct=Math.max(6,Math.round(mo.total/maxTotal*100));
+      const isCurr=mo.key===currMonth;
+      const bars=mo.total>0
+        ?Object.entries(VCOLS).map(([vid,col])=>{
+            const h=mo.total>0?Math.max(5,Math.round(mo.byV[vid]/mo.total*colPct)):0;
+            return `<div class="adm-trend-bar" style="height:${h}%;background:${col};opacity:${isCurr?1:.75}" title="${VEHICLES[vid]?.name}: ${fmt$(mo.byV[vid])}"></div>`;
+          }).join('')
+        :`<div class="adm-trend-bar" style="height:8px;background:var(--border)"></div>`;
+      return `<div class="adm-trend-col${isCurr?' is-curr':''}">
+        <div class="adm-trend-bars">${bars}</div>
+        <div class="adm-trend-lbl">${mo.lbl}</div>
+        <div class="adm-trend-amt">${mo.total>0?'$'+Math.round(mo.total/1000)+'k':'—'}</div>
+      </div>`;
+    }).join('');
+  },
 
-    const cont=document.getElementById('adm-vcards');cont.innerHTML='';
-    let allFuelForRecent=[];
-    let totalCargas=0,totalAmt=0,totalLit=0,totalKmFlota=0;
-
-    Object.values(VEHICLES).forEach(v=>{
-      const vd=vData[v.id];
-      const mo=vd.fuel.filter(r=>{const d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
-      const amt=mo.reduce((s,r)=>s+r.amount,0);
-      const lit=mo.reduce((s,r)=>s+r.liters,0);
-      const km=calcKmMetrics(vd.fuel,vd.currentKm);
-      const maint=vd.maint.sort((a,b)=>b.currentKm-a.currentKm);
-      const st=getMaintStatus({maintenanceRecords:maint,currentKm:vd.currentKm});
-
-      totalCargas+=mo.length;totalAmt+=amt;totalLit+=lit;
-      if(km.totalKm)totalKmFlota+=km.totalKm;
-
-      // Tag fuel records with vehicle for combined recent list
-      vd.fuel.forEach(r=>allFuelForRecent.push({...r,_vname:v.name,_vemoji:v.emoji}));
-
-      // Status chip
-      let statusText='OK',statusColor='var(--green)',statusBg='rgba(34,197,94,.13)';
-      if(st){
-        if(st.kmLeft<=0){statusText='VENCIDO';statusColor='var(--red)';statusBg='rgba(239,68,68,.13)'}
-        else if(st.kmLeft<=500){statusText='URGENTE';statusColor='var(--orange)';statusBg='rgba(245,158,11,.13)'}
-        else if(st.kmLeft<=1000){statusText='PRÓXIMO';statusColor='var(--orange)';statusBg='rgba(245,158,11,.08)'}
-      }
-
-      const card=document.createElement('div');card.className='adm-vcard';
-      card.innerHTML=`
-        <div class="adm-vcard-top">
-          <span class="adm-vemoji">${v.emoji}</span>
-          <span class="adm-vstatus" style="background:${statusBg};color:${statusColor}">${statusText}</span>
+  _admRenderRanking(currStats,prevStats,totalGasto){
+    const el=document.getElementById('adm-ranking');if(!el)return;
+    const VCOLS={hiace:'var(--acc)',saveiro:'var(--blue)',fiat:'var(--green)'};
+    const medals=['🥇','🥈','🥉'];
+    const sorted=Object.entries(currStats)
+      .filter(([vid])=>VEHICLES[vid])
+      .sort((a,b)=>b[1].gasto-a[1].gasto);
+    const maxG=Math.max(...sorted.map(([,v])=>v.gasto),1);
+    el.innerHTML=sorted.map(([vid,vd],i)=>{
+      const v=VEHICLES[vid];
+      const pct=totalGasto>0?Math.round(vd.gasto/totalGasto*100):0;
+      const barPct=Math.round(vd.gasto/maxG*100);
+      const prev=prevStats[vid]||{};
+      const gastoPct=prev.gasto>0?Math.round((vd.gasto/prev.gasto-1)*100):null;
+      const deltaStr=gastoPct!==null
+        ?`<span class="${gastoPct>0?'dlt-up':'dlt-dn'}">${gastoPct>0?'▲':'▼'} ${Math.abs(gastoPct)}%</span>`
+        :`<span class="dlt-eq">sin dato prev.</span>`;
+      return `<div class="adm-rank-item${i===0?' top1':''}">
+        <div class="adm-rank-pos">${medals[i]||(i+1)+'.'}</div>
+        <div class="adm-rank-info">
+          <div class="adm-rank-name">${v.emoji} ${v.name} <span class="chip c-acc" style="font-size:.54rem;padding:.12rem .4rem">${pct}%</span></div>
+          <div class="adm-rank-bar-bg"><div class="adm-rank-bar-fill" style="width:${barPct}%;background:${VCOLS[vid]||'var(--acc)'}"></div></div>
+          <div class="adm-rank-meta">
+            ${vd.km.traveled>0?`<span>🛣️ ${fmtN(vd.km.traveled)} km</span>`:''}
+            ${vd.kpl?`<span>⚡ ${vd.kpl} km/L</span>`:''}
+            ${vd.cpm>0?`<span>💲 $${fmtN(vd.cpm)}/km</span>`:''}
+            <span>👤 ${vd.drivers.join(', ')||'Sin asignar'}</span>
+          </div>
         </div>
-        <div class="adm-vname">${v.name}</div>
-        <div class="adm-vdriver">👤 ${vd.drivers.length?vd.drivers.join(', '):'Sin asignar'}</div>
-        <div class="adm-stats">
-          <div class="adm-stat"><span class="adm-sv">${fmtN(vd.currentKm)||'—'}</span><span class="adm-sl">KM actuales</span></div>
-          <div class="adm-stat"><span class="adm-sv">${fmt$(amt)}</span><span class="adm-sl">Gasto mes</span></div>
-          <div class="adm-stat"><span class="adm-sv">${lit.toFixed(1)}L</span><span class="adm-sl">Litros mes</span></div>
-          <div class="adm-stat"><span class="adm-sv">${km.costoPorKm?'$'+km.costoPorKm:'—'}</span><span class="adm-sl">$/km</span></div>
+        <div class="adm-rank-right">
+          <div class="adm-rank-gasto">${fmt$(vd.gasto)}</div>
+          <div class="adm-rank-delta">${deltaStr}</div>
+          <div class="adm-rank-litros">${vd.litros.toFixed(1)}L</div>
         </div>
-        ${st?`<div class="adm-km-bar">
-          <div class="adm-km-label"><span>Mantenimiento</span><span style="color:${statusColor}">${st.kmLeft>0?'Faltan '+fmtN(st.kmLeft)+' km':'⚠️ VENCIDO'}</span></div>
-          <div class="adm-km-bg"><div class="adm-km-fill ${st.pct>80?'warn':''}" style="width:${st.pct}%"></div></div>
-        </div>`:''}
-      `;
-      card.onclick=()=>this._showAdminDetail(v.id,vData[v.id]);
-      cont.appendChild(card);
-    });
+      </div>`;
+    }).join('');
+    if(!sorted.length||!sorted[0][1].gasto)el.innerHTML='<p style="color:var(--muted);font-size:.82rem;padding:.75rem 0">Sin datos para este período</p>';
+  },
 
-    // Totales globales
-    document.getElementById('adm-total-cargas').textContent=totalCargas;
-    document.getElementById('adm-total-gasto').textContent=fmt$(totalAmt);
-    document.getElementById('adm-total-lit').textContent=totalLit.toFixed(1)+'L';
-    document.getElementById('adm-total-km').textContent=totalKmFlota?fmtN(totalKmFlota)+'km':'—';
-    // Cargar panel de asignaciones
-    this._loadAssignments();
+  _admRenderCompTable(currStats,prevStats){
+    const el=document.getElementById('adm-comp-table');if(!el)return;
+    const dTag=(curr,prev,inv=false)=>{
+      if(!prev||!curr)return '';
+      const p=Math.round((curr/prev-1)*100);
+      if(!p)return '';
+      const cls=inv?(p>0?'var(--green)':'var(--red)'):(p>0?'var(--red)':'var(--green)');
+      return `<span style="font-size:.56rem;color:${cls};margin-left:.2rem">${p>0?'▲':'▼'}${Math.abs(p)}%</span>`;
+    };
+    const hdr=`<div class="adm-comp-hdr"><span>Vehículo</span><span>Gasto</span><span>Litros</span><span>KM</span><span>km/L</span><span>$/km</span></div>`;
+    const rows=Object.entries(currStats).filter(([vid])=>VEHICLES[vid]).map(([vid,vd])=>{
+      const v=VEHICLES[vid];const prev=prevStats[vid]||{};
+      return `<div class="adm-comp-row">
+        <div class="adm-comp-veh">${v.emoji}<span>${v.name.split(' ')[1]||v.name}</span></div>
+        <div class="adm-comp-cell acc">${vd.gasto>0?fmt$(vd.gasto):'—'}${dTag(vd.gasto,prev.gasto)}</div>
+        <div class="adm-comp-cell">${vd.litros>0?vd.litros.toFixed(1)+'L':'—'}${dTag(vd.litros,prev.litros)}</div>
+        <div class="adm-comp-cell">${vd.km.traveled>0?fmtN(vd.km.traveled):'—'}</div>
+        <div class="adm-comp-cell">${vd.kpl||'—'}</div>
+        <div class="adm-comp-cell">${vd.cpm>0?'$'+fmtN(vd.cpm):'—'}</div>
+      </div>`;
+    }).join('');
+    // Total flota
+    const fG=Object.values(currStats).reduce((s,v)=>s+v.gasto,0);
+    const fL=Object.values(currStats).reduce((s,v)=>s+v.litros,0);
+    const fK=Object.values(currStats).reduce((s,v)=>s+v.km.traveled,0);
+    const prevFG=Object.values(prevStats).reduce((s,v)=>s+v.gasto,0);
+    const total=fG>0?`<div class="adm-comp-row total-row">
+      <div class="adm-comp-veh">🚛<span>Total</span></div>
+      <div class="adm-comp-cell acc">${fmt$(fG)}${dTag(fG,prevFG)}</div>
+      <div class="adm-comp-cell">${fL.toFixed(1)}L</div>
+      <div class="adm-comp-cell">${fK>0?fmtN(fK):'—'}</div>
+      <div class="adm-comp-cell">${(fL>0&&fK>0)?(fK/fL).toFixed(2):'—'}</div>
+      <div class="adm-comp-cell">${fK>0?'$'+fmtN(Math.round(fG/fK)):'—'}</div>
+    </div>`:'';
+    el.innerHTML=hdr+rows+total;
+    if(!rows&&!total)el.innerHTML+=`<div class="adm-comp-row"><span style="color:var(--muted);font-size:.82rem;grid-column:1/-1;padding:.25rem 0">Sin datos para este período</span></div>`;
+  },
 
-    // Ultimas cargas de toda la flota
-    const recent=allFuelForRecent.sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,8);
-    document.getElementById('adm-recent').innerHTML=recent.length===0
-      ?'<p class="muted tc" style="padding:1.5rem 0">Sin cargas registradas</p>'
-      :recent.map(r=>`<div class="card" style="margin-bottom:.5rem">
-          <div class="card-row">
-            <div><div style="font-weight:600;margin-bottom:.1rem">${r._vemoji} ${r._vname}</div>
-            <div class="muted" style="font-size:.75rem">${new Date(r.date).toLocaleDateString('es-AR')}${r.time?' · '+r.time:''}${r.location?' · '+r.location:''}</div></div>
-            <div style="text-align:right">
-              <div class="tm" style="color:var(--acc)">${fmt$(r.amount)}</div>
-              <div class="muted" style="font-size:.7rem">${r.liters.toFixed(1)}L · $${(r.amount/r.liters).toFixed(2)}/L${r.km?' · '+fmtN(r.km)+' km':''}</div>
-            </div>
-          </div></div>`).join('');
+  _admRenderRecent(allRecs,month){
+    const el=document.getElementById('adm-recent');if(!el)return;
+    const mo=allRecs.filter(e=>e.record?.date?.slice(0,7)===month)
+      .sort((a,b)=>new Date(b.record.date+' '+(b.record.time||''))-new Date(a.record.date+' '+(a.record.time||'')))
+      .slice(0,12);
+    if(!mo.length){el.innerHTML='<p style="color:var(--muted);font-size:.82rem;padding:.5rem 0">Sin cargas en este período</p>';return;}
+    el.innerHTML=mo.map(entry=>{
+      const r=entry.record;const v=VEHICLES[entry.vehicleId]||{};
+      return `<div class="card" style="margin-bottom:.5rem"><div class="card-row">
+        <div><div style="font-weight:600;margin-bottom:.1rem">${v.emoji||''} ${entry.vehicleName||v.name||'—'}</div>
+        <div style="color:var(--muted);font-size:.75rem">${new Date(r.date).toLocaleDateString('es-AR')}${r.time?' · '+r.time:''}${r.location?' · '+r.location:''}</div>
+        <div style="color:var(--muted);font-size:.7rem">👤 ${entry.userName||'—'}</div></div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-m);color:var(--acc)">${fmt$(r.amount)}</div>
+          <div style="color:var(--muted);font-size:.7rem">${r.liters.toFixed(1)}L · $${(r.amount/r.liters).toFixed(2)}/L${r.km?' · '+fmtN(r.km)+'km':''}</div>
+        </div>
+      </div></div>`;
+    }).join('');
   },
 
   _showAdminDetail(vid,vd){
