@@ -1,67 +1,37 @@
+# Flota ML 2.0 — Worker Cloudflare
+# Deploy: npx wrangler deploy
+# Secrets (persisten entre deploys): GEMINI_API_KEY, SENDGRID_API_KEY (Brevo),
+#   VAPID_PRIVATE_KEY, OWNER_EMAIL, FLEET_EMAIL, AUTH_PEPPER
+
 name = "logisticaml"
-main = "worker.js"
-compatibility_date = "2024-09-23"
+main = "worker/worker.js"
+compatibility_date = "2026-03-05"
 compatibility_flags = ["nodejs_compat"]
 
-# ─── CRON TRIGGERS ────────────────────────────────────────────────────────────
-# Todos los horarios en UTC (Argentina = UTC-3, no tiene horario de verano)
-#
-#  UTC → AR:  hora_ar = hora_utc - 3
-#
-#  "0 11 * * 1-5"   → lun-vie 08:00 AR → push diario revisión vehículo
-#  "30 16 * * 5"    → vie 13:30 AR     → push limpieza personalizada
-#  "0 12 15 * *"    → día 15 09:00 AR  → push calibración neumáticos
-#  "0 12 20 * *"    → día 20 09:00 AR  → push revisión auxilio
-#  "30 11 1 * *"    → día 1  08:30 AR  → push papeles al día
-#  "0 11 1  * *"    → día 1  08:00 AR  → reporte email dueño
-#  "0 12 25 * *"    → día 25 09:00 AR  → resumen email contador
-#  "0 18 * * 5"     → vie 15:00 AR     → reporte semanal IA email
+# ── CRON (límite 5 por CUENTA free — usamos 2, ramifica por fecha AR adentro) ─
+#  "0 11 * * *" → 08:00 AR: revisión diaria (lun-vie) + limpieza (vie) + día 1: reporte dueño y papeles
+#  "0 12 * * *" → 09:00 AR: día 15 neumáticos, día 20 auxilio, día 25 contador, sábado reporte semanal
 [triggers]
-crons = [
-  "0 11 * * 1-5",
-  "30 16 * * 5",
-  "0 12 15 * *",
-  "0 12 20 * *",
-  "30 11 1 * *",
-  "0 11 1  * *",
-  "0 12 25 * *",
-  "0 18 * * 5"
-]
+crons = ["0 11 * * *", "0 12 * * *"]
 
-# ─── KV NAMESPACE ─────────────────────────────────────────────────────────────
-# Crear en: Cloudflare Dashboard → Workers & Pages → KV → Create namespace
-# Nombre sugerido: flota-ml-kv
-# Luego pegar el ID del namespace en "id":
 [[kv_namespaces]]
 binding = "FLOTA_KV"
-id      = "REEMPLAZAR_CON_TU_KV_ID"
-# preview_id = "REEMPLAZAR_CON_TU_KV_PREVIEW_ID"
+id = "c33c0e4c860c4a3cbbca28ff13be1541"
 
-# ─── SECRETS (NO poner valores reales aquí — usar wrangler secret put) ────────
-#
-#   wrangler secret put SENDGRID_API_KEY
-#   → API Key de Brevo (xkeysib-...)
-#
-#   wrangler secret put GEMINI_API_KEY
-#   → API Key de Gemini (AIza...)
-#
-#   wrangler secret put FROM_EMAIL
-#   → santamariapablodaniel@gmail.com (email VERIFICADO en Brevo)
-#
-#   wrangler secret put OWNER_EMAIL
-#   → tu email personal (recibe reporte día 1 y reporte semanal)
-#
-#   wrangler secret put CONTADOR_EMAIL
-#   → email del contador (recibe resumen día 25)
-#
-#   wrangler secret put VAPID_PRIVATE_KEY
-#   → WOK81I1NZLa_s0jVeiAAwse63eptGYjnbM1JD3zXlVo
-#
-#   wrangler secret put VAPID_PUBLIC_KEY
-#   → BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY
-#
-#   wrangler secret put FLEET_EMAIL        (opcional)
-#   → distribuidoramercadolimpio@gmail.com
-#
-#   wrangler secret put FIREBASE_CREDENTIALS   (opcional)
-#   → {"projectId":"tu-proyecto","apiKey":"AIza..."}
+[[d1_databases]]
+binding = "DB"
+database_name = "flota-ml"
+database_id = "d7fb5ae3-f035-4de6-9ea0-3f7bfed3993f"
+
+# Cuando actives R2 en el dashboard, descomentá esto y las fotos nuevas van a R2:
+# [[r2_buckets]]
+# binding = "FOTOS"
+# bucket_name = "flota-ml-fotos"
+
+[vars]
+CONTADOR_EMAIL = "santamariapablodaniel@gmail.com"
+FROM_EMAIL = "santamariapablodaniel@gmail.com"
+VAPID_PUBLIC_KEY = "BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY"
+
+[observability]
+enabled = true

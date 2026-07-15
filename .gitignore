@@ -1,0 +1,9 @@
+.secrets-tmp.json
+.test-keys.json
+kv-export*.json
+worker/migration.sql
+worker/seed.sql
+node_modules/
+.wrangler/
+WhatsApp Image*.jpeg
+*.jpeg

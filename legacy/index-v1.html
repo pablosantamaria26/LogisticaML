@@ -1,0 +1,2583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Flota ML</title>
+<link rel="manifest" href="/LogisticaML/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@400;700;800&family=Space+Mono:wght@400;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--sat:env(safe-area-inset-top,0px);--sab:env(safe-area-inset-bottom,0px);--touch:54px}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{position:fixed;width:100%;-webkit-overflow-scrolling:touch;transition:background .35s,color .35s}
+
+/* ══ THEMES ══════════════════════════════════════════════════════════════ */
+body.t1{--bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;--border:#2a2a2a;--border2:#3d3d3d;--text:#f0f0f0;--muted:#666;--dim:#2a2a2a;--acc:#ff6b00;--acc2:#cc5500;--acc-g:rgba(255,107,0,.18);--green:#22c55e;--orange:#f59e0b;--red:#ef4444;--blue:#3b82f6;--font-h:'Bebas Neue',sans-serif;--font-b:'DM Sans',sans-serif;--font-m:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);font-family:var(--font-b)}
+body.t1::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(255,107,0,.025) 39px,rgba(255,107,0,.025) 40px);pointer-events:none;z-index:0}
+body.t2{--bg:#f0f2f8;--bg2:#ffffff;--bg3:#e8ebf5;--border:#dde1ee;--border2:#c4cae0;--text:#111827;--muted:#6b7280;--dim:#d1d5db;--acc:#2563eb;--acc2:#1d4ed8;--acc-g:rgba(37,99,235,.12);--green:#16a34a;--orange:#d97706;--red:#dc2626;--blue:#2563eb;--font-h:'Syne',sans-serif;--font-b:'Syne',sans-serif;--font-m:'IBM Plex Mono',monospace;background:var(--bg);color:var(--text);font-family:var(--font-b)}
+body.t2::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 35% at 50% 0%,rgba(37,99,235,.06) 0%,transparent 60%);pointer-events:none;z-index:0}
+body.t3{--bg:#030a05;--bg2:#071a0c;--bg3:#0c2412;--border:#112a18;--border2:#1a4025;--text:#d4f5dc;--muted:#3d7a4a;--dim:#122018;--acc:#39ff14;--acc2:#2acc0f;--acc-g:rgba(57,255,20,.12);--green:#39ff14;--orange:#fbbf24;--red:#f87171;--blue:#60a5fa;--font-h:'Space Mono',monospace;--font-b:'DM Sans',sans-serif;--font-m:'Space Mono',monospace;background:var(--bg);color:var(--text);font-family:var(--font-b)}
+body.t3::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 100% 60% at 50% 100%,rgba(57,255,20,.04) 0%,transparent 65%);pointer-events:none;z-index:0}
+
+/* ══ SCREENS ══════════════════════════════════════════════════════════════ */
+.screen{display:none;flex-direction:column;position:fixed;inset:0;padding-top:var(--sat);z-index:1;height:100vh;height:calc(var(--real-vh,1vh)*100)}
+.screen.on{display:flex}
+#sc-login{align-items:center;justify-content:flex-start;padding:calc(var(--sat)+1.5rem) 1.25rem calc(1.5rem + var(--sab));overflow-y:auto;-webkit-overflow-scrolling:touch}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:22px;padding:2.25rem 1.875rem;width:100%;max-width:380px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.45);animation:lbIn .45s cubic-bezier(.16,1,.3,1) both}
+@keyframes lbIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
+.login-logo{text-align:center;margin-bottom:1.75rem}
+.logo-icon{display:inline-flex;align-items:center;justify-content:center;width:72px;height:72px;background:var(--acc);border-radius:20px;font-size:2.3rem;margin-bottom:1rem;box-shadow:0 8px 30px var(--acc-g),0 0 0 1px rgba(255,255,255,.05)}
+.login-logo h1{font-family:var(--font-h);font-size:2.2rem;letter-spacing:.05em;text-transform:uppercase;line-height:1;margin-bottom:.35rem}
+.login-logo p{color:var(--muted);font-size:.68rem;text-transform:uppercase;letter-spacing:.14em}
+.theme-row{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.75rem}
+.tp{width:38px;height:38px;border-radius:11px;border:2px solid transparent;cursor:pointer;transition:all .22s;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.tp.on{border-color:var(--acc);transform:scale(1.15);box-shadow:0 0 12px var(--acc-g)}
+.tp-1{background:#0d0d0d}.tp-2{background:#f0f2f8;border-color:#dde1ee!important}.tp-3{background:#030a05}
+.lf{margin-bottom:1rem}
+.lf label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+.lf input{width:100%;padding:.9rem 1rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:13px;color:var(--text);font-family:var(--font-b);font-size:1rem;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;min-height:var(--touch)}
+.lf input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
+.lf input::placeholder{color:var(--dim)}
+.pin-f{font-family:var(--font-m)!important;font-size:1.8rem!important;letter-spacing:.6em!important;text-align:center!important;padding-left:1.5em!important}
+.toggle-link{text-align:center;margin-top:.875rem;color:var(--muted);font-size:.875rem}
+.link-btn{background:none;border:none;color:var(--acc);font-size:.875rem;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px;font-family:var(--font-b)}
+
+/* ══ BUTTONS ══════════════════════════════════════════════════════════════ */
+.btn{width:100%;padding:1rem 1.25rem;border:none;border-radius:13px;font-family:var(--font-b);font-size:1rem;font-weight:600;cursor:pointer;transition:all .18s;display:flex;align-items:center;justify-content:center;gap:.5rem;min-height:var(--touch);-webkit-appearance:none;user-select:none}
+.btn-primary{background:var(--acc);color:#000;font-weight:700;letter-spacing:.02em}
+.btn-primary:active{transform:scale(.96)}
+.btn-ghost{background:transparent;color:var(--muted);border:1.5px solid var(--border)}
+.btn-ghost:active{transform:scale(.96)}
+.btn-danger{background:rgba(239,68,68,.1);color:var(--red);border:1.5px solid rgba(239,68,68,.2)}
+.btn-sm{min-height:40px;padding:.6rem 1rem;font-size:.82rem}
+
+/* ══ TOAST ════════════════════════════════════════════════════════════════ */
+.toast-stack{position:fixed;top:calc(var(--sat)+.75rem);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 2rem);max-width:400px;pointer-events:none}
+.toast{padding:.875rem 1.125rem;border-radius:14px;font-size:.875rem;font-weight:600;display:flex;align-items:center;gap:.625rem;backdrop-filter:blur(16px);pointer-events:auto;animation:tIn .28s cubic-bezier(.16,1,.3,1) both;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+@keyframes tIn{from{opacity:0;transform:translateY(-10px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes tOut{to{opacity:0;transform:translateY(-8px) scale(.95)}}
+.toast.bye{animation:tOut .2s ease forwards}
+.t-success{background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);color:var(--green)}
+.t-error{background:rgba(239,68,68,.14);border:1px solid rgba(239,68,68,.3);color:var(--red)}
+.t-warning{background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.3);color:var(--orange)}
+.t-info{background:var(--acc-g);border:1px solid rgba(255,255,255,.12);color:var(--acc)}
+/* ── CONFIRM OVERLAY (centrado en pantalla) ─────────────────────────── */
+#fuel-confirm-overlay{display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:env(safe-area-inset-top,16px) 1.25rem env(safe-area-inset-bottom,16px)}
+#fuel-confirm-overlay.on{display:flex;animation:mfade .25s ease both;-webkit-animation:mfade .25s ease both}
+.fco-card{background:var(--bg2);border:2px solid var(--acc);border-radius:20px;padding:1.5rem 1.25rem;width:100%;max-width:min(360px,calc(100vw - 2.5rem));box-shadow:0 24px 60px rgba(0,0,0,.5);animation:fcoIn .3s cubic-bezier(.16,1,.3,1) both}
+@keyframes fcoIn{from{opacity:0;transform:scale(.88) translateY(20px)}to{opacity:1;transform:none}}
+@keyframes fcoOut{to{opacity:0;transform:scale(.92) translateY(10px)}}
+.fco-card.bye{animation:fcoOut .2s ease forwards}
+
+/* ══ APP LAYOUT ═══════════════════════════════════════════════════════════ */
+#sc-app{flex-direction:column;overflow:hidden}
+.topnav{flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 .875rem;height:56px;display:flex;align-items:center;justify-content:space-between;gap:.625rem;position:relative;z-index:2}
+.nav-brand{font-family:var(--font-h);font-size:1.4rem;text-transform:uppercase;display:flex;align-items:center;gap:.45rem;flex-shrink:0;letter-spacing:.06em}
+.dot-live{width:8px;height:8px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(.6)}}
+.nav-vbadge{display:flex;align-items:center;gap:.4rem;padding:.35rem .75rem;background:var(--bg3);border:1px solid var(--border);border-radius:20px;font-size:.78rem;color:var(--muted);flex:1;min-width:0;overflow:hidden}
+.nav-vbadge .vn{font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{width:44px;height:44px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg2);color:var(--muted);cursor:pointer;transition:all .18s;font-size:1.15rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-btn:active{transform:scale(.88)}
+
+/* ══ TABBAR ═══════════════════════════════════════════════════════════════ */
+.tabbar{flex-shrink:0;display:flex;background:var(--bg2);border-bottom:1px solid var(--border);position:relative;z-index:2}
+.tab{flex:1;padding:.65rem .4rem;border:none;background:none;color:var(--dim);cursor:pointer;font-family:var(--font-b);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:.2rem;border-bottom:2.5px solid transparent;min-height:52px;-webkit-appearance:none}
+.tab .ti{font-size:1.25rem;line-height:1}
+.tab.on{color:var(--acc);border-bottom-color:var(--acc)}
+.tab:active{transform:scale(.88)}
+
+/* ══ MAIN SCROLL ══════════════════════════════════════════════════════════ */
+.main{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:1.25rem;padding-bottom:calc(1.25rem + max(env(safe-area-inset-bottom,0px),8px))}
+.panel{display:none;animation:pIn .22s ease both}
+.panel.on{display:block}
+@keyframes pIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ══ CARDS ════════════════════════════════════════════════════════════════ */
+.slabel{font-family:var(--font-m);font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin-bottom:.875rem;display:flex;align-items:center;gap:.5rem}
+.slabel::after{content:'';flex:1;height:1px;background:var(--border)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.125rem;margin-bottom:.75rem}
+.card-row{display:flex;justify-content:space-between;align-items:flex-start;gap:.875rem}
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:1rem}
+@media(min-width:520px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+.sc{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem .875rem;text-align:center;position:relative;overflow:hidden}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent);opacity:.5}
+.sv{font-family:var(--font-m);font-size:clamp(.95rem,4vw,1.3rem);font-weight:700;color:var(--acc);line-height:1.1;margin-bottom:.3rem;word-break:break-all}
+.sl{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.vhero{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:1rem;position:relative;overflow:hidden}
+.vhero::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,var(--acc-g) 0%,transparent 70%);pointer-events:none}
+.vhero .eb{font-size:3rem;line-height:1;flex-shrink:0}
+.vhero-i h2{font-family:var(--font-h);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.15rem}
+.vhero-i p{color:var(--muted);font-size:.8rem}
+.vhero-k{margin-left:auto;text-align:right;flex-shrink:0;min-width:0}
+.kv{font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);word-break:break-all}
+.kl{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.aban{border-radius:12px;padding:.875rem 1rem;margin-bottom:.75rem;display:flex;align-items:flex-start;gap:.625rem;font-size:.82rem}
+.aban .ai{font-size:1.15rem;flex-shrink:0}
+.aban strong{display:block;font-weight:700;margin-bottom:.1rem}
+.a-red{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.22);color:var(--red)}
+.a-orange{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);color:var(--orange)}
+.a-green{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.22);color:var(--green)}
+
+/* ══ FUEL SECTION ═════════════════════════════════════════════════════════ */
+.fuel-section-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;padding:.875rem 1rem;background:linear-gradient(135deg,var(--acc-g),transparent);border:1px solid var(--acc);border-radius:14px;position:relative;overflow:hidden}
+.fuel-section-header::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,var(--acc),rgba(255,255,255,.1),transparent)}
+.fsh-icon{font-size:1.75rem;line-height:1;filter:drop-shadow(0 0 8px var(--acc))}
+.fsh-text h3{font-family:var(--font-h);font-size:1.1rem;text-transform:uppercase;letter-spacing:.05em;line-height:1;margin-bottom:.2rem}
+.fsh-text p{color:var(--muted);font-size:.72rem}
+.fsh-badge{margin-left:auto;padding:.3rem .75rem;background:var(--acc);color:#000;border-radius:20px;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;animation:pulse-badge 2s ease-in-out infinite}
+@keyframes pulse-badge{0%,100%{box-shadow:0 0 0 0 var(--acc-g)}50%{box-shadow:0 0 0 6px transparent}}
+
+/* ══ BIG FUEL BUTTON ══════════════════════════════════════════════════════ */
+.fuel-hero{width:100%;margin-bottom:1.5rem;background:var(--acc);border:none;border-radius:20px;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:130px;position:relative;overflow:hidden;-webkit-appearance:none;box-shadow:0 6px 0 var(--acc2),0 10px 30px var(--acc-g);transition:transform .1s,box-shadow .1s;animation:fuelPulse 3s ease-in-out infinite}
+@keyframes fuelPulse{0%,100%{box-shadow:0 6px 0 var(--acc2),0 10px 30px var(--acc-g)}50%{box-shadow:0 6px 0 var(--acc2),0 10px 50px var(--acc-g),0 0 80px var(--acc-g)}}
+.fuel-hero::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 55%);pointer-events:none}
+.fuel-hero:active{transform:translateY(4px) scale(.98);box-shadow:0 2px 0 var(--acc2),0 4px 12px var(--acc-g)}
+.fuel-hero-inner{display:flex;align-items:center;gap:1.375rem;padding:1.75rem 2rem;z-index:1;position:relative}
+.fuel-hero-icon{font-size:3.75rem;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.4));flex-shrink:0}
+.fuel-hero-text h2{font-family:var(--font-h);font-size:1.9rem;font-weight:700;color:#000;text-transform:uppercase;letter-spacing:.04em;line-height:1;margin-bottom:.35rem}
+.fuel-hero-text p{color:rgba(0,0,0,.55);font-size:.82rem;font-weight:600}
+.fuel-hero .queue-badge{position:absolute;top:.75rem;right:.75rem;z-index:2;background:rgba(0,0,0,.7);border-radius:20px;padding:.25rem .7rem;font-size:.65rem;font-weight:700;color:#fff;display:none}
+.fuel-hero .queue-badge.show{display:block}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.4);transform:scale(0);animation:rippleAnim .55s linear;pointer-events:none}
+@keyframes rippleAnim{to{transform:scale(4.5);opacity:0}}
+
+/* ══ KM WIDGET ════════════════════════════════════════════════════════════ */
+.km-widget{background:var(--bg2);border:2px solid var(--acc);border-radius:16px;padding:1.125rem;margin-bottom:1.25rem;position:relative;overflow:hidden}
+.km-widget::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.km-header{display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem}
+.km-header-icon{font-size:1.4rem}
+.km-header-text{flex:1}
+.km-header-text h4{font-family:var(--font-h);font-size:1rem;text-transform:uppercase;letter-spacing:.04em;line-height:1;margin-bottom:.15rem}
+.km-header-text p{color:var(--muted);font-size:.72rem}
+.km-input-row{display:flex;gap:.625rem;align-items:center}
+.km-input-wrap{flex:1;position:relative}
+.km-input-wrap input{width:100%;padding:.9rem 1rem .9rem 2.8rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:var(--font-m);font-size:1.3rem;font-weight:700;letter-spacing:.04em;-webkit-appearance:none;min-height:56px;transition:border-color .2s,box-shadow .2s}
+.km-input-wrap input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
+.km-input-wrap::before{content:'🛣️';position:absolute;left:.75rem;top:50%;transform:translateY(-50%);font-size:1.1rem;pointer-events:none}
+.km-photo-btn{width:56px;height:56px;border-radius:12px;border:1.5px solid var(--border);background:var(--bg3);color:var(--muted);cursor:pointer;font-size:1.4rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .18s}
+.km-photo-btn:active{border-color:var(--acc);color:var(--acc)}
+.km-prev{margin-top:.625rem;border-radius:10px;overflow:hidden;position:relative;display:none}
+.km-prev img{width:100%;max-height:120px;object-fit:cover;display:block}
+.km-prev-badge{position:absolute;bottom:.5rem;right:.5rem;background:rgba(10,10,15,.88);backdrop-filter:blur(10px);border-radius:8px;padding:.25rem .625rem;font-size:.68rem;font-weight:700;color:var(--acc)}
+
+/* ══ FORM ═════════════════════════════════════════════════════════════════ */
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:.875rem}
+@media(max-width:400px){.fgrid{grid-template-columns:1fr}}
+.ffull{grid-column:1/-1}
+.fl label{display:block;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.4rem}
+.fl input,.fl select,.fl textarea{width:100%;padding:.8rem .875rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:var(--font-b);font-size:.9rem;transition:border-color .2s;-webkit-appearance:none;min-height:var(--touch)}
+.fl input:focus,.fl select:focus,.fl textarea:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-g)}
+.fl textarea{resize:vertical;min-height:80px}
+select option{background:var(--bg2)}
+.twrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:12px;border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+th{background:var(--bg3);padding:.7rem .9rem;text-align:left;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);white-space:nowrap}
+td{padding:.8rem .9rem;border-top:1px solid var(--border);white-space:nowrap}
+.tm{font-family:var(--font-m);font-size:.75rem}
+.chip{display:inline-flex;align-items:center;gap:.2rem;padding:.22rem .65rem;border-radius:20px;font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.c-green{background:rgba(34,197,94,.13);color:var(--green)}
+.c-orange{background:rgba(245,158,11,.13);color:var(--orange)}
+.c-red{background:rgba(239,68,68,.13);color:var(--red)}
+.c-acc{background:var(--acc-g);color:var(--acc)}
+.c-blue{background:rgba(59,130,246,.13);color:var(--blue)}
+.maint-card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1rem;margin-bottom:.625rem}
+.tprev{border-radius:12px;overflow:hidden;margin-bottom:.875rem;border:1px solid var(--border);position:relative}
+.tprev img{width:100%;max-height:200px;object-fit:cover;display:block}
+.tprev-badge{position:absolute;top:.625rem;right:.625rem;background:rgba(10,10,15,.88);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:8px;padding:.3rem .65rem;font-size:.68rem;font-weight:700;color:var(--acc)}
+.spin{display:inline-block;width:12px;height:12px;border:2px solid var(--acc-g);border-top-color:var(--acc);border-radius:50%;animation:rot .5s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.offline-banner{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;display:none;align-items:center;gap:.625rem;font-size:.82rem;color:var(--orange)}
+.fuel-step{display:flex;align-items:center;gap:.875rem;padding:.875rem 1rem;background:var(--bg2);border:1px solid var(--border);border-radius:14px;transition:all .3s}
+.fuel-step.active{border-color:var(--acc);background:var(--acc-g)}
+.fuel-step.done{border-color:var(--green);background:rgba(34,197,94,.08)}
+.fuel-step.error{border-color:var(--orange);background:rgba(245,158,11,.08)}
+.fstep-dot{width:28px;height:28px;border-radius:50%;background:var(--bg3);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:800;color:var(--muted);flex-shrink:0;transition:all .3s}
+.fuel-step.active .fstep-dot{background:var(--acc);border-color:var(--acc);color:#000}
+.fuel-step.done .fstep-dot{background:var(--green);border-color:var(--green);color:#000}
+.fstep-body{flex:1;min-width:0}
+.fstep-title{font-weight:700;font-size:.88rem;margin-bottom:.1rem}
+.fstep-sub{font-size:.72rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fstep-icon{font-size:1.4rem;flex-shrink:0}
+.fstep-connector{width:2px;height:14px;background:var(--border);margin:0 0 0 20px}
+.offline-banner.show{display:flex}
+
+/* ══ ADMIN DASHBOARD ══════════════════════════════════════════════════════ */
+.adm-grid{display:grid;grid-template-columns:1fr;gap:1rem;margin-bottom:1rem}
+@media(min-width:600px){.adm-grid{grid-template-columns:repeat(3,1fr)}}
+.adm-vcard{background:var(--bg2);border:1px solid var(--border);border-radius:18px;padding:1.25rem;position:relative;overflow:hidden;cursor:pointer;transition:all .2s}
+.adm-vcard:hover{border-color:var(--acc);transform:translateY(-2px)}
+.adm-vcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.adm-vcard-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.adm-vemoji{font-size:2.5rem;line-height:1}
+.adm-vstatus{padding:.25rem .7rem;border-radius:20px;font-size:.62rem;font-weight:700;text-transform:uppercase}
+.adm-vname{font-family:var(--font-h);font-size:1.3rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.25rem}
+.adm-vdriver{font-size:.78rem;color:var(--muted);margin-bottom:1rem}
+.adm-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
+.adm-stat{background:var(--bg3);border-radius:10px;padding:.625rem;text-align:center}
+.adm-sv{font-family:var(--font-m);font-size:1rem;font-weight:700;color:var(--acc);display:block;line-height:1.1}
+.adm-sl{font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.2rem;display:block}
+.adm-km-bar{margin-top:1rem}
+.adm-km-label{display:flex;justify-content:space-between;font-size:.7rem;color:var(--muted);margin-bottom:.35rem}
+.adm-km-bg{background:var(--bg3);border-radius:4px;height:6px;overflow:hidden}
+.adm-km-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--acc));transition:width .5s ease}
+.adm-km-fill.warn{background:linear-gradient(90deg,var(--orange),var(--red))}
+
+/* detail modal */
+.adm-detail-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.75rem;margin-bottom:1rem}
+@media(min-width:480px){.adm-detail-grid{grid-template-columns:repeat(3,1fr)}}
+.adm-d-stat{background:var(--bg3);border-radius:12px;padding:.875rem;text-align:center;border:1px solid var(--border)}
+.adm-d-sv{font-family:var(--font-m);font-size:1.2rem;font-weight:700;color:var(--acc);display:block;line-height:1}
+.adm-d-sl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:.35rem;display:block}
+
+/* ══ ADMIN PRO ════════════════════════════════════════════════════════════ */
+.adm-month-nav{display:flex;align-items:center;gap:.375rem;margin-bottom:1.25rem;background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.5rem .75rem}
+.adm-mnav-btn{min-width:36px;height:36px;border:none;background:var(--bg3);border-radius:9px;color:var(--muted);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;flex-shrink:0;font-family:var(--font-b);font-weight:700}
+.adm-mnav-btn:active{background:var(--acc);color:#000}
+.adm-mnav-btn[disabled]{opacity:.3;pointer-events:none}
+.adm-mnav-lbl{flex:1;text-align:center;font-family:var(--font-h);font-size:1.05rem;text-transform:uppercase;letter-spacing:.06em}
+.adm-live-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.2rem .65rem;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.3);border-radius:20px;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--green);margin-bottom:.875rem}
+.adm-live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;box-shadow:0 0 6px var(--green);animation:blink 1.5s ease-in-out infinite;flex-shrink:0}
+.adm-kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.625rem;margin-bottom:1.25rem}
+.adm-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.875rem;position:relative;overflow:hidden}
+.adm-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--acc),transparent);opacity:.7}
+.adm-kpi-lbl{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.3rem}
+.adm-kpi-val{font-family:var(--font-m);font-size:1.15rem;font-weight:700;color:var(--acc);line-height:1;word-break:break-all}
+.adm-kpi-delta{font-size:.68rem;font-weight:700;margin-top:.35rem}
+.dlt-up{color:var(--red)}.dlt-dn{color:var(--green)}.dlt-eq{color:var(--muted)}
+.adm-alert{border-radius:14px;padding:.875rem 1rem;margin-bottom:1.25rem;border:1px solid;display:flex;align-items:flex-start;gap:.75rem;font-size:.82rem}
+.adm-alert.cls-up{background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.25);color:var(--red)}
+.adm-alert.cls-ok{background:rgba(34,197,94,.07);border-color:rgba(34,197,94,.25);color:var(--green)}
+.adm-alert.cls-warn{background:rgba(245,158,11,.07);border-color:rgba(245,158,11,.25);color:var(--orange)}
+.adm-alert .ai{font-size:1.35rem;flex-shrink:0;line-height:1.2}
+.adm-alert strong{display:block;font-weight:700;margin-bottom:.2rem}
+.adm-alert p{opacity:.9;line-height:1.5;font-size:.78rem}
+.adm-trend-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:1rem 1rem .75rem;margin-bottom:1.25rem}
+.adm-trend-hdr{display:flex;align-items:center;justify-content:space-between;font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:.875rem}
+.adm-trend-legend{display:flex;gap:.5rem;align-items:center;flex-wrap:wrap}
+.adm-trend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;display:inline-block}
+.adm-trend-chart{display:flex;align-items:flex-end;gap:.375rem;height:80px}
+.adm-trend-col{display:flex;flex-direction:column;align-items:center;gap:.3rem;flex:1;min-width:0}
+.adm-trend-bars{width:100%;flex:1;display:flex;align-items:flex-end;gap:1px}
+.adm-trend-bar{flex:1;border-radius:4px 4px 0 0;min-height:3px;transition:height .5s ease;cursor:pointer}
+.adm-trend-col.is-curr .adm-trend-lbl{color:var(--acc);font-weight:900}
+.adm-trend-lbl{font-size:.54rem;font-weight:700;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.adm-trend-amt{font-family:var(--font-m);font-size:.5rem;color:var(--muted);white-space:nowrap}
+.adm-rank-list{display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.25rem}
+.adm-rank-item{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:.875rem;display:flex;align-items:center;gap:.75rem;transition:border-color .2s}
+.adm-rank-item.top1{border-color:var(--acc)}
+.adm-rank-pos{width:26px;font-size:1.1rem;text-align:center;flex-shrink:0;line-height:1}
+.adm-rank-info{flex:1;min-width:0}
+.adm-rank-name{font-weight:700;font-size:.88rem;display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;flex-wrap:wrap}
+.adm-rank-bar-bg{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:.35rem}
+.adm-rank-bar-fill{height:100%;border-radius:2px;transition:width .7s ease}
+.adm-rank-meta{font-size:.68rem;color:var(--muted);display:flex;gap:.5rem;flex-wrap:wrap}
+.adm-rank-right{text-align:right;flex-shrink:0}
+.adm-rank-gasto{font-family:var(--font-m);font-size:.95rem;font-weight:700;color:var(--acc)}
+.adm-rank-delta{font-size:.68rem;font-weight:700;margin-top:.2rem}
+.adm-rank-litros{font-size:.62rem;color:var(--muted);margin-top:.1rem}
+.adm-comp-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:1.25rem}
+.adm-comp-hdr,.adm-comp-row{display:grid;grid-template-columns:1fr repeat(5,minmax(0,auto));gap:.2rem;padding:.6rem .875rem;align-items:center}
+.adm-comp-hdr{background:var(--bg3);font-size:.55rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.adm-comp-row{border-top:1px solid var(--border);font-size:.75rem}
+.adm-comp-row.total-row{background:var(--bg3);font-weight:700}
+.adm-comp-veh{display:flex;align-items:center;gap:.35rem;font-weight:700;white-space:nowrap;overflow:hidden;min-width:0}
+.adm-comp-cell{font-family:var(--font-m);font-size:.72rem;font-weight:700;text-align:right;white-space:nowrap}
+.adm-comp-cell.acc{color:var(--acc)}
+.adm-sec{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);margin:.875rem 0 .75rem;display:flex;align-items:center;gap:.5rem}
+.adm-sec::after{content:'';flex:1;height:1px;background:var(--border)}
+.adm-tool-toggle{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.75rem 1rem;margin-bottom:.5rem;display:flex;align-items:center;justify-content:space-between;cursor:pointer;font-size:.82rem;font-weight:600;user-select:none;transition:border-color .2s;-webkit-tap-highlight-color:transparent}
+.adm-tool-toggle:active{opacity:.75}
+.adm-tool-toggle.danger{border-color:rgba(239,68,68,.3);color:var(--red)}
+.adm-tool-body{background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 12px 12px;padding:.875rem;margin-top:-.5rem;margin-bottom:.75rem}
+
+/* ══ MODALS ═══════════════════════════════════════════════════════════════ */
+.mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:500;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}
+.mbk.on{display:flex;animation:mfade .2s ease}
+@keyframes mfade{from{opacity:0}to{opacity:1}}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem calc(1.5rem + max(env(safe-area-inset-bottom,0px),20px));width:100%;max-width:500px;max-height:85vh;max-height:85dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;box-shadow:0 -16px 50px rgba(0,0,0,.55);animation:mUp .28s cubic-bezier(.16,1,.3,1) both;position:relative}
+@media(min-width:600px){.mbk{align-items:center;padding:1rem}.modal{border-radius:22px;padding:1.75rem;max-height:90vh;max-height:90dvh;animation:mIn .28s cubic-bezier(.16,1,.3,1) both}}
+@keyframes mIn{from{opacity:0;transform:scale(.93) translateY(14px)}to{opacity:1;transform:none}}
+@keyframes mUp{from{opacity:0;transform:translateY(50px)}to{opacity:1;transform:none}}
+.modal::before{content:'';display:block;width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.25rem}
+@media(min-width:600px){.modal::before{display:none}}
+.mhdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem}
+.mtitle{font-family:var(--font-h);font-size:1.2rem;text-transform:uppercase;letter-spacing:.04em}
+.mclose{background:none;border:1.5px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:9px;cursor:pointer;font-size:.9rem;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.vcard{display:flex;align-items:center;gap:1rem;padding:1.125rem;background:var(--bg3);border:2px solid var(--border);border-radius:14px;cursor:pointer;transition:all .18s;margin-bottom:.625rem;min-height:76px}
+.vcard:hover,.vcard.sel{border-color:var(--acc);background:var(--acc-g)}
+.vcard:active{transform:scale(.97)}
+.vcard .ve{font-size:2.5rem;line-height:1;flex-shrink:0}
+.vcard .vi h3{font-weight:700;font-size:.95rem;margin-bottom:.15rem}
+.vcard .vi p{color:var(--muted);font-size:.78rem}
+.vcard .vb{margin-left:auto;flex-shrink:0}
+.div{height:1px;background:var(--border);margin:1rem 0}
+.muted{color:var(--muted);font-size:.85rem}
+.tc{text-align:center}
+.mb1{margin-bottom:.5rem}
+.mb2{margin-bottom:1rem}
+.row2{display:flex;gap:.625rem}
+.gap{display:flex;flex-direction:column;gap:.5rem}
+
+/* PWA modals */
+#m-pwa,#m-notif{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(12px);z-index:1000;align-items:flex-end;justify-content:center;padding:0;overflow:hidden}
+.pwa-sheet{background:var(--bg2);border:1px solid var(--border);border-radius:22px 22px 0 0;padding:2rem 1.75rem calc(2rem + max(var(--sab),16px));width:100%;max-width:480px;max-height:85vh;max-height:85dvh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;animation:mUp .3s cubic-bezier(.16,1,.3,1) both}
+.pwa-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 1.5rem}
+.pwa-feature{display:flex;align-items:center;gap:.875rem;padding:.875rem;background:var(--bg3);border-radius:12px;border:1px solid var(--border);font-size:.875rem}
+</style>
+</head>
+<body class="t1">
+<div class="toast-stack" id="toasts"></div>
+<div id="fuel-confirm-overlay"></div>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════════ -->
+<div id="sc-login" class="screen on">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="logo-icon">🚛</div>
+      <h1>Flota ML</h1>
+      <p>Control de Flota</p>
+    </div>
+    <div class="theme-row">
+      <div class="tp tp-1 on" onclick="setTheme(1)" title="Industrial">🔶</div>
+      <div class="tp tp-2"    onclick="setTheme(2)" title="Día limpio">🔷</div>
+      <div class="tp tp-3"    onclick="setTheme(3)" title="Verde flota">🟢</div>
+    </div>
+    <div id="f-login">
+      <div class="lf"><label>Usuario</label><input type="text" id="lu" placeholder="tu usuario" autocomplete="username" autocorrect="off" autocapitalize="none" onkeydown="if(event.key==='Enter')document.getElementById('lp').focus()"></div>
+      <div class="lf"><label>PIN</label><input type="password" id="lp" class="pin-f" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="••••" autocomplete="current-password" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)" onkeydown="if(event.key==='Enter')App.login()"></div>
+      <button id="btn-login" class="btn btn-primary" onclick="App.login()">Ingresar →</button>
+      <div class="toggle-link">¿Primera vez? <button class="link-btn" onclick="App.showReg()">Crear cuenta</button></div>
+    </div>
+    <div id="f-reg" style="display:none">
+      <div class="lf"><label>Nombre completo</label><input type="text" id="rn" placeholder="Juan García" autocomplete="name"></div>
+      <div class="lf"><label>Usuario</label><input type="text" id="ru" placeholder="juangarcia" autocorrect="off" autocapitalize="none"></div>
+      <div class="lf"><label>PIN (4 números)</label><input type="password" id="rp" class="pin-f" maxlength="4" inputmode="numeric" placeholder="••••" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,4)" onkeydown="if(event.key==='Enter')App.register()"></div>
+      <button id="btn-register" class="btn btn-primary" onclick="App.register()" style="margin-bottom:.625rem">Crear cuenta</button>
+      <button class="btn btn-ghost" onclick="App.showLogin()">← Volver</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════════════════════ -->
+<div id="sc-app" class="screen">
+  <nav class="topnav">
+    <div class="nav-brand"><div class="dot-live"></div>Flota ML</div>
+    <div class="nav-vbadge"><span id="nav-ve">🚛</span><span class="vn" id="nav-vn">Sin vehículo</span></div>
+    <div id="sync-indicator" style="font-size:.65rem;color:var(--muted);text-align:center;line-height:1.2;display:none">
+      <div id="sync-icon">✅</div><div id="sync-text">Sync</div>
+    </div>
+    <button class="icon-btn" id="offline-icon" title="Sin conexión" style="display:none;color:var(--orange)">📶</button>
+    <button class="icon-btn" onclick="App.openMenu()">⋮</button>
+  </nav>
+  <div class="tabbar" id="main-tabs">
+    <button class="tab on"  onclick="App.tab('dash',this)"><span class="ti">📊</span>Panel</button>
+    <button class="tab"     onclick="App.tab('fuel',this)"><span class="ti">⛽</span>Combustible</button>
+    <button class="tab"     onclick="App.tab('maint',this)"><span class="ti">🔧</span>Servicio</button>
+    <button class="tab" id="tab-admin" style="display:none" onclick="App.tab('admin',this)"><span class="ti">👁️</span>Monitor</button>
+  </div>
+  <div class="main">
+
+    <!-- ── PANEL DASHBOARD ──────────────────────────────────────────────── -->
+    <div id="panel-dash" class="panel on">
+      <div id="dash-alerts"></div>
+      <div class="vhero">
+        <div class="eb" id="h-emoji">🚛</div>
+        <div class="vhero-i"><h2 id="h-name">—</h2><p id="h-desc">Seleccioná un vehículo</p></div>
+        <div class="vhero-k"><div class="kv" id="h-km">—</div><div class="kl">km actuales</div></div>
+      </div>
+      <!-- Progress bar al próximo servicio -->
+      <div id="maint-progress" style="display:none" class="card" style="margin-bottom:1rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem">
+          <span style="font-size:.78rem;font-weight:700">🔧 Próximo servicio</span>
+          <span id="mp-label" style="font-family:var(--font-m);font-size:.75rem;color:var(--acc)"></span>
+        </div>
+        <div style="background:var(--bg3);border-radius:4px;height:8px;overflow:hidden">
+          <div id="mp-bar" style="height:100%;border-radius:4px;background:linear-gradient(90deg,var(--green),var(--acc));transition:width .6s ease;width:0%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:.35rem">
+          <span id="mp-done" style="font-size:.65rem;color:var(--muted)"></span>
+          <span id="mp-next" style="font-size:.65rem;color:var(--muted)"></span>
+        </div>
+      </div>
+      <div class="sgrid">
+        <div class="sc"><div class="sv" id="st-fuel">$0</div><div class="sl" id="st-period-label">Últ. 30 días</div></div>
+        <div class="sc"><div class="sv" id="st-lit">0</div><div class="sl">Litros</div></div>
+        <div class="sc"><div class="sv" id="st-n">0</div><div class="sl">Cargas</div></div>
+        <div class="sc"><div class="sv" id="st-avg">—</div><div class="sl">$/litro</div></div>
+      </div>
+      <!-- KM stats -->
+      <div class="sgrid">
+        <div class="sc"><div class="sv" id="st-kmprom">—</div><div class="sl">km/carga</div></div>
+        <div class="sc"><div class="sv" id="st-costkm">—</div><div class="sl">$/km</div></div>
+        <div class="sc"><div class="sv" id="st-totalkm">—</div><div class="sl">km período</div></div>
+        <div class="sc"><div class="sv" id="st-kml">—</div><div class="sl">km/litro</div></div>
+      </div>
+      <div class="slabel">Últimas cargas</div>
+      <div id="dash-recent"></div>
+    </div>
+
+    <!-- ── PANEL COMBUSTIBLE ────────────────────────────────────────────── -->
+    <div id="panel-fuel" class="panel">
+      <!-- inputs ocultos para captura de fotos -->
+      <input type="file" id="file-in"  accept="image/*" capture="environment" style="display:none" onchange="App._onTicketPhoto(event)">
+      <input type="file" id="file-km"  accept="image/*" capture="environment" style="display:none" onchange="App._onKmPhoto(event)">
+      <!-- campos ocultos del formulario (se llenan en background) -->
+      <input type="hidden" id="ff-date"><input type="hidden" id="ff-time">
+      <input type="hidden" id="ff-lit"><input type="hidden" id="ff-amt">
+      <input type="hidden" id="ff-iva"><input type="hidden" id="ff-cuit">
+      <input type="hidden" id="ff-loc"><input type="hidden" id="ff-addr">
+      <input type="hidden" id="km-curr">
+
+      <div class="offline-banner" id="offline-banner">
+        <span>📶</span>
+        <div><strong>Sin conexión</strong> — <span id="queue-count">0</span> carga(s) en cola.</div>
+      </div>
+
+      <!-- BOTÓN ÚNICO DE CARGA -->
+      <button class="fuel-hero" id="fuel-hero-btn" onclick="App.startFuelFlow(event)">
+        <div class="queue-badge" id="queue-badge"></div>
+        <div class="fuel-hero-inner">
+          <div class="fuel-hero-icon" id="fhb-icon">⛽</div>
+          <div class="fuel-hero-text">
+            <h2 id="fhb-title">Registrar carga</h2>
+            <p id="fhb-sub">Fotografiá ticket + tablero</p>
+          </div>
+        </div>
+      </button>
+
+      <!-- FLOW STEPS — aparecen debajo del botón durante el proceso -->
+      <div id="fuel-steps" style="display:none;margin-top:-.5rem;margin-bottom:1rem">
+        <div id="fstep-ticket" class="fuel-step">
+          <div class="fstep-dot" id="fdot-ticket">1</div>
+          <div class="fstep-body">
+            <div class="fstep-title" id="ftitle-ticket">Foto del ticket</div>
+            <div class="fstep-sub" id="fsub-ticket">Esperando foto...</div>
+          </div>
+          <div class="fstep-icon" id="ficon-ticket">📷</div>
+        </div>
+        <div class="fstep-connector"></div>
+        <div id="fstep-km" class="fuel-step" style="opacity:.4">
+          <div class="fstep-dot" id="fdot-km">2</div>
+          <div class="fstep-body">
+            <div class="fstep-title" id="ftitle-km">Foto del tablero</div>
+            <div class="fstep-sub" id="fsub-km">Foto del odómetro</div>
+          </div>
+          <div class="fstep-icon" id="ficon-km">🛣️</div>
+        </div>
+      </div>
+
+      <!-- BARRA DE PROGRESO KM (mantenimiento) — se muestra cuando hay KM -->
+      <div id="km-maint-bar" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:.875rem;margin-bottom:.75rem">
+        <div style="display:flex;justify-content:space-between;font-size:.68rem;color:var(--muted);margin-bottom:.35rem">
+          <span>Próximo servicio</span><span id="km-maint-label" style="color:var(--acc);font-family:var(--font-m)"></span>
+        </div>
+        <div style="background:var(--bg3);border-radius:4px;height:6px;overflow:hidden">
+          <div id="km-maint-fill" style="height:100%;border-radius:4px;transition:width .5s"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL SERVICIO ───────────────────────────────────────────────── -->
+    <div id="panel-maint" class="panel">
+      <div class="card mb2">
+        <div class="slabel" style="margin-bottom:1rem">Nuevo servicio</div>
+        <div class="fgrid">
+          <div class="fl"><label>Tipo</label>
+            <select id="sv-type">
+              <option value="">Elegir...</option>
+              <option value="oil-change">🛢️ Servicio completo (aceite + filtro)</option>
+              <option value="tires">⚙️ Neumáticos</option>
+              <option value="suspension">🔧 Suspensión</option>
+              <option value="brakes">🛑 Frenos</option>
+              <option value="other">🔩 Otro</option>
+            </select>
+          </div>
+          <div class="fl"><label>Fecha</label><input type="date" id="sv-date"></div>
+          <div class="fl"><label>KM actual</label><input type="number" id="sv-km" placeholder="150000" inputmode="numeric"></div>
+          <div class="fl"><label>Próximo cada (km)</label><input type="number" id="sv-next" value="10000" inputmode="numeric"></div>
+          <div class="fl ffull"><label>Taller</label><input type="text" id="sv-prov" placeholder="Nombre del taller"></div>
+          <div class="fl ffull"><label>Notas</label><textarea id="sv-notes" placeholder="Detalles..."></textarea></div>
+        </div>
+        <button class="btn btn-primary" onclick="App.saveMaint()">Registrar servicio</button>
+      </div>
+      <div class="slabel">Historial</div>
+      <div id="maint-list"></div>
+    </div>
+
+    <!-- ── PANEL ADMIN MONITOR ──────────────────────────────────────────── -->
+    <div id="panel-admin" class="panel">
+
+      <!-- HEADER -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <div>
+          <div style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em">Monitor Pro</div>
+          <div style="color:var(--muted);font-size:.72rem" id="adm-updated">Cargando...</div>
+        </div>
+        <button class="icon-btn" onclick="App.renderAdmin()" title="Actualizar">🔄</button>
+      </div>
+
+      <!-- MONTH NAVIGATOR -->
+      <div class="adm-month-nav">
+        <button class="adm-mnav-btn" onclick="App.admPrevMonth()">‹</button>
+        <div class="adm-mnav-lbl" id="adm-month-lbl">—</div>
+        <button class="adm-mnav-btn" id="adm-month-next" onclick="App.admNextMonth()">›</button>
+        <button class="adm-mnav-btn" id="adm-today-btn" onclick="App.admGoToday()" title="Mes actual" style="font-size:.7rem;min-width:44px">HOY</button>
+      </div>
+
+      <!-- LIVE badge (solo mes actual) -->
+      <div id="adm-live-badge" class="adm-live-badge" style="display:none">
+        <span class="adm-live-dot"></span>EN VIVO — Datos acumulando
+      </div>
+
+      <!-- KPI cards -->
+      <div class="adm-kpi-grid" id="adm-kpis"></div>
+
+      <!-- ALERTA DE PRECIO / TRASLADO -->
+      <div id="adm-price-alert"></div>
+
+      <!-- TREND CHART -->
+      <div class="adm-sec">Tendencia — últimos 6 meses</div>
+      <div class="adm-trend-wrap">
+        <div class="adm-trend-hdr">
+          <span>Gasto combustible flota</span>
+          <div class="adm-trend-legend" id="adm-trend-legend"></div>
+        </div>
+        <div class="adm-trend-chart" id="adm-trend"></div>
+      </div>
+
+      <!-- VEHICLE RANKING -->
+      <div class="adm-sec">Ranking — mayor gastador</div>
+      <div class="adm-rank-list" id="adm-ranking"></div>
+
+      <!-- COMPARISON TABLE -->
+      <div class="adm-sec">Detalle por vehículo</div>
+      <div class="adm-comp-wrap" id="adm-comp-table"></div>
+
+      <!-- HERRAMIENTAS (colapsables) -->
+      <div class="adm-sec" style="margin-top:1.75rem">Herramientas</div>
+
+      <!-- Cargas recientes -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-recent','chv-recent')">
+        <span>🕐 Cargas del período</span><span id="chv-recent">▾</span>
+      </div>
+      <div id="adm-t-recent" class="adm-tool-body" style="display:none">
+        <div id="adm-recent"></div>
+      </div>
+
+      <!-- Asignación de vehículos -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-assign','chv-assign',()=>App._loadAssignments())">
+        <span>🚗 Asignación de vehículos</span><span id="chv-assign">▾</span>
+      </div>
+      <div id="adm-t-assign" class="adm-tool-body" style="display:none">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Cambiá el vehículo asignado a cada conductor. El cambio se aplica la próxima vez que el usuario abre la app.</p>
+        <div id="adm-assign-list"></div>
+        <button class="btn btn-ghost btn-sm" onclick="App._loadAssignments()" style="margin-top:.5rem">🔄 Actualizar</button>
+      </div>
+
+      <!-- Broadcast -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-broadcast','chv-broadcast')">
+        <span>📢 Mensaje a la flota</span><span id="chv-broadcast">▾</span>
+      </div>
+      <div id="adm-t-broadcast" class="adm-tool-body" style="display:none">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Llegará como notificación push a <strong style="color:var(--text)">todos los choferes</strong>.</p>
+        <div class="fl" style="margin-bottom:.75rem">
+          <label>Mensaje</label>
+          <textarea id="broadcast-msg" placeholder="Ej: Reunión mañana a las 8am en el depósito..." style="min-height:70px;resize:vertical"></textarea>
+        </div>
+        <button id="btn-broadcast" class="btn btn-primary" onclick="App.sendBroadcast()">📢 Enviar a toda la flota</button>
+      </div>
+
+      <!-- Reportes IA -->
+      <div class="adm-tool-toggle" onclick="App.admToggleTool('adm-t-reports','chv-reports')">
+        <span>📊 Reportes IA</span><span id="chv-reports">▾</span>
+      </div>
+      <div id="adm-t-reports" class="adm-tool-body" style="display:none">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">El reporte semanal se envía automáticamente todos los <strong style="color:var(--text)">viernes</strong> a tu email.</p>
+        <button class="btn btn-ghost btn-sm" onclick="App.sendWeeklyNow()" style="border-color:var(--acc);color:var(--acc);margin-bottom:.5rem">📧 Enviar reporte semanal ahora</button>
+        <button class="btn btn-ghost btn-sm" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange)">📧 Probar email mantenimiento</button>
+      </div>
+
+      <!-- Zona peligrosa -->
+      <div class="adm-tool-toggle danger" onclick="App.admToggleTool('adm-t-reset','chv-reset')">
+        <span>⚠️ Zona de reinicio</span><span id="chv-reset">▾</span>
+      </div>
+      <div id="adm-t-reset" class="adm-tool-body" style="display:none;border-color:rgba(239,68,68,.25);background:rgba(239,68,68,.04)">
+        <p style="font-size:.75rem;color:var(--muted);margin-bottom:.875rem;line-height:1.5">Borra <strong style="color:var(--text)">todos los datos del servidor</strong> (registros, tokens push, caché). No hay vuelta atrás.</p>
+        <button class="btn" onclick="App.resetKV()" style="background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);width:100%">🗑️ Borrar todo el servidor (KV)</button>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODALS ═════════════════════════════════════════════════════════════ -->
+<div class="mbk" id="m-veh"><div class="modal" style="max-width:420px">
+  <p class="mtitle mb1">¿Qué vehículo usás hoy?</p>
+  <p class="muted mb2" style="font-size:.82rem">Seleccioná el vehículo con el que salís.</p>
+  <div id="vcards"></div>
+</div></div>
+
+<div class="mbk" id="m-menu"><div class="modal" style="max-width:320px">
+  <div class="mhdr"><span class="mtitle" id="menu-uname">Opciones</span><button class="mclose" onclick="App.close('m-menu')">✕</button></div>
+  <div class="gap">
+    <button class="btn btn-ghost" onclick="App.openVPicker()">🚗 Cambiar vehículo</button>
+    <button class="btn btn-ghost" onclick="App.openSettings()">⚙️ Configuración</button>
+    <button class="btn btn-ghost" onclick="App.exportData()">📥 Exportar datos</button>
+    <div class="div" style="margin:0"></div>
+    <p style="font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:700;margin-bottom:.25rem">Tema visual</p>
+    <div style="display:flex;gap:.5rem">
+      <button onclick="setTheme(1)" class="tb" id="tb1" style="flex:1;padding:.75rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:1.2rem;transition:all .2s">🔶</button>
+      <button onclick="setTheme(2)" class="tb" id="tb2" style="flex:1;padding:.75rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:1.2rem;transition:all .2s">🔷</button>
+      <button onclick="setTheme(3)" class="tb" id="tb3" style="flex:1;padding:.75rem;background:var(--bg3);border:1.5px solid var(--border);border-radius:10px;cursor:pointer;font-size:1.2rem;transition:all .2s">🟢</button>
+    </div>
+    <div class="div" style="margin:0"></div>
+    <button class="btn btn-danger" onclick="App.logout()">🚪 Cerrar sesión</button>
+  </div>
+</div></div>
+
+<div class="mbk" id="m-cfg"><div class="modal">
+  <div class="mhdr"><span class="mtitle">Configuración</span><button class="mclose" onclick="App.close('m-cfg')">✕</button></div>
+  <div class="slabel">Mi cuenta</div>
+  <div class="fl mb2"><label>Mi email (recibo confirmaciones)</label><input type="email" id="cfg-email" placeholder="tu@email.com" inputmode="email"></div>
+  <div class="div"></div>
+  <div class="slabel">Administrador</div>
+  <div class="fl mb2"><label>Clave de administrador</label><input type="password" id="cfg-akey" placeholder="Clave admin" oninput="App.checkAdminKey()"></div>
+  <div id="admin-panel" style="display:none">
+    <div class="card" style="border-color:var(--orange);margin-bottom:1rem">
+      <p style="font-size:.7rem;color:var(--orange);font-weight:700;margin-bottom:1rem;text-transform:uppercase;letter-spacing:.08em">⚡ Panel Admin</p>
+      <div class="fl mb2"><label>Email dueño (reporte el 1°)</label><input type="email" id="cfg-owner-email" placeholder="dueno@empresa.com"></div>
+      <div class="fl mb2"><label>Email contador (resumen el 25)</label><input type="email" id="cfg-cont-email" placeholder="contador@estudio.com"></div>
+      <div class="fl mb2"><label>Email flota (alertas)</label><input type="email" id="cfg-fleet-email" placeholder="distribuidoramercadolimpio@gmail.com"></div>
+      <div class="fl mb2"><label>API Key Gemini</label><input type="password" id="cfg-apikey" placeholder="AIza..."></div>
+      <div class="slabel" style="margin-bottom:.75rem">Asignación especial para hoy</div>
+      <div id="adm-assigns" style="display:flex;flex-direction:column;gap:.625rem"></div>
+      <!-- TEST BUTTONS -->
+      <div style="margin-top:1rem;padding:1rem;background:rgba(57,255,20,.06);border:1px dashed var(--green);border-radius:12px">
+        <p style="font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--green);margin-bottom:.75rem">🧪 Pruebas (borrar después)</p>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <button class="btn btn-ghost btn-sm" onclick="App.testPushNotif()" style="border-color:var(--green);color:var(--green)">🔔 Probar push a todos los vehículos</button>
+          <button class="btn btn-ghost btn-sm" onclick="App.testMaintEmail()" style="border-color:var(--orange);color:var(--orange)">📧 Probar email mantenimiento</button>
+          <button class="btn btn-ghost btn-sm" onclick="App.resetAllData()" style="border-color:var(--red);color:var(--red)">🗑️ Resetear todos los datos</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="row2">
+    <button class="btn btn-primary" onclick="App.saveSettings()" style="flex:2">Guardar</button>
+    <button class="btn btn-ghost" onclick="App.close('m-cfg')" style="flex:1">Cancelar</button>
+  </div>
+</div></div>
+
+<div class="mbk" id="m-km"><div class="modal" style="max-width:360px">
+  <p class="mtitle mb1">KM del vehículo</p>
+  <p class="muted mb2" style="font-size:.82rem">Primera vez con este vehículo. ¿Cuántos km tiene?</p>
+  <div class="fl mb2"><label id="km-lbl">Kilómetros actuales</label><input type="number" id="km-in" placeholder="150000" inputmode="numeric" onkeydown="if(event.key==='Enter')App.confirmKm()"></div>
+  <button class="btn btn-primary" onclick="App.confirmKm()">Confirmar</button>
+</div></div>
+
+<!-- Detalle vehículo admin -->
+<div class="mbk" id="m-adm-detail"><div class="modal" style="max-width:540px">
+  <div class="mhdr"><span class="mtitle" id="adm-detail-title">Detalle</span><button class="mclose" onclick="App.close('m-adm-detail')">✕</button></div>
+  <div id="adm-detail-body"></div>
+</div></div>
+
+<!-- PWA Install -->
+<div id="m-pwa">
+  <div class="pwa-sheet">
+    <div class="pwa-handle"></div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="width:72px;height:72px;background:var(--acc);border-radius:20px;display:inline-flex;align-items:center;justify-content:center;font-size:2.5rem;margin-bottom:1rem;box-shadow:0 8px 24px var(--acc-g)">🚛</div>
+      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Instalar Flota ML</h2>
+      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">Instalá la app en tu teléfono para notificaciones y uso sin conexión.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1.25rem">
+      <div class="pwa-feature"><span style="font-size:1.4rem">📲</span><div style="font-size:.875rem"><strong>Acceso directo</strong> desde la pantalla de inicio</div></div>
+      <div class="pwa-feature"><span style="font-size:1.4rem">🔔</span><div style="font-size:.875rem"><strong>Notificaciones</strong> de mantenimiento en tu celu</div></div>
+      <div class="pwa-feature"><span style="font-size:1.4rem">📶</span><div style="font-size:.875rem"><strong>Funciona sin señal</strong> y sincroniza automáticamente</div></div>
+    </div>
+    <button id="pwa-install-btn" class="btn btn-primary" style="margin-bottom:.625rem">📲 Instalar ahora</button>
+    <button class="btn btn-ghost" onclick="PWA.dismiss()">Ahora no</button>
+  </div>
+</div>
+
+<!-- Notif Permission -->
+<div id="m-notif">
+  <div class="pwa-sheet">
+    <div class="pwa-handle"></div>
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div style="font-size:3.5rem;margin-bottom:.875rem">🔔</div>
+      <h2 style="font-family:var(--font-h);font-size:1.5rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:.5rem">Activar notificaciones</h2>
+      <p style="color:var(--muted);font-size:.875rem;line-height:1.6">Recibí alertas cuando tu vehículo se acerca al servicio de mantenimiento.</p>
+    </div>
+    <div class="pwa-feature" style="background:var(--acc-g);border:1px solid var(--acc);margin-bottom:1.25rem">
+      <span style="font-size:1.4rem">🔧</span>
+      <div style="font-size:.875rem;line-height:1.5"><strong>Aviso a los 500 km</strong> del próximo servicio<br><span style="color:var(--muted)">+ email automático a los 1000 km</span></div>
+    </div>
+    <button class="btn btn-primary" onclick="PWA.requestNotif()" style="margin-bottom:.625rem">🔔 Activar notificaciones</button>
+    <button class="btn btn-ghost" onclick="PWA.dismissNotif()">Ahora no</button>
+  </div>
+</div>
+
+
+<script>
+// ── Mobile viewport height fix (Android Chrome address bar) ─────────────
+(function fixVH(){
+  function setVH(){
+    document.documentElement.style.setProperty('--real-vh', window.innerHeight*0.01+'px');
+  }
+  setVH();
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', ()=>setTimeout(setVH, 200));
+})();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════════════════════
+const API       = "https://logisticaml.santamariapablodaniel.workers.dev";
+const ADMIN_KEY = "admin2024";
+const ADMIN_PIN = "2817";           // PIN fijo del administrador
+const TZ        = "America/Argentina/Buenos_Aires";
+const FLEET_DEF = "distribuidoramercadolimpio@gmail.com";
+const MAINT_WARN  = 500;
+const MAINT_EMAIL = 1000;
+// VAPID public key for Web Push subscriptions
+const VAPID_PUBLIC = "BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY";
+
+const VEHICLES = {
+  hiace:   {id:'hiace',   name:'Toyota Hiace',  emoji:'🚐', desc:'Furgón de carga',  fixedUser:'nicolas'},
+  saveiro: {id:'saveiro', name:'VW Saveiro',     emoji:'🚙', desc:'Camioneta pickup', fixedUser:'martin'},
+  fiat:    {id:'fiat',    name:'Fiat Uno Cargo', emoji:'🚗', desc:'Auto comercial',   fixedUser:'ramiro'},
+};
+const USER_V   = {martin:'saveiro', ramiro:'fiat', nicolas:'hiace'};
+const SV_NAMES = {'oil-change':'Servicio completo','tires':'Neumáticos','suspension':'Suspensión','brakes':'Frenos','other':'Otro'};
+const SV_ICONS = {'oil-change':'🛢️','tires':'⚙️','suspension':'🔧','brakes':'🛑','other':'🔩'};
+const ADMIN_USER = 'pablo'; // usuario admin con acceso al monitor
+const ADMIN_VIRTUAL = {id:'__admin__',name:'Administrador',username:'pablo',pin:ADMIN_PIN,email:'',vehicles:{},createdAt:''};
+
+let S = {user:null, vid:null, pendingKmV:null};
+let swReg = null;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DB
+// ══════════════════════════════════════════════════════════════════════════════
+const DB = {
+  save(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}},
+  load(k,d=null){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
+  users(){return this.load('fml_users',{})},
+  saveUsers(u){this.save('fml_users',u)},
+  overrides(){return this.load('fml_ov',{})},
+  saveOverrides(o){this.save('fml_ov',o)},
+  queue(){return this.load('fml_queue',[])},
+  saveQueue(q){this.save('fml_queue',q)},
+  priceHistory(){return this.load('fml_prices',[])},
+  savePriceHistory(h){this.save('fml_prices',h)},
+  pushSubs(){return this.load('fml_push_subs',{})},
+  savePushSubs(s){this.save('fml_push_subs',s)},
+  session(){return this.load('fml_session',null)},
+  saveSession(s){this.save('fml_session',s)},
+  clearSession(){try{localStorage.removeItem('fml_session')}catch(e){}},
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
+// OFFLINE QUEUE
+// ══════════════════════════════════════════════════════════════════════════════
+const OfflineQueue = {
+  add(item){const q=DB.queue();q.push({...item,queuedAt:new Date().toISOString(),id:Date.now()});DB.saveQueue(q);this.updateUI()},
+  remove(id){DB.saveQueue(DB.queue().filter(x=>x.id!==id));this.updateUI()},
+  count(){return DB.queue().length},
+  updateUI(){
+    const n=this.count();
+    const banner=document.getElementById('offline-banner');
+    const badge=document.getElementById('queue-badge');
+    const icon=document.getElementById('offline-icon');
+    if(n>0){banner?.classList.add('show');const qc=document.getElementById('queue-count');if(qc)qc.textContent=n;if(badge){badge.textContent=`${n} en cola`;badge.classList.add('show')}if(icon)icon.style.display='flex'}
+    else{banner?.classList.remove('show');if(badge)badge.classList.remove('show');if(icon)icon.style.display='none'}
+  },
+  async flush(){
+    const q=DB.queue();if(!q.length||!navigator.onLine)return;
+    let synced=0;
+    for(const item of q){
+      try{
+        if(item.type==='sync-record'){const res=await fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(item.data)});if(res.ok){this.remove(item.id);synced++}}
+        else this.remove(item.id);
+      }catch(e){}
+    }
+    if(synced>0)toast(`✅ ${synced} registro(s) sincronizado(s)`,'success');
+    this.updateUI();
+  }
+};
+window.addEventListener('online',()=>{toast('📶 Conexión restaurada','info',3000);setTimeout(()=>OfflineQueue.flush(),1500)});
+window.addEventListener('offline',()=>{toast('📴 Sin conexión — cargas se guardan localmente','warning',5000)});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&navigator.onLine)OfflineQueue.flush()});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SERVICE WORKER + WEB PUSH
+// ══════════════════════════════════════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/LogisticaML/service-worker.js',{scope:'/LogisticaML/'})
+    .then(reg=>{
+      swReg=reg;
+      navigator.serviceWorker.addEventListener('message',e=>{
+        if(e.data?.type==='FLUSH_QUEUE'&&navigator.onLine)OfflineQueue.flush();
+      });
+    }).catch(err=>console.warn('SW:',err));
+}
+
+// Suscribir dispositivo a Web Push y enviar sub al worker
+async function subscribePush(){
+  if(!swReg||!('PushManager' in window))return null;
+  try{
+    let sub=await swReg.pushManager.getSubscription();
+    if(!sub){
+      sub=await swReg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC)
+      });
+    }
+
+    // ── Deduplicación por dispositivo ────────────────────────────────────
+    // Guardamos el último endpoint registrado por usuario+vehículo
+    // Si es el mismo que ya registramos, NO volvemos a llamar al servidor
+    const username=S.user?.username||'unknown';
+    const cacheKey=`fml_push_reg_${username}`;
+    const lastReg=JSON.parse(localStorage.getItem(cacheKey)||'{}');
+    const currentEndpoint=sub.endpoint;
+    const currentVid=S.vid||'__admin__';
+
+    const cacheRecent=(
+      lastReg.endpoint===currentEndpoint &&
+      lastReg.vid===currentVid &&
+      lastReg.username===username &&
+      lastReg.ts && (Date.now()-lastReg.ts < 7*24*60*60*1000)
+    );
+
+    if(cacheRecent){
+      // Verificar en servidor que la sub sigue vigente (recovery automático tras reset-all)
+      try{
+        const chk=await fetch(`${API}/api/push-check?username=${encodeURIComponent(username)}`);
+        if(chk.ok){
+          const chkData=await chk.json().catch(()=>({}));
+          if(chkData.exists){
+            console.log('✅ Push ya registrada en KV — omitiendo re-registro');
+            return sub;
+          }
+          console.log('⚠️ Push no encontrada en servidor — re-registrando...');
+          // Limpiar caché local para forzar re-registro
+          localStorage.removeItem(cacheKey);
+        }
+      }catch(e){
+        // Sin internet: confiar en caché local
+        console.log('✅ Push cache local válida (offline)');
+        return sub;
+      }
+    }
+
+    // Guardar sub localmente con ID del usuario
+    const subs=DB.pushSubs();
+    subs[username]=JSON.parse(JSON.stringify(sub));
+    DB.savePushSubs(subs);
+
+    // Enviar al worker
+    const regRes=await fetch(`${API}/api/register-push`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({subscription:sub,userId:S.user?.id,username,vehicleId:S.vid})
+    }).catch(e=>{console.warn('register-push fetch error:',e);return null});
+
+    if(regRes){
+      const regData=await regRes.json().catch(()=>({}));
+      if(regData.ok){
+        // Guardar en cache para no re-registrar innecesariamente
+        localStorage.setItem(cacheKey,JSON.stringify({
+          endpoint:currentEndpoint,
+          vid:currentVid,
+          username,
+          ts:Date.now()
+        }));
+        console.log('✅ Push registrada en KV:',regData);
+      }else{
+        console.error('❌ Push NO registrada:',regData);
+      }
+    }
+    return sub;
+  }catch(e){console.warn('Push sub:',e);return null}
+}
+
+function urlBase64ToUint8Array(base64String){
+  const padding='='.repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,'+').replace(/_/g,'/');
+  const rawData=window.atob(base64);
+  return new Uint8Array([...rawData].map(c=>c.charCodeAt(0)));
+}
+
+// Notificación local (cuando app está abierta)
+function pushNotify(title,body,tag='fml'){
+  if(!('Notification' in window))return;
+  if(Notification.permission==='granted'){
+    swReg?.showNotification(title,{body,tag,icon:'',badge:''}).catch(()=>new Notification(title,{body}));
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════════════════════════════════════
+function nowAR(){const now=new Date();return{date:now.toLocaleDateString('en-CA',{timeZone:TZ}),time:now.toLocaleTimeString('es-AR',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false})}}
+
+function setSyncStatus(state){
+  const ind=document.getElementById('sync-indicator');
+  const icon=document.getElementById('sync-icon');
+  const text=document.getElementById('sync-text');
+  if(!ind)return;
+  ind.style.display='';
+  if(state==='ok'){icon.textContent='✅';text.textContent='Sincronizado';ind.style.color='var(--green)';}
+  else if(state==='pending'){icon.textContent='⏳';text.textContent='Enviando...';ind.style.color='var(--muted)';}
+  else if(state==='offline'){icon.textContent='📴';text.textContent='Sin conexión';ind.style.color='var(--orange)';}
+  else if(state==='error'){icon.textContent='⚠️';text.textContent='Error sync';ind.style.color='var(--red)';}
+}
+function fmt$(n){return'$'+(n||0).toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+function fmtN(n){return(n||0).toLocaleString('es-AR')}
+function setTheme(n){document.body.className='t'+n;localStorage.setItem('fml_theme','t'+n);document.querySelectorAll('.tp').forEach((el,i)=>el.classList.toggle('on',i===n-1));document.querySelectorAll('.tb').forEach((el,i)=>{el.style.borderColor=i===n-1?'var(--acc)':'var(--border)';el.style.transform=i===n-1?'scale(1.1)':'scale(1)'})}
+(()=>{const t=localStorage.getItem('fml_theme')||'t1';setTheme(parseInt(t.replace('t','')))})();
+function toast(msg,type='info',ms=4500){const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};const el=document.createElement('div');el.className=`toast t-${type}`;el.innerHTML=`<span>${icons[type]}</span><span style="flex:1">${msg}</span>`;document.getElementById('toasts').appendChild(el);setTimeout(()=>{el.classList.add('bye');setTimeout(()=>el.remove(),230)},ms)}
+function haptic(t='light'){if(navigator.vibrate){const p={light:30,medium:60,heavy:100};navigator.vibrate(p[t]||30)}}
+function setBtn(id,loading,label){const b=document.getElementById(id);if(!b)return;b.disabled=loading;b.innerHTML=loading?`<span class="spin" style="border-color:currentColor;border-right-color:transparent;width:16px;height:16px;display:inline-block;vertical-align:middle;margin-right:6px"></span>`+label:label;}
+function addRipple(btn,e){const rect=btn.getBoundingClientRect();const r=document.createElement('span');const d=Math.max(rect.width,rect.height);r.className='ripple';r.style.cssText=`width:${d}px;height:${d}px;left:${(e.clientX||rect.left+rect.width/2)-rect.left-d/2}px;top:${(e.clientY||rect.top+rect.height/2)-rect.top-d/2}px`;btn.appendChild(r);setTimeout(()=>r.remove(),650)}
+function isAdmin(){return S.user?.username===ADMIN_USER||localStorage.getItem('fml_adm')==='1'}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// KM ANALYSIS — calcula todas las métricas
+// ══════════════════════════════════════════════════════════════════════════════
+function calcKmMetrics(fuel, currentKm){
+  // Solo cargas con KM registrados, ordenadas por fecha
+  const withKm = [...fuel].filter(r=>r.km>0).sort((a,b)=>new Date(a.date)-new Date(b.date));
+  if(withKm.length < 2) return {kmPorCarga:null,costoPorKm:null,totalKm:null,kmPorLitro:null};
+
+  const first=withKm[0], last=withKm[withKm.length-1];
+  const totalKm=last.km-first.km;
+  if(totalKm<=0) return {kmPorCarga:null,costoPorKm:null,totalKm:null,kmPorLitro:null};
+
+  const totalAmt=withKm.slice(1).reduce((s,r)=>s+r.amount,0);
+  const totalLit=withKm.slice(1).reduce((s,r)=>s+r.liters,0);
+  const nCargas=withKm.length-1;
+
+  return{
+    totalKm,
+    kmPorCarga: Math.round(totalKm/nCargas),
+    costoPorKm: totalAmt>0 ? (totalAmt/totalKm).toFixed(2) : null,
+    kmPorLitro: totalLit>0 ? (totalKm/totalLit).toFixed(1) : null,
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAINTENANCE CHECK + ALERT
+// ══════════════════════════════════════════════════════════════════════════════
+function getMaintStatus(vd){
+  const maint=vd.maintenanceRecords||[];
+  const currentKm=vd.currentKm||0;
+  if(!maint.length||!currentKm) return null;
+  const last=maint[maint.length-1];
+  const nextKm=last.currentKm+last.nextKm;
+  const kmLeft=nextKm-currentKm;
+  const pct=Math.max(0,Math.min(100,Math.round((currentKm-last.currentKm)/last.nextKm*100)));
+  return{nextKm,kmLeft,pct,lastKm:last.currentKm,interval:last.nextKm};
+}
+
+async function checkMaintenanceAlerts(vd,vid){
+  const st=getMaintStatus(vd);
+  if(!st)return;
+  const v=VEHICLES[vid];
+  const alerted=DB.load(`fml_alrt_${vid}`,0);
+
+  if(st.kmLeft<=MAINT_WARN&&st.kmLeft>0&&alerted<MAINT_WARN){
+    DB.save(`fml_alrt_${vid}`,MAINT_WARN);
+    pushNotify(`🔧 Servicio próximo — ${v.name}`,`Faltan ${fmtN(st.kmLeft)} km para el cambio.`,'maint-'+vid);
+    toast(`🔧 ${v.name}: faltan ${fmtN(st.kmLeft)} km para el servicio`,'warning',8000);
+    // Enviar push a TODOS los dispositivos suscritos a este vehículo
+    await sendPushToVehicle(vid,{
+      title:`🔧 Servicio próximo — ${v.name}`,
+      body:`Faltan ${fmtN(st.kmLeft)} km para el cambio de aceite.`,
+      tag:'maint-'+vid
+    });
+  }
+  if(st.kmLeft<=MAINT_EMAIL&&alerted<MAINT_EMAIL){
+    DB.save(`fml_alrt_${vid}`,MAINT_EMAIL);
+    fetch(`${API}/api/maintenance-alert`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vehicleName:v.name,vehicleIcon:v.emoji,currentKm:vd.currentKm,nextServiceKm:st.nextKm,kmLeft:st.kmLeft,userEmail:S.user?.email||''})
+    }).catch(console.error);
+  }
+}
+
+// Enviar push notification a todos los dispositivos de un vehículo
+async function sendPushToVehicle(vid,payload){
+  try{
+    await fetch(`${API}/api/push-notify`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({vehicleId:vid,...payload})
+    });
+  }catch(e){console.warn('Push:',e)}
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PRICE HISTORY
+// ══════════════════════════════════════════════════════════════════════════════
+function recordPrice(ppl,date){
+  if(!ppl||ppl<=0)return;
+  const h=DB.priceHistory();
+  const month=date?date.slice(0,7):nowAR().date.slice(0,7);
+  const ex=h.find(x=>x.month===month);
+  if(ex){ex.prices.push(ppl);ex.avg=ex.prices.reduce((s,v)=>s+v,0)/ex.prices.length}
+  else h.push({month,prices:[ppl],avg:ppl});
+  if(h.length>12)h.splice(0,h.length-12);
+  DB.savePriceHistory(h);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// APP
+// ══════════════════════════════════════════════════════════════════════════════
+const App = {
+  showLogin(){document.getElementById('f-login').style.display='';document.getElementById('f-reg').style.display='none';setTimeout(()=>document.getElementById('lu').focus(),80)},
+  showReg(){document.getElementById('f-login').style.display='none';document.getElementById('f-reg').style.display='';setTimeout(()=>document.getElementById('rn').focus(),80)},
+
+  login(){
+    const u=document.getElementById('lu').value.trim().toLowerCase();
+    const p=document.getElementById('lp').value.trim();
+    if(!u){alert('Ingresá tu usuario');return}
+    if(p.length!==4){alert('El PIN debe tener 4 dígitos');return}
+    setBtn('btn-login',true,'Ingresando...');
+    // Admin virtual — PIN fijo 2817, usuario pablo
+    if(u===ADMIN_USER&&p===ADMIN_PIN){
+      S.user=ADMIN_VIRTUAL;haptic('medium');
+      DB.saveSession({type:'admin'});
+      this._enterAdminApp();
+      document.dispatchEvent(new Event('fml-loggedin'));
+      setBtn('btn-login',false,'Ingresar →');
+      return;
+    }
+    const users=DB.users();
+    const user=Object.values(users).find(x=>x.username===u);
+    if(!user){setBtn('btn-login',false,'Ingresar →');alert('Usuario no encontrado');return}
+    if(user.pin!==p){setBtn('btn-login',false,'Ingresar →');alert('PIN incorrecto');document.getElementById('lp').value='';return}
+    S.user=user;haptic('medium');
+    DB.saveSession({type:'user',userId:user.id,vid:null});
+    this._enterApp();
+    document.dispatchEvent(new Event('fml-loggedin'));
+    setBtn('btn-login',false,'Ingresar →');
+  },
+
+  register(){
+    const name=document.getElementById('rn').value.trim();
+    const u=document.getElementById('ru').value.trim().toLowerCase();
+    const p=document.getElementById('rp').value.trim();
+    if(!name||!u||!/^\d{4}$/.test(p)){alert('Completá todos los campos con PIN de 4 dígitos');return}
+    const users=DB.users();
+    if(Object.values(users).find(x=>x.username===u)){alert('Ese usuario ya existe');return}
+    setBtn('btn-register',true,'Creando...');
+    const id=Date.now().toString();
+    users[id]={id,name,username:u,pin:p,email:'',vehicles:{},createdAt:new Date().toISOString()};
+    DB.saveUsers(users);
+    setBtn('btn-register',false,'Crear cuenta');
+    alert(`✅ Cuenta creada. Iniciá sesión con "${u}".`);
+    document.getElementById('rn').value='';document.getElementById('ru').value='';document.getElementById('rp').value='';
+    this.showLogin();document.getElementById('lu').value=u;document.getElementById('lp').focus();
+  },
+
+
+
+  _enterAdminApp(){
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent='👑 Admin';
+    // Ocultar tabs de chofer, mostrar solo monitor
+    document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
+    const tabAdmin=document.getElementById('tab-admin');
+    tabAdmin.style.display='';
+    tabAdmin.classList.add('on');
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('panel-admin').classList.add('on');
+    // Ocultar botón cambiar vehículo en menú
+    document.querySelector('#m-menu .btn-ghost[onclick*="openVPicker"]').style.display='none';
+    // Actualizar nav badge
+    document.getElementById('nav-ve').textContent='👑';
+    document.getElementById('nav-vn').textContent='Monitor Admin';
+    localStorage.setItem('fml_adm','1');
+    this.renderAdmin();
+    setTimeout(()=>subscribePush().catch(()=>{}),2000);
+  },
+
+  _enterApp(){
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent=S.user.name;
+    // Reset COMPLETO del layout — por si venía de una sesión admin previa
+    // (admin oculta los tabs normales; hay que restaurarlos)
+    localStorage.removeItem('fml_adm'); // siempre limpiar flag admin para no-admin
+    document.querySelectorAll('.tab').forEach(t=>t.style.display=''); // mostrar todos
+    document.getElementById('tab-admin').style.display='none'; // admin siempre oculto por defecto
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('panel-dash').classList.add('on');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelector('.tab[onclick*="dash"]').classList.add('on');
+    // Restablecer botón "Cambiar vehículo" en menú (admin lo ocultaba)
+    const vpBtn=document.querySelector('#m-menu .btn-ghost[onclick*="openVPicker"]');
+    if(vpBtn)vpBtn.style.display='';
+    const q=DB.queue().filter(x=>x.type==='sync-record');
+    DB.saveQueue(q);OfflineQueue.updateUI();
+    if(navigator.onLine)setTimeout(()=>OfflineQueue.flush(),2000);
+    // Consultar asignación en servidor primero, luego entrar
+    this._resolveVehicleAndEnter();
+  },
+
+  async _resolveVehicleAndEnter(){
+    if(isAdmin()){this.openVPicker();return;}
+    // 1. Intentar obtener asignación del KV (tiene prioridad sobre todo)
+    let serverVid=null;
+    try{
+      const res=await fetch(`${API}/api/assignments`);
+      if(res.ok){
+        const d=await res.json();
+        const ukey=S.user.username.toLowerCase();
+        serverVid=d.assignments?.[ukey]||null;
+      }
+    }catch(e){}
+    // 2. Fallback: asignación local USER_V
+    const uKey=(S.user.username||'').toLowerCase().trim();
+    const uFirst=(S.user.name||'').toLowerCase().split(' ')[0];
+    let localVid=null;
+    for(const [key,vid] of Object.entries(USER_V)){
+      if(uKey===key.toLowerCase()||uFirst===key.toLowerCase()){localVid=vid;break}
+    }
+    const finalVid=serverVid||localVid;
+    if(finalVid){
+      // Auto-seleccionar sin mostrar modal
+      this.selectV(finalVid,true);
+    }else{
+      // Sin asignación conocida → mostrar picker
+      this.openVPicker();
+    }
+  },
+
+  openVPicker(){
+    this.close('m-menu');
+    const today=nowAR().date;
+    const ovr=DB.overrides();const uOvr=ovr[S.user.username];
+    const hasOvr=uOvr&&uOvr.expires>=today;
+    const uKey=(S.user.username||'').toLowerCase().trim();
+    const uFirst=(S.user.name||'').toLowerCase().split(' ')[0];
+    let assignedId=null;
+    if(hasOvr){assignedId=uOvr.vehicleId}
+    else{
+      for(const [key,vid] of Object.entries(USER_V)){
+        if(uKey===key.toLowerCase()||uFirst===key.toLowerCase()){assignedId=vid;break}
+      }
+    }
+    const admin=isAdmin();
+    const cont=document.getElementById('vcards');cont.innerHTML='';
+    if(assignedId||admin){
+      Object.values(VEHICLES).forEach(v=>{
+        const isAssigned=v.id===assignedId;
+        if(!admin&&!isAssigned)return;
+        const badge=isAssigned?'<span class="chip c-acc">Tu vehículo</span>':'';
+        const card=document.createElement('div');card.className='vcard'+(isAssigned?' sel':'');
+        card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb">${badge}</div>`;
+        card.onclick=()=>{haptic('medium');this.selectV(v.id)};
+        cont.appendChild(card);
+      });
+    } else {
+      Object.values(VEHICLES).forEach(v=>{
+        const card=document.createElement('div');card.className='vcard';
+        card.innerHTML=`<div class="ve">${v.emoji}</div><div class="vi"><h3>${v.name}</h3><p>${v.desc}</p></div><div class="vb"><span class="chip c-orange">Elegir</span></div>`;
+        card.onclick=()=>{haptic('medium');this.selectV(v.id)};
+        cont.appendChild(card);
+      });
+    }
+    document.getElementById('m-veh').classList.add('on');
+  },
+
+  selectV(vid, silent=false){
+    S.vid=vid;if(!silent)this.close('m-veh');else this.close('m-veh');
+    const sess=DB.session();if(sess&&sess.type==='user'){sess.vid=vid;DB.saveSession(sess);}
+    const users=DB.users();
+    if(!users[S.user.id].vehicles)users[S.user.id].vehicles={};
+    if(!users[S.user.id].vehicles[vid])users[S.user.id].vehicles[vid]={currentKm:null,fuelRecords:[],maintenanceRecords:[]};
+    DB.saveUsers(users);S.user=users[S.user.id];
+    const v=VEHICLES[vid];
+    document.getElementById('nav-ve').textContent=v.emoji;
+    document.getElementById('nav-vn').textContent=v.name;
+    const ckm=S.user.vehicles[vid].currentKm;
+    if(ckm){document.getElementById('km-curr').value=ckm;this._updateKmBar(ckm)}
+    if(!ckm){
+      S.pendingKmV=vid;document.getElementById('km-lbl').textContent=`KM actuales del ${v.name}`;
+      document.getElementById('km-in').value='';document.getElementById('m-km').classList.add('on');
+      setTimeout(()=>document.getElementById('km-in').focus(),300);
+    } else {
+      if(Notification.permission==='granted')subscribePush().catch(()=>{});
+      this.renderDash();
+    }
+  },
+
+  confirmKm(){
+    const km=parseInt(document.getElementById('km-in').value);
+    if(!km||km<0){alert('Ingresá un valor válido');return}
+    const users=DB.users();users[S.user.id].vehicles[S.pendingKmV].currentKm=km;
+    DB.saveUsers(users);S.user=users[S.user.id];S.pendingKmV=null;
+    this.close('m-km');document.getElementById('km-curr').value=km;this._updateKmBar(km);
+    this.renderDash();toast('KM registrado ✅','success');
+    if(Notification.permission==='granted')subscribePush().catch(()=>{});
+  },
+
+  tab(name,btn){
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    btn.classList.add('on');document.getElementById('panel-'+name).classList.add('on');
+    haptic('light');
+    if(name==='maint')this.renderMaintList();
+    if(name==='dash')this.renderDash();
+    if(name==='admin')this.renderAdmin();
+  },
+
+  // ── KM input handling ────────────────────────────────────────────────────
+  onKmInput(val){
+    const km=parseInt(val);
+    if(km>0){this._updateKmBar(km)}
+  },
+
+  _updateKmBar(km){
+    if(!S.vid)return;
+    const vd=S.user.vehicles[S.vid];
+    const st=getMaintStatus(vd);
+    const bar=document.getElementById('km-maint-bar');
+    if(!st){if(bar)bar.style.display='none';return}
+    if(bar)bar.style.display='';
+    const label=document.getElementById('km-maint-label');
+    const fill=document.getElementById('km-maint-fill');
+    // Calcular KM recorridos desde último service
+    const kmDone=km-(st.lastKm||0);
+    const interval=st.interval||10000;
+    const pct=Math.max(0,Math.min(100,Math.round(kmDone/interval*100)));
+    // Colores por tramo: 0-70% verde, 70-85% amarillo, 85-95% naranja, 95%+ rojo
+    let color,statusText;
+    if(pct>=95||st.kmLeft<=0){
+      color='linear-gradient(90deg,#dc2626,#ef4444)';
+      statusText=st.kmLeft<=0?'⚠️ SERVICE VENCIDO':'🚨 '+fmtN(st.kmLeft)+' km restantes';
+    }else if(pct>=85){
+      color='linear-gradient(90deg,#ea580c,#f97316)';
+      statusText='⚠️ Faltan '+fmtN(st.kmLeft)+' km — PRÓXIMO';
+    }else if(pct>=70){
+      color='linear-gradient(90deg,#ca8a04,#eab308)';
+      statusText='Faltan '+fmtN(st.kmLeft)+' km';
+    }else{
+      color='linear-gradient(90deg,#059669,#10b981)';
+      statusText='Faltan '+fmtN(st.kmLeft)+' km';
+    }
+    if(label)label.textContent=statusText;
+    if(fill){fill.style.width=pct+'%';fill.style.background=color;fill.style.transition='width .6s ease,background .4s ease';}
+  },
+
+  // handleKmPhoto → replaced by _onKmPhoto in new fuel pipeline
+
+  // ── DASHBOARD ────────────────────────────────────────────────────────────
+  renderDash(){
+    if(!S.vid)return;
+    // Siempre refrescar S.user desde DB para tener datos más recientes
+    const freshUsers=DB.users();
+    if(freshUsers[S.user.id])S.user=freshUsers[S.user.id];
+    const vd=S.user.vehicles[S.vid];
+    const v=VEHICLES[S.vid];
+    const fuel=vd.fuelRecords||[];
+    document.getElementById('h-emoji').textContent=v.emoji;
+    document.getElementById('h-name').textContent=v.name;
+    document.getElementById('h-desc').textContent=v.desc;
+    document.getElementById('h-km').textContent=vd.currentKm?fmtN(vd.currentKm):'—';
+
+    // Mantenimiento progress bar
+    const st=getMaintStatus(vd);
+    const mpBlock=document.getElementById('maint-progress');
+    if(st&&mpBlock){
+      mpBlock.style.display='';
+      document.getElementById('mp-label').textContent=st.kmLeft>0?`Faltan ${fmtN(st.kmLeft)} km`:'⚠️ Vencido';
+      const bar=document.getElementById('mp-bar');
+      bar.style.width=st.pct+'%';
+      bar.style.background=st.pct>80?'linear-gradient(90deg,var(--orange),var(--red))':'linear-gradient(90deg,var(--green),var(--acc))';
+      document.getElementById('mp-done').textContent=`Último: ${fmtN(st.lastKm)} km`;
+      document.getElementById('mp-next').textContent=`Próximo: ${fmtN(st.nextKm)} km`;
+    } else if(mpBlock) mpBlock.style.display='none';
+
+    // Stats — últimos 30 días (ventana móvil, más útil que mes calendario)
+    const now=new Date();
+    const d30=new Date(now.getTime()-30*86400000);
+    const mo=fuel.filter(r=>new Date(r.date)>=d30);
+    // Si no hay datos en los últimos 30 días, mostrar todo el historial
+    const mo2=mo.length>0?mo:fuel;
+    const periodLabel=mo.length>0?'Últ. 30 días':'Total historial';
+    const amt=mo2.reduce((s,r)=>s+r.amount,0);
+    const lit=mo2.reduce((s,r)=>s+r.liters,0);
+    document.getElementById('st-fuel').textContent='$'+Math.round(amt).toLocaleString('es-AR');
+    document.getElementById('st-lit').textContent=lit.toFixed(1);
+    document.getElementById('st-n').textContent=mo2.length;
+    document.getElementById('st-avg').textContent=lit>0?'$'+(amt/lit).toFixed(2):'—';
+    // Update period label in UI
+    const pLabel=document.getElementById('st-period-label');
+    if(pLabel)pLabel.textContent=periodLabel;
+
+    // KM metrics
+    const km=calcKmMetrics(fuel,vd.currentKm);
+    document.getElementById('st-kmprom').textContent=km.kmPorCarga?fmtN(km.kmPorCarga):'—';
+    document.getElementById('st-costkm').textContent=km.costoPorKm?'$'+km.costoPorKm:'—';
+    document.getElementById('st-totalkm').textContent=km.totalKm?fmtN(km.totalKm):'—';
+    document.getElementById('st-kml').textContent=km.kmPorLitro||'—';
+
+    this._renderAlerts(vd);
+
+    // Recent records
+    const recent=[...fuel].reverse().slice(0,5);
+    document.getElementById('dash-recent').innerHTML=recent.length===0
+      ?'<p class="muted tc" style="padding:2rem 0">Sin cargas registradas aún</p>'
+      :recent.map(r=>`<div class="card" style="margin-bottom:.5rem">
+        <div class="card-row">
+          <div><div style="font-weight:600;margin-bottom:.15rem">${new Date(r.date).toLocaleDateString('es-AR')}${r.time?' · '+r.time:''}</div>
+          <div class="muted" style="font-size:.78rem">${r.location||'Sin localidad'} · ${r.liters.toFixed(2)} L${r.km?' · '+fmtN(r.km)+' km':''}</div></div>
+          <div style="text-align:right">
+            <div class="tm" style="font-size:.95rem;color:var(--acc)">${fmt$(r.amount)}</div>
+            <div class="muted" style="font-size:.7rem">$${(r.amount/r.liters).toFixed(2)}/L</div>
+          </div>
+        </div></div>`).join('');
+
+    checkMaintenanceAlerts(vd,S.vid);
+  },
+
+  _renderAlerts(vd){
+    const st=getMaintStatus(vd);
+    let html='';
+    if(st){
+      if(st.kmLeft<=0)html=`<div class="aban a-red"><span class="ai">🛑</span><div><strong>Mantenimiento vencido</strong><p>Superó ${fmtN(Math.abs(st.kmLeft))} km. Agendá urgente.</p></div></div>`;
+      else if(st.kmLeft<=500)html=`<div class="aban a-orange"><span class="ai">⚠️</span><div><strong>Servicio en ${fmtN(st.kmLeft)} km</strong><p>Programá el cambio de aceite y filtros pronto.</p></div></div>`;
+      else if(st.kmLeft<=1000)html=`<div class="aban a-orange"><span class="ai">🔔</span><div><strong>Servicio próximo — ${fmtN(st.kmLeft)} km</strong><p>Empezá a coordinar con el taller.</p></div></div>`;
+    }
+    document.getElementById('dash-alerts').innerHTML=html;
+  },
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // FUEL FLOW — pipeline de 2 fotos en paralelo
+  // ══════════════════════════════════════════════════════════════════════════
+  // Estado del flujo
+  _ff:{ticketDone:false,kmDone:false,ticketData:null,kmData:null,active:false},
+
+  startFuelFlow(e){
+    if(!S.vid){toast('Seleccioná un vehículo primero','warning');return}
+    haptic('heavy');
+    addRipple(document.getElementById('fuel-hero-btn'),e);
+    // Reset estado
+    this._ff={ticketDone:false,kmDone:false,ticketData:null,kmData:null,active:true};
+    // Resetear campos ocultos
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','km-curr']
+      .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    // Mostrar steps
+    document.getElementById('fuel-steps').style.display='';
+    this._ffSetStep('ticket','active','Esperando foto del ticket...');
+    this._ffSetStep('km','idle','Foto del odómetro');
+    // Actualizar botón principal
+    document.getElementById('fhb-icon').textContent='📷';
+    document.getElementById('fhb-title').textContent='Foto del ticket';
+    document.getElementById('fhb-sub').textContent='Enfocá bien el ticket de nafta';
+    document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);setTimeout(()=>document.getElementById('file-in').click(),120)};
+    setTimeout(()=>document.getElementById('file-in').click(),200);
+  },
+
+  async _onTicketPhoto(e){
+    const file=e.target.files[0];if(!file)return;
+    document.getElementById('file-in').value=''; // limpiar input para que no retenga ref al file
+    let b64=await this._b64(file);
+    this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
+    document.getElementById('fhb-icon').textContent='🛣️';
+    document.getElementById('fhb-title').textContent='Foto del tablero';
+    document.getElementById('fhb-sub').textContent='Fotografiá el odómetro';
+    document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);setTimeout(()=>document.getElementById('file-km').click(),120)};
+    this._ffSetStep('km','active','Esperando foto del tablero...');
+    haptic('light');
+    // Mandar a background y soltar la referencia — el GC puede liberar los ~300KB
+    this._processTicketBg(b64);
+    b64=null; // liberar string base64 del scope local
+    setTimeout(()=>document.getElementById('file-km').click(),400);
+  },
+
+  async _onKmPhoto(e){
+    const file=e.target.files[0];if(!file)return;
+    document.getElementById('file-km').value=''; // limpiar input
+    let b64=await this._b64(file);
+    this._ffSetStep('km','active','Leyendo odómetro con IA...',true);
+    document.getElementById('fhb-icon').textContent='⏳';
+    document.getElementById('fhb-title').textContent='Procesando...';
+    document.getElementById('fhb-sub').textContent='La IA está analizando las fotos';
+    document.getElementById('fuel-hero-btn').onclick=null;
+    this._processKmBg(b64);
+    b64=null; // liberar string base64 del scope local
+  },
+
+  async _processTicketBg(b64){
+    const apiKey=localStorage.getItem('fml_akey')||'';
+    try{
+      const res=await fetch(`${API}/api/process-ticket`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image:b64,apiKey})
+      });
+      b64=null; // foto enviada — liberar string (~300KB) inmediatamente
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(!data.ticket)throw new Error('Sin datos');
+      const t=data.ticket;
+      const today=nowAR().date;
+      const todayYear=parseInt(today.slice(0,4));
+      // Llenar campos ocultos
+      let fecha=today;
+      if(t.fecha){const fy=parseInt((t.fecha||'').slice(0,4));if(fy>=todayYear-1&&fy<=todayYear)fecha=t.fecha;}
+      document.getElementById('ff-date').value=fecha;
+      if(t.hora)document.getElementById('ff-time').value=t.hora.slice(0,5);
+      const lit=t.combustible?.litros||t.combustible?.liters;
+      if(lit)document.getElementById('ff-lit').value=parseFloat(lit);
+      if(t.monto?.total)document.getElementById('ff-amt').value=parseFloat(t.monto.total);
+      if(t.monto?.iva)document.getElementById('ff-iva').value=parseFloat(t.monto.iva);
+      if(t.surtidor?.cuit)document.getElementById('ff-cuit').value=t.surtidor.cuit;
+      if(t.surtidor?.localidad)document.getElementById('ff-loc').value=t.surtidor.localidad;
+      if(t.surtidor?.direccion)document.getElementById('ff-addr').value=t.surtidor.direccion;
+      this._ff.ticketData={liters:parseFloat(lit)||0,amount:parseFloat(t.monto?.total)||0};
+      this._ff.ticketDone=true;
+      this._ffSetStep('ticket','done',`${parseFloat(lit)||'?'} L · $${Math.round(parseFloat(t.monto?.total)||0).toLocaleString('es-AR')}`);
+      haptic('light');
+      this._ffTryFinish();
+    }catch(err){
+      this._ff.ticketDone=true; // marcamos done aunque sea con error para no bloquear
+      this._ff.ticketData=null;
+      this._ffSetStep('ticket','error','No se pudo leer — podés reintentar');
+      // Ofrecer reintentar la foto del ticket
+      document.getElementById('fhb-icon').textContent='🔄';
+      document.getElementById('fhb-title').textContent='Reintentar ticket';
+      document.getElementById('fhb-sub').textContent='La foto salió poco legible';
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{
+        haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);
+        this._ff.ticketDone=false;this._ff.ticketData=null;
+        this._ffSetStep('ticket','active','Leyendo ticket con IA...',true);
+        setTimeout(()=>document.getElementById('file-in').click(),120);
+      };
+      this._ffTryFinish();
+    }
+  },
+
+  async _processKmBg(b64){
+    const apiKey=localStorage.getItem('fml_akey')||'';
+    try{
+      const res=await fetch(`${API}/api/process-odometer`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({image:b64,apiKey})
+      });
+      b64=null; // foto enviada — liberar string inmediatamente
+      if(!res.ok)throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      if(!data.km)throw new Error('Sin KM');
+      document.getElementById('km-curr').value=data.km;
+      this._updateKmBar(data.km);
+      this._ff.kmData={km:data.km};
+      this._ff.kmDone=true;
+      this._ffSetStep('km','done',`${fmtN(data.km)} km leídos ✓`);
+      haptic('light');
+      this._ffTryFinish();
+    }catch(err){
+      this._ff.kmDone=true;
+      this._ff.kmData=null;
+      this._ffSetStep('km','error','Foto poco legible — reintentar');
+      document.getElementById('fhb-icon').textContent='🔄';
+      document.getElementById('fhb-title').textContent='Reintentar tablero';
+      document.getElementById('fhb-sub').textContent='Sacá una foto más nítida del odómetro';
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{
+        haptic('medium');addRipple(document.getElementById('fuel-hero-btn'),ev);
+        this._ff.kmDone=false;this._ff.kmData=null;
+        this._ffSetStep('km','active','Leyendo odómetro...',true);
+        setTimeout(()=>document.getElementById('file-km').click(),120);
+      };
+      this._ffTryFinish();
+    }
+  },
+
+  _ffTryFinish(){
+    if(!this._ff.ticketDone||!this._ff.kmDone)return;
+    // Ambas fotos procesadas — ¿tenemos los datos mínimos?
+    const liters=parseFloat(document.getElementById('ff-lit').value)||0;
+    const amount=parseFloat(document.getElementById('ff-amt').value)||0;
+    const km=parseInt(document.getElementById('km-curr').value)||0;
+    // Si falta ticket Y falta km → ambos fallaron → pedir de nuevo desde el inicio
+    if(!liters&&!km){
+      document.getElementById('fhb-icon').textContent='⚠️';
+      document.getElementById('fhb-title').textContent='Fotos poco legibles';
+      document.getElementById('fhb-sub').textContent='Volvé a intentar con mejor luz';
+      document.getElementById('fuel-hero-btn').onclick=(ev)=>{haptic('medium');App.startFuelFlow(ev);};
+      return;
+    }
+    // Si alguno falló pero el otro OK → mostrar toast de confirmación con lo que hay
+    haptic('heavy');
+    this._ffShowConfirmToast(liters,amount,km);
+  },
+
+  _ffCDTimer:null,
+  _ffShowConfirmToast(liters,amount,km){
+    // Actualizar botón
+    document.getElementById('fhb-icon').textContent='✅';
+    document.getElementById('fhb-title').textContent='¡Registrado!';
+    document.getElementById('fhb-sub').textContent='Guardando en segundo plano...';
+    document.getElementById('fuel-hero-btn').onclick=null;
+
+    const vname=VEHICLES[S.vid]?.name||'';
+    const vicon=VEHICLES[S.vid]?.emoji||'⛽';
+    const litStr=liters>0?liters.toFixed(1)+'L':'—';
+    const amtStr=amount>0?'$'+Math.round(amount).toLocaleString('es-AR'):'—';
+    const kmStr=km>0?fmtN(km)+' km':'Sin KM';
+    const hasWarn=(!liters||!amount||!km);
+
+    // Usar overlay centrado en pantalla
+    const overlay=document.getElementById('fuel-confirm-overlay');
+    overlay.innerHTML='';
+    const card=document.createElement('div');
+    card.className='fco-card';
+    card.id='toast-confirm-fuel';
+    card.innerHTML=`
+      <div style="text-align:center;margin-bottom:1.25rem">
+        <div style="font-size:3rem;line-height:1;margin-bottom:.5rem">${vicon}</div>
+        <div style="font-family:var(--font-h);font-size:1.4rem;text-transform:uppercase;letter-spacing:.04em;color:var(--green);margin-bottom:.2rem">✅ Carga registrada</div>
+        <div style="font-size:.78rem;color:var(--muted)">${vname}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.625rem;margin-bottom:1.25rem">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem .5rem;text-align:center">
+          <div style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);line-height:1">${litStr}</div>
+          <div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.3rem">Litros</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem .5rem;text-align:center">
+          <div style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);line-height:1;word-break:break-all">${amtStr}</div>
+          <div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.3rem">Total</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem .5rem;text-align:center">
+          <div style="font-family:var(--font-m);font-size:1.1rem;font-weight:700;color:var(--acc);line-height:1">${kmStr}</div>
+          <div style="font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:.3rem">KM</div>
+        </div>
+      </div>
+      ${hasWarn?`<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:10px;padding:.625rem .875rem;margin-bottom:1rem;font-size:.75rem;color:var(--orange)">⚠️ Algunos datos no pudieron leerse de la foto — revisá en el panel.</div>`:''}
+      <div style="margin-bottom:.875rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:.35rem">
+          <span style="font-size:.68rem;color:var(--muted)">Cerrando automáticamente...</span>
+          <span id="tcf-num" style="font-family:var(--font-m);font-size:.75rem;font-weight:700;color:var(--acc)">4s</span>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;height:5px;overflow:hidden">
+          <div id="tcf-bar" style="height:100%;border-radius:6px;background:linear-gradient(90deg,var(--green),var(--acc));width:100%;transition:width 1s linear"></div>
+        </div>
+      </div>
+      <button onclick="App._ffDismissToast()" style="width:100%;background:var(--acc);color:#000;border:none;border-radius:12px;padding:.875rem;font-size:.9rem;font-weight:700;cursor:pointer;font-family:var(--font-b);min-height:48px">Ver en el panel →</button>`;
+    overlay.appendChild(card);
+    overlay.classList.add('on');
+    // Cerrar al tocar el backdrop (fuera de la card)
+    overlay.onclick=(e)=>{if(e.target===overlay)App._ffDismissToast();};
+
+    // Guardar inmediatamente en background
+    this._ffDoSave();
+
+    // Countdown visual 4 seg
+    clearInterval(this._ffCDTimer);
+    let secs=4;
+    const bar=document.getElementById('tcf-bar');
+    const num=document.getElementById('tcf-num');
+    setTimeout(()=>{if(bar)bar.style.width='0%'},30);
+    this._ffCDTimer=setInterval(()=>{
+      secs--;
+      if(num)num.textContent=secs+'s';
+      if(secs<=0){clearInterval(this._ffCDTimer);this._ffDismissToast();}
+    },1000);
+  },
+
+  _ffDismissToast(){
+    clearInterval(this._ffCDTimer);
+    const overlay=document.getElementById('fuel-confirm-overlay');
+    const card=document.getElementById('toast-confirm-fuel');
+    if(card)card.classList.add('bye');
+    setTimeout(()=>{
+      if(overlay){overlay.classList.remove('on');overlay.innerHTML='';}
+    },220);
+    // Resetear UI y volver al dashboard
+    this._ffReset();
+  },
+
+  _ffReset(){
+    this._ff={ticketDone:false,kmDone:false,ticketData:null,kmData:null,active:false};
+    document.getElementById('fuel-steps').style.display='none';
+    document.getElementById('fhb-icon').textContent='⛽';
+    document.getElementById('fhb-title').textContent='Registrar carga';
+    document.getElementById('fhb-sub').textContent='Fotografiá ticket + tablero';
+    document.getElementById('fuel-hero-btn').onclick=(ev)=>App.startFuelFlow(ev);
+    // Volver automáticamente al dashboard para ver los stats actualizados
+    const allTabs=document.querySelectorAll('.tab');
+    const dashTab=[...allTabs].find(t=>t.getAttribute('onclick')&&t.getAttribute('onclick').includes("'dash'"));
+    if(dashTab){App.tab('dash',dashTab);}else{App.renderDash();}
+  },
+
+  async _ffDoSave(){
+    if(!S.vid)return;
+    const liters=parseFloat(document.getElementById('ff-lit').value)||0;
+    const amount=parseFloat(document.getElementById('ff-amt').value)||0;
+    const date=document.getElementById('ff-date').value||nowAR().date;
+    const kmVal=parseInt(document.getElementById('km-curr').value)||0;
+    if(!liters||!amount)return; // ticket falló completamente, nada que guardar
+
+    // Validar KM
+    const vd0=DB.users()[S.user.id].vehicles[S.vid];
+    const lastKm=vd0?.currentKm||0;
+    if(kmVal>0&&lastKm>0&&kmVal<=lastKm){
+      toast(`⚠️ KM ${kmVal<=lastKm?'igual o menor':'inválido'} al anterior (${fmtN(lastKm)} km) — verificalo`,'warning',7000);
+    }
+
+    const record={
+      id:Date.now(),date,time:document.getElementById('ff-time').value,
+      liters,amount,
+      iva:parseFloat(document.getElementById('ff-iva').value)||0,
+      cuit:document.getElementById('ff-cuit').value,
+      location:document.getElementById('ff-loc').value,
+      address:document.getElementById('ff-addr').value,
+      km:kmVal>0?kmVal:null,
+      createdAt:new Date().toISOString(),
+    };
+
+    // Guardar localmente
+    const users=DB.users();const vd=users[S.user.id].vehicles[S.vid];
+    if(!vd.fuelRecords)vd.fuelRecords=[];
+
+    // Anomalías
+    const TANK_MAX={hiace:70,saveiro:55,fiat:45};
+    const maxTank=TANK_MAX[S.vid]||70;
+    if(liters>maxTank)toast(`🚨 ${liters.toFixed(1)}L supera capacidad del tanque (${maxTank}L) — verificá`,'warning',8000);
+    if(vd.fuelRecords.length>=3){
+      const avgLit=vd.fuelRecords.slice(-3).reduce((s,r)=>s+(r.liters||0),0)/3;
+      if(avgLit>0&&liters>avgLit*1.3)toast(`⚠️ Consumo +${Math.round((liters/avgLit-1)*100)}% sobre promedio`,'warning',7000);
+    }
+
+    vd.fuelRecords.push(record);
+    if(kmVal>0)vd.currentKm=kmVal;
+    DB.saveUsers(users);S.user=users[S.user.id];
+
+    const ppl=liters>0?amount/liters:0;
+    if(ppl>0)recordPrice(ppl,date);
+    if(kmVal>0)this._updateKmBar(kmVal);
+    this.renderDash();
+    setSyncStatus('pending');
+
+    // Sync al servidor en background — continúa aunque el usuario cierre la app
+    const v=VEHICLES[S.vid];
+    const _prevRecs=(DB.users()[S.user.id]?.vehicles?.[S.vid]?.fuelRecords||[]).filter(r=>r.km>0&&r.id!==record.id);
+    const _prevKm=_prevRecs.length>0?_prevRecs.sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt))[0].km:0;
+    const syncData={userId:S.user.id,userName:S.user.name,vehicleId:S.vid,vehicleName:v.name,vehicleIcon:v.emoji,vehicleBaseKm:_prevKm,record};
+
+    const doSync=async()=>{
+      try{
+        const r=await fetch(`${API}/api/sync-record`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(syncData)});
+        if(r.ok)setSyncStatus('ok');else setSyncStatus('error');
+      }catch(e){OfflineQueue.add({type:'sync-record',data:syncData});setSyncStatus('offline');}
+      this._sendConfirmEmail(record).catch(console.error);
+      await checkMaintenanceAlerts(S.user.vehicles[S.vid],S.vid);
+    };
+
+    // Usar keepalive fetch si el SW está disponible, sino normal
+    if(navigator.onLine){
+      if('serviceWorker' in navigator&&navigator.serviceWorker.controller){
+        doSync(); // SW mantendrá la conexión viva
+      }else{
+        doSync();
+      }
+    }else{
+      OfflineQueue.add({type:'sync-record',data:syncData});
+      setSyncStatus('offline');
+    }
+  },
+
+  _ffSetStep(step,state,sub,spin=false){
+    const el=document.getElementById('fstep-'+step);
+    const dot=document.getElementById('fdot-'+step);
+    const subEl=document.getElementById('fsub-'+step);
+    const iconEl=document.getElementById('ficon-'+step);
+    if(!el)return;
+    el.className='fuel-step'+(state==='active'?' active':state==='done'?' done':state==='error'?' error':'');
+    el.style.opacity='1';
+    if(sub)subEl.textContent=sub;
+    if(spin)dot.innerHTML='<span class="spin" style="width:14px;height:14px;border-width:2px;border-color:var(--acc-g);border-top-color:var(--acc)"></span>';
+    else if(state==='done')dot.textContent='✓';
+    else if(state==='error')dot.textContent='!';
+    else dot.textContent=step==='ticket'?'1':'2';
+    if(state==='done')iconEl.textContent=step==='ticket'?'✅':'✅';
+    else if(state==='error')iconEl.textContent='⚠️';
+  },
+
+  // Compatibilidad con cancelFuel llamado desde otros lugares
+  cancelFuel(){
+    this._ffReset();
+    ['ff-date','ff-time','ff-lit','ff-amt','ff-iva','ff-cuit','ff-loc','ff-addr','km-curr']
+      .forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  },
+
+  // KM input manual — ya no hay widget visible, pero se puede poner desde configuración o maint
+  onKmInput(val){const km=parseInt(val);if(km>0)this._updateKmBar(km);},
+
+  // Legacy compat
+  triggerFuelScan(e){App.startFuelFlow(e);},
+  handlePhoto(e){this._onTicketPhoto(e);},
+  handleKmPhoto(e){this._onKmPhoto(e);},
+  _retryPhoto(){},_retakePhoto(){},
+
+  async _sendConfirmEmail(record){
+    const v=VEHICLES[S.vid];
+    const body={to:FLEET_DEF,userName:S.user.name,vehicleName:v.name,vehicleIcon:v.emoji,fuelRecord:record,location:record.location,address:record.address};
+    const userEmail=S.user.email?.trim()||'';
+    if(userEmail&&userEmail.includes('@')&&userEmail!==FLEET_DEF)body.cc=userEmail;
+    try{
+      const res=await fetch(`${API}/api/send-confirmation`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+      const data=await res.json().catch(()=>({}));
+      if(res.ok)toast('📧 Email enviado','info',3000);
+      else console.warn('Email:',data?.error||res.status);
+    }catch(err){if(!navigator.onLine)OfflineQueue.add({type:'send-confirmation',data:body})}
+  },
+
+
+
+  // ── MAINTENANCE ──────────────────────────────────────────────────────────
+  saveMaint(){
+    if(!S.vid){alert('Seleccioná un vehículo');return}
+    const type=document.getElementById('sv-type').value;
+    const date=document.getElementById('sv-date').value;
+    const km=parseInt(document.getElementById('sv-km').value);
+    const next=parseInt(document.getElementById('sv-next').value)||10000;
+    if(!type||!date||!km){alert('Completá: Tipo, Fecha y KM');return}
+    const record={id:Date.now(),type,date,currentKm:km,nextKm:next,notes:document.getElementById('sv-notes').value,provider:document.getElementById('sv-prov').value,createdAt:new Date().toISOString()};
+    const users=DB.users();const vd=users[S.user.id].vehicles[S.vid];
+    if(!vd.maintenanceRecords)vd.maintenanceRecords=[];
+    vd.maintenanceRecords.push(record);vd.currentKm=km;
+    DB.saveUsers(users);S.user=users[S.user.id];
+    DB.save(`fml_alrt_${S.vid}`,0);
+    haptic('medium');toast('✅ Servicio registrado','success');
+    ['sv-type','sv-date','sv-km','sv-notes','sv-prov'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('sv-next').value='10000';
+    this.renderMaintList();this.renderDash();
+  },
+
+  renderMaintList(){
+    if(!S.vid)return;
+    const records=[...(S.user.vehicles[S.vid]?.maintenanceRecords||[])].reverse();
+    document.getElementById('maint-list').innerHTML=records.length===0
+      ?'<p class="muted tc" style="padding:2rem 0">Sin servicios registrados</p>'
+      :records.map(r=>`<div class="maint-card">
+        <div class="card-row" style="margin-bottom:.5rem">
+          <div><div style="font-weight:700;margin-bottom:.15rem">${SV_ICONS[r.type]||'🔧'} ${SV_NAMES[r.type]||r.type}</div>
+          <div class="muted" style="font-size:.78rem">${new Date(r.date).toLocaleDateString('es-AR')}</div></div>
+          <div class="chip c-acc">${fmtN(r.currentKm)} km</div>
+        </div>
+        <div class="muted" style="font-size:.78rem;display:flex;flex-direction:column;gap:.15rem">
+          <span>📅 Próximo: ${fmtN(r.currentKm+r.nextKm)} km</span>
+          ${r.provider?`<span>🏪 ${r.provider}</span>`:''}
+          ${r.notes?`<span>📝 ${r.notes}</span>`:''}
+        </div></div>`).join('');
+  },
+
+  // ── ADMIN MONITOR ────────────────────────────────────────────────────────
+  _adminRefreshTimer:null,
+
+  // ── ADMIN PRO: state ─────────────────────────────────────────────────────
+  _admMonth: null,  // YYYY-MM del mes visualizado
+  _admAllRecs: [],  // cache de todos los registros
+
+  _admCurrMonth(){
+    const n=new Date();
+    return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}`;
+  },
+
+  admPrevMonth(){
+    const m=this._admMonth||this._admCurrMonth();
+    const [y,mo]=m.split('-').map(Number);
+    const d=new Date(y,mo-2,1);
+    this._admMonth=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    this.renderAdmin();
+  },
+
+  admNextMonth(){
+    const curr=this._admCurrMonth();
+    const m=this._admMonth||curr;
+    if(m>=curr)return;
+    const [y,mo]=m.split('-').map(Number);
+    const d=new Date(y,mo,1);
+    const next=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    this._admMonth=next<=curr?next:curr;
+    this.renderAdmin();
+  },
+
+  admGoToday(){
+    this._admMonth=null;
+    this.renderAdmin();
+  },
+
+  admToggleTool(bodyId,chevId,onOpen){
+    const el=document.getElementById(bodyId);
+    if(!el)return;
+    const chv=document.getElementById(chevId);
+    const opening=el.style.display==='none';
+    el.style.display=opening?'':'none';
+    if(chv)chv.textContent=opening?'▴':'▾';
+    if(opening&&onOpen)onOpen();
+  },
+
+  // Computa métricas para un mes dado a partir de todos los registros
+  _admMonthStats(allRecs,month){
+    const res={};
+    Object.keys(VEHICLES).forEach(vid=>{res[vid]={fuel:[],litros:0,gasto:0,iva:0,km:{start:0,end:0,traveled:0},cpm:0,kpl:null,ppl:null,drivers:[]}});
+    // Cargas de ese mes
+    allRecs.forEach(entry=>{
+      const r=entry.record;if(!r?.date)return;
+      const vid=entry.vehicleId;if(!res[vid])return;
+      if(r.date.slice(0,7)!==month)return;
+      res[vid].fuel.push(r);
+      res[vid].litros+=(r.liters||0);
+      res[vid].gasto+=(r.amount||0);
+      res[vid].iva+=(r.iva||0);
+      if(entry.userName&&!res[vid].drivers.includes(entry.userName))res[vid].drivers.push(entry.userName);
+    });
+    // KM por vehículo — usando todos los registros para calcular el rango
+    Object.keys(VEHICLES).forEach(vid=>{
+      const allVRecs=allRecs.filter(e=>e.vehicleId===vid&&(e.record?.km||0)>0)
+        .map(e=>({km:e.record.km,date:e.record.date}))
+        .sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const moRecs=allVRecs.filter(r=>r.date.slice(0,7)===month);
+      const prevRecs=allVRecs.filter(r=>r.date.slice(0,7)<month);
+      if(moRecs.length>0){
+        const endKm=Math.max(...moRecs.map(r=>r.km));
+        let startKm=0;
+        if(prevRecs.length>0)startKm=Math.max(...prevRecs.map(r=>r.km));
+        else if(moRecs.length>1)startKm=Math.min(...moRecs.map(r=>r.km));
+        res[vid].km={start:startKm,end:endKm,traveled:startKm>0?Math.max(0,endKm-startKm):0};
+      }
+      const vd=res[vid];
+      vd.cpm=vd.km.traveled>0?Math.round(vd.gasto/vd.km.traveled):0;
+      vd.kpl=(vd.litros>0&&vd.km.traveled>0)?(vd.km.traveled/vd.litros).toFixed(2):null;
+      vd.ppl=vd.litros>0?(vd.gasto/vd.litros).toFixed(2):null;
+    });
+    return res;
+  },
+
+  async renderAdmin(){
+    document.getElementById('adm-updated').textContent='Actualizando...';
+    if(this._adminRefreshTimer)clearInterval(this._adminRefreshTimer);
+    this._adminRefreshTimer=setInterval(()=>{
+      const p=document.getElementById('panel-admin');
+      if(p&&p.classList.contains('on'))this.renderAdmin();
+      else clearInterval(this._adminRefreshTimer);
+    },60000);
+
+    // Obtener registros KV
+    let kvRecords=[];
+    try{
+      const res=await fetch(`${API}/api/get-records`);
+      if(res.ok){const d=await res.json();kvRecords=d.records||[];}
+    }catch(e){console.warn('get-records:',e)}
+
+    // Fusionar con datos locales (deduplicar por id)
+    const localUsers=DB.users();
+    const seenIds=new Set(kvRecords.map(e=>e.record?.id).filter(Boolean));
+    const allRecs=[...kvRecords];
+    Object.values(localUsers).forEach(u=>{
+      if(!u.vehicles)return;
+      Object.entries(u.vehicles).forEach(([vid,vd])=>{
+        (vd.fuelRecords||[]).forEach(r=>{
+          if(!seenIds.has(r.id)){
+            seenIds.add(r.id);
+            allRecs.push({vehicleId:vid,vehicleName:VEHICLES[vid]?.name,vehicleIcon:VEHICLES[vid]?.emoji,userName:u.name,record:r});
+          }
+        });
+      });
+    });
+    this._admAllRecs=allRecs;
+
+    // Mes seleccionado
+    const curr=this._admCurrMonth();
+    if(!this._admMonth)this._admMonth=curr;
+    const isCurr=this._admMonth===curr;
+
+    // Label del mes
+    const [y,mo]=this._admMonth.split('-').map(Number);
+    const lbl=new Date(y,mo-1,1).toLocaleDateString('es-AR',{month:'long',year:'numeric',timeZone:TZ});
+    document.getElementById('adm-month-lbl').textContent=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+    const nextBtn=document.getElementById('adm-month-next');
+    if(nextBtn)nextBtn.disabled=isCurr;
+    const liveBadge=document.getElementById('adm-live-badge');
+    if(liveBadge)liveBadge.style.display=isCurr?'':'none';
+
+    // Mes anterior
+    const prevDate=new Date(y,mo-2,1);
+    const prevMonth=`${prevDate.getFullYear()}-${String(prevDate.getMonth()+1).padStart(2,'0')}`;
+
+    const currStats=this._admMonthStats(allRecs,this._admMonth);
+    const prevStats=this._admMonthStats(allRecs,prevMonth);
+
+    // Totales flota
+    const fleet={
+      cargas:Object.values(currStats).reduce((s,v)=>s+v.fuel.length,0),
+      litros:Object.values(currStats).reduce((s,v)=>s+v.litros,0),
+      gasto:Object.values(currStats).reduce((s,v)=>s+v.gasto,0),
+      km:Object.values(currStats).reduce((s,v)=>s+v.km.traveled,0),
+    };
+    const prevFleet={
+      cargas:Object.values(prevStats).reduce((s,v)=>s+v.fuel.length,0),
+      litros:Object.values(prevStats).reduce((s,v)=>s+v.litros,0),
+      gasto:Object.values(prevStats).reduce((s,v)=>s+v.gasto,0),
+      km:Object.values(prevStats).reduce((s,v)=>s+v.km.traveled,0),
+    };
+
+    document.getElementById('adm-updated').textContent=`Act: ${new Date().toLocaleTimeString('es-AR',{timeZone:TZ})} · ${allRecs.length} reg`;
+
+    this._admRenderKPIs(fleet,prevFleet);
+    this._admRenderPriceAlert(fleet,prevFleet,currStats,prevStats);
+    this._admRenderTrend(allRecs,this._admMonth);
+    this._admRenderRanking(currStats,prevStats,fleet.gasto);
+    this._admRenderCompTable(currStats,prevStats);
+    this._admRenderRecent(allRecs,this._admMonth);
+  },
+
+  _admDeltaHtml(curr,prev,invertColor=false){
+    if(!prev||prev===0)return '';
+    const pct=Math.round((curr/prev-1)*100);
+    if(pct===0)return '<span class="dlt-eq">→ Sin cambio</span>';
+    const up=pct>0;
+    const cls=invertColor?(up?'dlt-dn':'dlt-up'):(up?'dlt-up':'dlt-dn');
+    return `<span class="${cls}">${up?'▲':'▼'} ${Math.abs(pct)}% vs mes ant.</span>`;
+  },
+
+  _admRenderKPIs(fleet,prevFleet){
+    document.getElementById('adm-kpis').innerHTML=`
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">Gasto total</div>
+        <div class="adm-kpi-val">${fmt$(fleet.gasto)}</div>
+        <div class="adm-kpi-delta">${this._admDeltaHtml(fleet.gasto,prevFleet.gasto)}</div>
+      </div>
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">Litros</div>
+        <div class="adm-kpi-val">${fleet.litros.toFixed(1)}L</div>
+        <div class="adm-kpi-delta">${this._admDeltaHtml(fleet.litros,prevFleet.litros)}</div>
+      </div>
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">KM recorridos</div>
+        <div class="adm-kpi-val">${fleet.km>0?fmtN(fleet.km)+'km':'—'}</div>
+        <div class="adm-kpi-delta">${fleet.km>0?this._admDeltaHtml(fleet.km,prevFleet.km,true):''}</div>
+      </div>
+      <div class="adm-kpi">
+        <div class="adm-kpi-lbl">Cargas</div>
+        <div class="adm-kpi-val">${fleet.cargas}</div>
+        <div class="adm-kpi-delta">${this._admDeltaHtml(fleet.cargas,prevFleet.cargas)}</div>
+      </div>`;
+  },
+
+  _admRenderPriceAlert(fleet,prevFleet,currStats,prevStats){
+    const el=document.getElementById('adm-price-alert');
+    if(!el||!prevFleet.gasto||!fleet.gasto){if(el)el.innerHTML='';return;}
+    const gastoPct=((fleet.gasto/prevFleet.gasto)-1)*100;
+    const currPpl=fleet.litros>0?fleet.gasto/fleet.litros:0;
+    const prevLit=Object.values(prevStats).reduce((s,v)=>s+v.litros,0);
+    const prevGas=Object.values(prevStats).reduce((s,v)=>s+v.gasto,0);
+    const prevPpl=prevLit>0?prevGas/prevLit:0;
+    const pplPct=prevPpl>0?((currPpl/prevPpl)-1)*100:0;
+    let cls,icon,title,msg;
+    if(gastoPct>15){
+      cls='cls-up';icon='🚨';
+      title=`Gasto +${gastoPct.toFixed(1)}% vs mes anterior`;
+      msg=`Incremento significativo en combustible.${pplPct>5?` El precio/litro subió ${pplPct.toFixed(1)}% ($${currPpl.toFixed(2)}/L vs $${prevPpl.toFixed(2)}/L).`:''} Considerá trasladar el incremento a tu precio de venta.`;
+    }else if(gastoPct>5){
+      cls='cls-warn';icon='⚠️';
+      title=`Gasto +${gastoPct.toFixed(1)}% vs mes anterior`;
+      msg=`Incremento moderado. Precio promedio actual: $${currPpl.toFixed(2)}/L${prevPpl>0?` (era $${prevPpl.toFixed(2)}/L)`:''}.`;
+    }else if(gastoPct<-5){
+      cls='cls-ok';icon='✅';
+      title=`Gasto ${gastoPct.toFixed(1)}% vs mes anterior`;
+      msg=`Mes con menor gasto de combustible. Precio promedio: $${currPpl.toFixed(2)}/L. Buena eficiencia operativa.`;
+    }else{
+      el.innerHTML='';return;
+    }
+    el.innerHTML=`<div class="adm-alert ${cls}"><div class="ai">${icon}</div><div><strong>${title}</strong><p>${msg}</p></div></div>`;
+  },
+
+  _admRenderTrend(allRecs,currMonth){
+    const el=document.getElementById('adm-trend');
+    const leg=document.getElementById('adm-trend-legend');
+    if(!el)return;
+    const [cy,cm]=currMonth.split('-').map(Number);
+    const months=[];
+    for(let i=5;i>=0;i--){
+      const d=new Date(cy,cm-1-i,1);
+      const key=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      const lbl=d.toLocaleDateString('es-AR',{month:'short',timeZone:TZ}).replace('.','').slice(0,3);
+      months.push({key,lbl,byV:{hiace:0,saveiro:0,fiat:0},total:0});
+    }
+    allRecs.forEach(entry=>{
+      const r=entry.record;if(!r?.date)return;
+      const rm=r.date.slice(0,7);
+      const mo=months.find(m=>m.key===rm);if(!mo)return;
+      const vid=entry.vehicleId;
+      if(mo.byV[vid]!==undefined)mo.byV[vid]+=(r.amount||0);
+      mo.total+=(r.amount||0);
+    });
+    const maxTotal=Math.max(...months.map(m=>m.total),1);
+    const VCOLS={hiace:'var(--acc)',saveiro:'var(--blue)',fiat:'var(--green)'};
+    // Leyenda
+    if(leg)leg.innerHTML=Object.entries(VCOLS).map(([vid,col])=>`<span style="display:flex;align-items:center;gap:.25rem;font-size:.56rem;color:var(--muted)"><span class="adm-trend-dot" style="background:${col}"></span>${VEHICLES[vid]?.name.split(' ')[0]||vid}</span>`).join('');
+    el.innerHTML=months.map(mo=>{
+      const colPct=Math.max(6,Math.round(mo.total/maxTotal*100));
+      const isCurr=mo.key===currMonth;
+      const bars=mo.total>0
+        ?Object.entries(VCOLS).map(([vid,col])=>{
+            const h=mo.total>0?Math.max(5,Math.round(mo.byV[vid]/mo.total*colPct)):0;
+            return `<div class="adm-trend-bar" style="height:${h}%;background:${col};opacity:${isCurr?1:.75}" title="${VEHICLES[vid]?.name}: ${fmt$(mo.byV[vid])}"></div>`;
+          }).join('')
+        :`<div class="adm-trend-bar" style="height:8px;background:var(--border)"></div>`;
+      return `<div class="adm-trend-col${isCurr?' is-curr':''}">
+        <div class="adm-trend-bars">${bars}</div>
+        <div class="adm-trend-lbl">${mo.lbl}</div>
+        <div class="adm-trend-amt">${mo.total>0?'$'+Math.round(mo.total/1000)+'k':'—'}</div>
+      </div>`;
+    }).join('');
+  },
+
+  _admRenderRanking(currStats,prevStats,totalGasto){
+    const el=document.getElementById('adm-ranking');if(!el)return;
+    const VCOLS={hiace:'var(--acc)',saveiro:'var(--blue)',fiat:'var(--green)'};
+    const medals=['🥇','🥈','🥉'];
+    const sorted=Object.entries(currStats)
+      .filter(([vid])=>VEHICLES[vid])
+      .sort((a,b)=>b[1].gasto-a[1].gasto);
+    const maxG=Math.max(...sorted.map(([,v])=>v.gasto),1);
+    el.innerHTML=sorted.map(([vid,vd],i)=>{
+      const v=VEHICLES[vid];
+      const pct=totalGasto>0?Math.round(vd.gasto/totalGasto*100):0;
+      const barPct=Math.round(vd.gasto/maxG*100);
+      const prev=prevStats[vid]||{};
+      const gastoPct=prev.gasto>0?Math.round((vd.gasto/prev.gasto-1)*100):null;
+      const deltaStr=gastoPct!==null
+        ?`<span class="${gastoPct>0?'dlt-up':'dlt-dn'}">${gastoPct>0?'▲':'▼'} ${Math.abs(gastoPct)}%</span>`
+        :`<span class="dlt-eq">sin dato prev.</span>`;
+      return `<div class="adm-rank-item${i===0?' top1':''}">
+        <div class="adm-rank-pos">${medals[i]||(i+1)+'.'}</div>
+        <div class="adm-rank-info">
+          <div class="adm-rank-name">${v.emoji} ${v.name} <span class="chip c-acc" style="font-size:.54rem;padding:.12rem .4rem">${pct}%</span></div>
+          <div class="adm-rank-bar-bg"><div class="adm-rank-bar-fill" style="width:${barPct}%;background:${VCOLS[vid]||'var(--acc)'}"></div></div>
+          <div class="adm-rank-meta">
+            ${vd.km.traveled>0?`<span>🛣️ ${fmtN(vd.km.traveled)} km</span>`:''}
+            ${vd.kpl?`<span>⚡ ${vd.kpl} km/L</span>`:''}
+            ${vd.cpm>0?`<span>💲 $${fmtN(vd.cpm)}/km</span>`:''}
+            <span>👤 ${vd.drivers.join(', ')||'Sin asignar'}</span>
+          </div>
+        </div>
+        <div class="adm-rank-right">
+          <div class="adm-rank-gasto">${fmt$(vd.gasto)}</div>
+          <div class="adm-rank-delta">${deltaStr}</div>
+          <div class="adm-rank-litros">${vd.litros.toFixed(1)}L</div>
+        </div>
+      </div>`;
+    }).join('');
+    if(!sorted.length||!sorted[0][1].gasto)el.innerHTML='<p style="color:var(--muted);font-size:.82rem;padding:.75rem 0">Sin datos para este período</p>';
+  },
+
+  _admRenderCompTable(currStats,prevStats){
+    const el=document.getElementById('adm-comp-table');if(!el)return;
+    const dTag=(curr,prev,inv=false)=>{
+      if(!prev||!curr)return '';
+      const p=Math.round((curr/prev-1)*100);
+      if(!p)return '';
+      const cls=inv?(p>0?'var(--green)':'var(--red)'):(p>0?'var(--red)':'var(--green)');
+      return `<span style="font-size:.56rem;color:${cls};margin-left:.2rem">${p>0?'▲':'▼'}${Math.abs(p)}%</span>`;
+    };
+    const hdr=`<div class="adm-comp-hdr"><span>Vehículo</span><span>Gasto</span><span>Litros</span><span>KM</span><span>km/L</span><span>$/km</span></div>`;
+    const rows=Object.entries(currStats).filter(([vid])=>VEHICLES[vid]).map(([vid,vd])=>{
+      const v=VEHICLES[vid];const prev=prevStats[vid]||{};
+      return `<div class="adm-comp-row">
+        <div class="adm-comp-veh">${v.emoji}<span>${v.name.split(' ')[1]||v.name}</span></div>
+        <div class="adm-comp-cell acc">${vd.gasto>0?fmt$(vd.gasto):'—'}${dTag(vd.gasto,prev.gasto)}</div>
+        <div class="adm-comp-cell">${vd.litros>0?vd.litros.toFixed(1)+'L':'—'}${dTag(vd.litros,prev.litros)}</div>
+        <div class="adm-comp-cell">${vd.km.traveled>0?fmtN(vd.km.traveled):'—'}</div>
+        <div class="adm-comp-cell">${vd.kpl||'—'}</div>
+        <div class="adm-comp-cell">${vd.cpm>0?'$'+fmtN(vd.cpm):'—'}</div>
+      </div>`;
+    }).join('');
+    // Total flota
+    const fG=Object.values(currStats).reduce((s,v)=>s+v.gasto,0);
+    const fL=Object.values(currStats).reduce((s,v)=>s+v.litros,0);
+    const fK=Object.values(currStats).reduce((s,v)=>s+v.km.traveled,0);
+    const prevFG=Object.values(prevStats).reduce((s,v)=>s+v.gasto,0);
+    const total=fG>0?`<div class="adm-comp-row total-row">
+      <div class="adm-comp-veh">🚛<span>Total</span></div>
+      <div class="adm-comp-cell acc">${fmt$(fG)}${dTag(fG,prevFG)}</div>
+      <div class="adm-comp-cell">${fL.toFixed(1)}L</div>
+      <div class="adm-comp-cell">${fK>0?fmtN(fK):'—'}</div>
+      <div class="adm-comp-cell">${(fL>0&&fK>0)?(fK/fL).toFixed(2):'—'}</div>
+      <div class="adm-comp-cell">${fK>0?'$'+fmtN(Math.round(fG/fK)):'—'}</div>
+    </div>`:'';
+    el.innerHTML=hdr+rows+total;
+    if(!rows&&!total)el.innerHTML+=`<div class="adm-comp-row"><span style="color:var(--muted);font-size:.82rem;grid-column:1/-1;padding:.25rem 0">Sin datos para este período</span></div>`;
+  },
+
+  _admRenderRecent(allRecs,month){
+    const el=document.getElementById('adm-recent');if(!el)return;
+    const mo=allRecs.filter(e=>e.record?.date?.slice(0,7)===month)
+      .sort((a,b)=>new Date(b.record.date+' '+(b.record.time||''))-new Date(a.record.date+' '+(a.record.time||'')))
+      .slice(0,12);
+    if(!mo.length){el.innerHTML='<p style="color:var(--muted);font-size:.82rem;padding:.5rem 0">Sin cargas en este período</p>';return;}
+    el.innerHTML=mo.map(entry=>{
+      const r=entry.record;const v=VEHICLES[entry.vehicleId]||{};
+      return `<div class="card" style="margin-bottom:.5rem"><div class="card-row">
+        <div><div style="font-weight:600;margin-bottom:.1rem">${v.emoji||''} ${entry.vehicleName||v.name||'—'}</div>
+        <div style="color:var(--muted);font-size:.75rem">${new Date(r.date).toLocaleDateString('es-AR')}${r.time?' · '+r.time:''}${r.location?' · '+r.location:''}</div>
+        <div style="color:var(--muted);font-size:.7rem">👤 ${entry.userName||'—'}</div></div>
+        <div style="text-align:right">
+          <div style="font-family:var(--font-m);color:var(--acc)">${fmt$(r.amount)}</div>
+          <div style="color:var(--muted);font-size:.7rem">${r.liters.toFixed(1)}L · $${(r.amount/r.liters).toFixed(2)}/L${r.km?' · '+fmtN(r.km)+'km':''}</div>
+        </div>
+      </div></div>`;
+    }).join('');
+  },
+
+  _showAdminDetail(vid,vd){
+    const v=VEHICLES[vid];
+    document.getElementById('adm-detail-title').textContent=`${v.emoji} ${v.name}`;
+    const fuel=vd.fuel||[];
+    const maint=(vd.maint||[]).sort((a,b)=>b.currentKm-a.currentKm);
+    const st=getMaintStatus({maintenanceRecords:maint,currentKm:vd.currentKm});
+    const km=calcKmMetrics(fuel,vd.currentKm);
+    const now=new Date();
+    const mo=fuel.filter(r=>{const d=new Date(r.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()});
+    const tAmt=mo.reduce((s,r)=>s+r.amount,0);
+    const tLit=mo.reduce((s,r)=>s+r.liters,0);
+    const tIva=mo.reduce((s,r)=>s+(r.iva||0),0);
+    const allAmt=fuel.reduce((s,r)=>s+r.amount,0);
+
+    const body=`
+      <div class="adm-detail-grid">
+        <div class="adm-d-stat"><span class="adm-d-sv">${fmtN(vd.currentKm)||'—'}</span><span class="adm-d-sl">KM actuales</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${fuel.length}</span><span class="adm-d-sl">Cargas totales</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${fmt$(tAmt)}</span><span class="adm-d-sl">Gasto mes</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${tLit.toFixed(1)}L</span><span class="adm-d-sl">Litros mes</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv" style="color:var(--green)">${fmt$(tIva)}</span><span class="adm-d-sl">IVA mes</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${km.costoPorKm?'$'+km.costoPorKm:'—'}</span><span class="adm-d-sl">$/km</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${km.kmPorLitro||'—'}</span><span class="adm-d-sl">km/litro</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${km.kmPorCarga?fmtN(km.kmPorCarga):' —'}</span><span class="adm-d-sl">km/carga</span></div>
+        <div class="adm-d-stat"><span class="adm-d-sv">${fmt$(allAmt)}</span><span class="adm-d-sl">Gasto total</span></div>
+      </div>
+      ${st?`<div class="aban ${st.kmLeft<=0?'a-red':st.kmLeft<=500?'a-orange':'a-green'}">
+        <span class="ai">🔧</span>
+        <div><strong>${st.kmLeft<=0?'Mantenimiento VENCIDO':'Próximo servicio'}</strong>
+        <p>${st.kmLeft>0?`Faltan ${fmtN(st.kmLeft)} km (próximo: ${fmtN(st.nextKm)} km)`:`Superó ${fmtN(Math.abs(st.kmLeft))} km del intervalo`}</p></div>
+      </div>`:''}
+      <div class="slabel" style="margin-top:1rem">Últimas 5 cargas</div>
+      ${[...fuel].reverse().slice(0,5).map(r=>`
+        <div style="display:flex;justify-content:space-between;padding:.625rem 0;border-bottom:1px solid var(--border);font-size:.82rem">
+          <div><div style="font-weight:600">${new Date(r.date).toLocaleDateString('es-AR')}</div>
+          <div class="muted" style="font-size:.75rem">${r.location||'—'} · ${r.liters.toFixed(2)}L${r.km?' · '+fmtN(r.km)+' km':''}</div></div>
+          <div style="text-align:right;font-family:var(--font-m);color:var(--acc)">${fmt$(r.amount)}</div>
+        </div>`).join('')}
+      ${maint.length?`<div class="slabel" style="margin-top:1rem">Servicios registrados</div>
+      ${maint.slice(0,3).map(r=>`<div style="display:flex;justify-content:space-between;padding:.625rem 0;border-bottom:1px solid var(--border);font-size:.82rem">
+        <div><div style="font-weight:600">${SV_ICONS[r.type]||'🔧'} ${SV_NAMES[r.type]||r.type}</div>
+        <div class="muted" style="font-size:.75rem">${new Date(r.date).toLocaleDateString('es-AR')} · ${fmtN(r.currentKm)} km${r.provider?' · '+r.provider:''}</div></div>
+        <div class="chip c-acc" style="font-size:.62rem">prox ${fmtN(r.currentKm+r.nextKm)}km</div>
+      </div>`).join('')}`:''}
+    `;
+    document.getElementById('adm-detail-body').innerHTML=body;
+    document.getElementById('m-adm-detail').classList.add('on');
+  },
+
+  // ── SETTINGS ─────────────────────────────────────────────────────────────
+  openSettings(){
+    this.close('m-menu');
+    document.getElementById('cfg-email').value=S.user.email||'';
+    document.getElementById('cfg-owner-email').value=localStorage.getItem('fml_owner_email')||'';
+    document.getElementById('cfg-cont-email').value=localStorage.getItem('fml_cont_email')||'';
+    document.getElementById('cfg-fleet-email').value=localStorage.getItem('fml_fleet_email')||FLEET_DEF;
+    document.getElementById('cfg-apikey').value=localStorage.getItem('fml_akey')||'';
+    document.getElementById('cfg-akey').value='';
+    document.getElementById('admin-panel').style.display=isAdmin()?'':'none';
+    if(isAdmin())this._buildAssigns();
+    document.getElementById('m-cfg').classList.add('on');
+  },
+
+  checkAdminKey(){if(document.getElementById('cfg-akey').value===ADMIN_KEY){document.getElementById('admin-panel').style.display='';localStorage.setItem('fml_adm','1');this._buildAssigns();toast('🔓 Panel admin desbloqueado','success')}},
+
+  _buildAssigns(){
+    const users=DB.users();const ovr=DB.overrides();const today=nowAR().date;
+    const cont=document.getElementById('adm-assigns');cont.innerHTML='';
+    Object.values(users).forEach(u=>{
+      const defV=USER_V[u.username]||null;const uOvr=ovr[u.username];const hasOvr=uOvr&&uOvr.expires>=today;const curV=hasOvr?uOvr.vehicleId:defV;
+      const row=document.createElement('div');row.style.cssText='display:flex;align-items:center;gap:.5rem;flex-wrap:wrap';
+      row.innerHTML=`<span style="font-size:.8rem;color:var(--muted);min-width:80px;font-weight:600">${u.name}</span>
+        <select data-uid="${u.username}" style="flex:1;min-width:120px;padding:.55rem .7rem;background:var(--bg);border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-size:.82rem;-webkit-appearance:none">
+          ${Object.values(VEHICLES).map(v=>`<option value="${v.id}"${curV===v.id?' selected':''}>${v.emoji} ${v.name}${defV===v.id?' ✓':''}</option>`).join('')}
+        </select>
+        <span style="font-size:.68rem;color:${hasOvr?'var(--orange)':'var(--dim)'}">${hasOvr?'Hoy especial':'Normal'}</span>`;
+      cont.appendChild(row);
+    });
+  },
+
+  saveSettings(){
+    const users=DB.users();users[S.user.id].email=document.getElementById('cfg-email').value.trim();
+    DB.saveUsers(users);S.user=users[S.user.id];
+    const oe=document.getElementById('cfg-owner-email').value.trim();
+    const ce=document.getElementById('cfg-cont-email').value.trim();
+    const fe=document.getElementById('cfg-fleet-email').value.trim();
+    const ak=document.getElementById('cfg-apikey').value.trim();
+    if(oe)localStorage.setItem('fml_owner_email',oe);
+    if(ce)localStorage.setItem('fml_cont_email',ce);
+    if(fe)localStorage.setItem('fml_fleet_email',fe);
+    if(ak)localStorage.setItem('fml_akey',ak);
+    if(isAdmin()){
+      const ovr=DB.overrides();const today=nowAR().date;
+      document.querySelectorAll('#adm-assigns select').forEach(sel=>{
+        const uname=sel.dataset.uid;const vid=sel.value;const def=USER_V[uname];
+        if(vid!==def)ovr[uname]={vehicleId:vid,expires:today};else delete ovr[uname];
+      });
+      DB.saveOverrides(ovr);
+    }
+    this.close('m-cfg');haptic('medium');toast('✅ Configuración guardada','success');
+  },
+
+  openMenu(){document.getElementById('m-menu').classList.add('on')},
+  close(id){document.getElementById(id).classList.remove('on')},
+  logout(){
+    S={user:null,vid:null,pendingKmV:null};
+    DB.clearSession();
+    localStorage.removeItem('fml_adm');
+    document.getElementById('sc-app').classList.remove('on');
+    document.getElementById('sc-login').classList.add('on');
+    this.close('m-menu');
+    document.getElementById('lu').value='';
+    document.getElementById('lp').value='';
+  },
+  exportData(){const blob=new Blob([JSON.stringify({user:S.user,priceHistory:DB.priceHistory(),at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`flota-ml-${S.user.username}-${Date.now()}.json`;a.click();URL.revokeObjectURL(a.href)},
+  _b64(file){
+    // Comprime + libera memoria agresivamente — soporta celulares con poco RAM
+    // Estrategia: ObjectURL → Image → Canvas → toDataURL → limpiar TODO
+    return new Promise((res,rej)=>{
+      const MAX_PX=1280;   // px máximo en lado largo — la IA lee perfecto a esta res
+      const QUALITY=0.80;  // JPEG 80% — buen balance legibilidad/peso (≈200-400KB)
+
+      // Usamos ObjectURL en vez de FileReader+base64 para no tener dos copias en RAM
+      let objectUrl=null;
+      let img=null;
+      let canvas=null;
+
+      const cleanup=()=>{
+        // Limpiar en orden: primero canvas (GPU memory), luego img, luego objectURL
+        if(canvas){canvas.width=0;canvas.height=0;canvas=null;}
+        if(img){img.onload=null;img.onerror=null;img.src='';img=null;}
+        if(objectUrl){URL.revokeObjectURL(objectUrl);objectUrl=null;}
+      };
+
+      try{
+        objectUrl=URL.createObjectURL(file);
+      }catch(e){
+        // createObjectURL no disponible (raro) — fallback a FileReader
+        const reader=new FileReader();
+        reader.onerror=rej;
+        reader.onload=ev=>res(ev.target.result);
+        reader.readAsDataURL(file);
+        return;
+      }
+
+      img=new Image();
+
+      img.onerror=()=>{
+        // La imagen no cargó — limpiar y rechazar
+        cleanup();
+        rej(new Error('No se pudo cargar la imagen'));
+      };
+
+      img.onload=()=>{
+        try{
+          // 1. Calcular dimensiones finales manteniendo proporción
+          let w=img.naturalWidth||img.width;
+          let h=img.naturalHeight||img.height;
+          if(!w||!h){cleanup();rej(new Error('Imagen sin dimensiones'));return;}
+          if(w>MAX_PX||h>MAX_PX){
+            if(w>=h){h=Math.round(h*MAX_PX/w);w=MAX_PX;}
+            else{w=Math.round(w*MAX_PX/h);h=MAX_PX;}
+          }
+
+          // 2. Dibujar en canvas
+          canvas=document.createElement('canvas');
+          canvas.width=w;
+          canvas.height=h;
+          const ctx=canvas.getContext('2d',{alpha:false}); // alpha:false ahorra RAM
+          ctx.fillStyle='#ffffff';
+          ctx.fillRect(0,0,w,h);
+          ctx.drawImage(img,0,0,w,h);
+
+          // 3. Ya no necesitamos la imagen original — liberar ANTES de toDataURL
+          // (esto libera la memoria de la foto full-res antes de crear la string b64)
+          cleanup(); // libera img y objectUrl, canvas todavía se usa
+
+          // 4. Exportar el canvas comprimido
+          const out=canvas.toDataURL('image/jpeg',QUALITY);
+
+          // 5. Limpiar canvas (fue preservado por cleanup())
+          if(canvas){canvas.width=0;canvas.height=0;canvas=null;}
+
+          res(out);
+        }catch(e){
+          cleanup();
+          if(canvas){canvas.width=0;canvas.height=0;canvas=null;}
+          // Si falló canvas (memoria muy baja), intentar enviar igualcon ObjectURL directo
+          // En ese caso creamos un nuevo ObjectURL temporal
+          try{
+            const fb=URL.createObjectURL(file);
+            // Leer como base64 via FileReader como último recurso
+            const fr=new FileReader();
+            fr.onerror=()=>{URL.revokeObjectURL(fb);rej(e);};
+            fr.onload=ev=>{URL.revokeObjectURL(fb);res(ev.target.result);};
+            fr.readAsDataURL(file);
+          }catch(e2){rej(e2);}
+        }
+      };
+
+      img.src=objectUrl;
+    });
+  },
+
+  // ── TEST FUNCTIONS (borrar después) ──────────────────────────────────────
+  async testPushNotif(){
+    if(Notification.permission==='default'){
+      const p=await Notification.requestPermission();
+      if(p!=='granted'){toast('❌ Permiso denegado','error',7000);return}
+    }
+    if(Notification.permission!=='granted'){toast('❌ Notificaciones bloqueadas','error',6000);return}
+    toast('⏳ Registrando suscripción...','info',3000);
+    await subscribePush().catch(()=>{});
+    await new Promise(r=>setTimeout(r,1000));
+    toast('📤 Enviando push a TODOS los vehículos...','info',3000);
+    let totalSent=0;
+    for(const v of Object.values(VEHICLES)){
+      try{
+        const res=await fetch(`${API}/api/push-notify`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({vehicleId:v.id,title:`🔔 Prueba Admin — ${v.emoji} ${v.name}`,body:'Sistema de notificaciones funcionando ✅',tag:'test-all'})
+        });
+        const data=await res.json().catch(()=>({}));
+        totalSent+=data.sent||0;
+      }catch(e){}
+    }
+    toast(totalSent>0?`✅ Push enviado a ${totalSent} dispositivo(s) en total`:'⚠️ Sin suscriptores registrados aún','success',8000);
+  },
+
+  async sendBroadcast(){
+    const msg=document.getElementById('broadcast-msg')?.value?.trim();
+    if(!msg){toast('Escribí un mensaje primero','warning');return}
+    setBtn('btn-broadcast',true,'Enviando...');
+    let totalSent=0;
+    for(const v of Object.values(VEHICLES)){
+      try{
+        const res=await fetch(`${API}/api/push-notify`,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({vehicleId:v.id,title:'📢 Mensaje de administración',body:msg,tag:'broadcast'})
+        });
+        const data=await res.json().catch(()=>({}));
+        totalSent+=data.sent||0;
+      }catch(e){}
+    }
+    document.getElementById('broadcast-msg').value='';
+    setBtn('btn-broadcast',false,'📢 Enviar a toda la flota');
+    toast(totalSent>0?`✅ Mensaje enviado a ${totalSent} dispositivo(s)`:'⚠️ Sin dispositivos registrados','success',8000);
+  },
+  async sendWeeklyNow(){
+    toast('📊 Generando reporte semanal...','info',4000);
+    try{
+      const res=await fetch(`${API}/api/weekly-report`,{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'});
+      if(res.ok)toast('✅ Reporte semanal enviado a tu email','success',6000);
+      else toast('❌ Error enviando reporte','error',5000);
+    }catch(e){toast('❌ Error de red','error',5000)}
+  },
+
+  async _loadAssignments(){
+    const cont=document.getElementById('adm-assign-list');
+    if(!cont)return;
+    cont.innerHTML='<p class="muted" style="font-size:.78rem">Cargando...</p>';
+    // Traer asignaciones del servidor
+    let serverAssignments={};
+    try{
+      const res=await fetch(`${API}/api/assignments`);
+      if(res.ok){const d=await res.json();serverAssignments=d.assignments||{};}
+    }catch(e){}
+    // Combinar con USER_V como base
+    const allUsers={...Object.fromEntries(Object.entries(USER_V))};
+    Object.entries(serverAssignments).forEach(([u,v])=>{allUsers[u]=v;});
+    cont.innerHTML='';
+    const knownUsers=['martin','nicolas','ramiro'];
+    knownUsers.forEach(uname=>{
+      const currentVid=serverAssignments[uname]||USER_V[uname]||null;
+      const row=document.createElement('div');
+      row.style.cssText='display:flex;align-items:center;gap:.75rem;padding:.625rem 0;border-bottom:1px solid var(--border)';
+      row.innerHTML=`
+        <div style="flex:1;font-size:.9rem;font-weight:600;text-transform:capitalize">${uname}</div>
+        <select id="assign-${uname}" style="flex:1;padding:.35rem .5rem;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.82rem">
+          ${Object.values(VEHICLES).map(v=>`<option value="${v.id}"${currentVid===v.id?' selected':''}>${v.emoji} ${v.name}</option>`).join('')}
+        </select>
+        <button onclick="App._saveAssignment('${uname}')" style="background:var(--acc);color:var(--bg);border:none;border-radius:8px;padding:.35rem .75rem;font-size:.78rem;cursor:pointer;font-weight:700">Guardar</button>`;
+      cont.appendChild(row);
+    });
+  },
+
+  async _saveAssignment(uname){
+    const sel=document.getElementById(`assign-${uname}`);
+    if(!sel)return;
+    const vehicleId=sel.value;
+    try{
+      const res=await fetch(`${API}/api/assign-vehicle`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({adminPin:'2817',username:uname,vehicleId})
+      });
+      const d=await res.json();
+      if(d.ok){
+        haptic('medium');
+        toast(`✅ ${uname} → ${VEHICLES[vehicleId]?.name} guardado. Se aplica al próximo ingreso.`,'success',5000);
+      }else{
+        toast('❌ Error: '+d.error,'error',5000);
+      }
+    }catch(e){toast('❌ Error de red','error',5000)}
+  },
+  async testMaintEmail(){
+    toast('📧 Enviando email de prueba...','info',3000);
+    const res=await fetch(`${API}/api/maintenance-alert`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({vehicleName:'VW Saveiro (PRUEBA)',vehicleIcon:'🚙',currentKm:125000,nextServiceKm:125450,kmLeft:450,userEmail:S.user?.email||''})}).catch(()=>null);
+    if(res?.ok)toast('✅ Email enviado a distribuidoramercadolimpio@gmail.com','success',6000);
+    else toast('❌ Error — verificá la API key de Brevo en Cloudflare','error',6000);
+  },
+  resetAllData(){
+    if(!confirm('⚠️ Esto borra TODOS los datos locales: usuarios, cargas, km, servicios. ¿Confirmar?'))return;
+    localStorage.clear();location.reload();
+  },
+
+  // Borrar todo el KV del servidor (admin only)
+  async resetKV(){
+    if(!confirm('⚠️ ATENCIÓN: Esto borra TODOS los datos del servidor: registros de cargas, tokens push de todos los dispositivos.\n\nDespués cada usuario deberá reabrir la app.\n\n¿Confirmar borrado total?'))return;
+    if(!confirm('Segunda confirmación — ¿Estás seguro? No hay vuelta atrás.'))return;
+    try{
+      toast('🗑️ Borrando servidor...','info',3000);
+      const res=await fetch(`${API}/api/reset-all`,{
+        method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({confirm:'BORRAR_TODO'})
+      });
+      const d=await res.json().catch(()=>({}));
+      if(d.ok){
+        // También limpiar localStorage local
+        localStorage.clear();
+        toast(`✅ Servidor limpio — ${d.deleted} keys borradas. Recargando...`,'success',3000);
+        setTimeout(()=>location.reload(),3000);
+      }else{
+        toast('❌ Error: '+JSON.stringify(d),'error',6000);
+      }
+    }catch(e){toast('❌ Error de red: '+e.message,'error',6000);}
+  },
+};
+
+// Close modals on backdrop
+document.querySelectorAll('.mbk').forEach(bk=>{bk.addEventListener('click',e=>{if(e.target===bk&&bk.id!=='m-veh'&&bk.id!=='m-km')bk.classList.remove('on')})});
+
+// Init — restaurar sesión si existe
+(function restoreSession(){
+  const sess = DB.session();
+  if(!sess) return;
+  if(sess.type === 'admin'){
+    S.user = ADMIN_VIRTUAL;
+    App._enterAdminApp();
+    document.dispatchEvent(new Event('fml-loggedin'));
+    // Re-registrar push en background
+    setTimeout(()=>subscribePush().catch(()=>{}), 1500);
+    return;
+  }
+  if(sess.type === 'user'){
+    const users = DB.users();
+    const user = users[sess.userId];
+    if(!user){ DB.clearSession(); return; }
+    S.user = user;
+    document.getElementById('sc-login').classList.remove('on');
+    document.getElementById('sc-app').classList.add('on');
+    document.getElementById('menu-uname').textContent = user.name;
+    // Reset completo del layout (puede haber quedado en modo admin)
+    localStorage.removeItem('fml_adm');
+    document.querySelectorAll('.tab').forEach(t=>t.style.display='');
+    document.getElementById('tab-admin').style.display='none';
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+    document.getElementById('panel-dash').classList.add('on');
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+    document.querySelector('.tab[onclick*="dash"]').classList.add('on');
+    const vpBtn=document.querySelector('#m-menu .btn-ghost[onclick*="openVPicker"]');
+    if(vpBtn)vpBtn.style.display='';
+    OfflineQueue.updateUI();
+    if(navigator.onLine) setTimeout(()=>OfflineQueue.flush(), 2000);
+    // Restaurar vehículo si estaba seleccionado
+    if(sess.vid && user.vehicles && user.vehicles[sess.vid]){
+      S.vid = sess.vid;
+      const v = VEHICLES[sess.vid];
+      document.getElementById('nav-ve').textContent = v.emoji;
+      document.getElementById('nav-vn').textContent = v.name;
+      const ckm = user.vehicles[sess.vid].currentKm;
+      if(ckm){ document.getElementById('km-curr').value = ckm; }
+      App.renderDash();
+      // Re-registrar push en background silenciosamente
+      if(Notification.permission === 'granted'){
+        setTimeout(()=>subscribePush().catch(()=>{}), 1500);
+      }
+      document.dispatchEvent(new Event('fml-loggedin'));
+    } else {
+      // Vehículo no guardado — pedir selección
+      App.openVPicker();
+      document.dispatchEvent(new Event('fml-loggedin'));
+    }
+  }
+})();
+
+OfflineQueue.updateUI();
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PWA
+// ══════════════════════════════════════════════════════════════════════════════
+const PWA={
+  deferredPrompt:null,
+  init(){
+    window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();this.deferredPrompt=e;const installed=localStorage.getItem('fml_pwa_installed');const dismissed=localStorage.getItem('fml_pwa_dismissed');if(!installed&&!dismissed)setTimeout(()=>this.showInstall(),4000)});
+    window.addEventListener('appinstalled',()=>{localStorage.setItem('fml_pwa_installed','1');this.deferredPrompt=null;document.getElementById('m-pwa').style.display='none';toast('✅ App instalada','success')});
+    document.addEventListener('fml-loggedin',()=>{if('Notification' in window&&Notification.permission==='default'&&!localStorage.getItem('fml_notif_dismissed'))setTimeout(()=>this.showNotif(),6000)});
+  },
+  showInstall(){if(!this.deferredPrompt)return;document.getElementById('m-pwa').style.display='flex'},
+  async install(){
+    if(!this.deferredPrompt){alert('Para instalar:\n\nAndroid Chrome: menú (⋮) → "Añadir a pantalla de inicio"\niPhone Safari: compartir → "Agregar a inicio"');return}
+    document.getElementById('m-pwa').style.display='none';
+    this.deferredPrompt.prompt();
+    const{outcome}=await this.deferredPrompt.userChoice;
+    if(outcome==='accepted')localStorage.setItem('fml_pwa_installed','1');
+    this.deferredPrompt=null;
+  },
+  dismiss(){document.getElementById('m-pwa').style.display='none';localStorage.setItem('fml_pwa_dismissed','1')},
+  showNotif(){document.getElementById('m-notif').style.display='flex'},
+  async requestNotif(){
+    document.getElementById('m-notif').style.display='none';
+    const perm=await Notification.requestPermission();
+    if(perm==='granted'){
+      toast('🔔 Notificaciones activadas','success');
+      localStorage.setItem('fml_notif_ok','1');
+      // Suscribir al push del servidor
+      if(S.user)await subscribePush().catch(()=>{});
+    }else toast('Notificaciones bloqueadas — activalas en ajustes','warning',6000);
+  },
+  dismissNotif(){document.getElementById('m-notif').style.display='none';localStorage.setItem('fml_notif_dismissed','1')},
+};
+PWA.init();
+const _pwaBtn=document.getElementById('pwa-install-btn');
+if(_pwaBtn)_pwaBtn.onclick=()=>PWA.install();
+</script>
+</body>
+</html>
