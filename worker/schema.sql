@@ -107,3 +107,11 @@ CREATE TABLE IF NOT EXISTS alertas_enviadas (
   clave TEXT PRIMARY KEY,                 -- ej: maint:hiace:135000
   creado TEXT DEFAULT (datetime('now'))
 );
+
+CREATE TABLE IF NOT EXISTS analisis_ia (
+  vehiculo_id TEXT NOT NULL,
+  mes TEXT NOT NULL,                      -- YYYY-MM — el análisis se cachea por vehículo+mes
+  texto TEXT NOT NULL,
+  generado_en TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (vehiculo_id, mes)
+);

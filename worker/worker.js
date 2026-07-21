@@ -54,6 +54,7 @@ export default {
       if (p === '/api/admin/revision') return handleRevision(request, env);
       if (p === '/api/admin/contador-ahora' && request.method === 'POST') return handleContadorAhora(request, env);
       if (p === '/api/admin/weekly-ahora' && request.method === 'POST') return handleWeeklyAhora(request, env);
+      if (p === '/api/admin/analisis-vehiculo' && request.method === 'POST') return handleAnalisisVehiculo(request, env);
       if (p === '/api/admin/solicitar-foto' && request.method === 'POST') return handleAdminSolicitarFoto(request, env);
       if (p === '/api/cargas/pendientes-foto') return handlePendientesFoto(request, env);
       // Fotos: /api/cargas/{id}/foto/{ticket|tablero}?t=token  ó  /api/fotolink/{id}/{tipo}?k=firma
@@ -840,6 +841,97 @@ async function handleWeeklyAhora(request, env) {
   if (!admin) return noAuth();
   await sendWeeklyReport(env);
   return json({ ok: true });
+}
+
+// ── ANÁLISIS IA POR VEHÍCULO — cacheado por mes, se "reinicia" solo al cambiar de ciclo ──
+const MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+function mesAnterior(month) {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(y, m - 2, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+function statsVehiculoMes(cargasVeh) {
+  const litros = cargasVeh.reduce((s, c) => s + (c.litros || 0), 0);
+  const gasto = cargasVeh.reduce((s, c) => s + (c.total || 0), 0);
+  const conKm = cargasVeh.filter(c => c.km > 0);
+  const kms = conKm.map(c => c.km);
+  const kmRecorridos = kms.length >= 2 ? Math.max(...kms) - Math.min(...kms) : 0;
+  return {
+    n: cargasVeh.length, litros, gasto, kmRecorridos, kmLecturas: kms.length,
+    kml: (kmRecorridos > 0 && litros > 0) ? kmRecorridos / litros : null,
+    cxkm: (kmRecorridos > 0 && gasto > 0) ? gasto / kmRecorridos : null,
+    ppl: litros > 0 ? gasto / litros : null,
+  };
+}
+async function handleAnalisisVehiculo(request, env) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  const { vehiculoId, month, forzar } = await request.json().catch(() => ({}));
+  if (!vehiculoId || !/^\d{4}-\d{2}$/.test(month || '')) return json({ error: 'Faltan datos' }, 400);
+  const veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(vehiculoId).first();
+  if (!veh) return json({ error: 'Vehículo inexistente' }, 400);
+
+  if (!forzar) {
+    const cached = await env.DB.prepare(
+      'SELECT texto, generado_en FROM analisis_ia WHERE vehiculo_id=? AND mes=?').bind(vehiculoId, month).first();
+    if (cached) return json({ ok: true, texto: cached.texto, generadoEn: cached.generado_en, cache: true });
+  }
+  if (!env.GEMINI_API_KEY) return json({ error: 'Sin GEMINI_API_KEY configurada' }, 500);
+
+  const st = statsVehiculoMes((await cargasDelMes(env, month)).filter(c => c.vehiculo_id === vehiculoId));
+  const prevSt = statsVehiculoMes((await cargasDelMes(env, mesAnterior(month))).filter(c => c.vehiculo_id === vehiculoId));
+
+  const [y, m] = month.split('-').map(Number);
+  const diasDelMes = new Date(y, m, 0).getDate();
+  const hoy = hoyAR();
+  const esMesActual = month === hoy.slice(0, 7);
+  const diasTranscurridos = esMesActual ? new Date(hoy).getUTCDate() : diasDelMes;
+  const proyeccionAnualKm = (st.kmRecorridos > 0 && diasTranscurridos > 0)
+    ? Math.round(st.kmRecorridos / diasTranscurridos * 365) : null;
+  const delta = (curr, prev) => (prev > 0 && curr !== null) ? Math.round((curr / prev - 1) * 100) : null;
+  const fmtDelta = d => d === null ? 'sin datos del mes anterior' : (d > 0 ? '+' : '') + d + '%';
+  const mesLabel = `${MESES_ES[m - 1]} de ${y}`;
+
+  const kmConfiable = st.n === 0 || st.kmLecturas >= st.n - 1; // se tolera 1 carga sin KM (la más reciente puede estar recién cargada)
+
+  const prompt = `Sos un asesor de flota para una empresa de reparto en Argentina. Analizá al vehículo "${veh.nombre}" durante ${mesLabel} y devolvé un consejo breve (3 a 4 oraciones, texto plano sin markdown, español rioplatense) sobre si el gasto de combustible parece razonable o exorbitante, la tendencia de eficiencia, y una recomendación concreta si corresponde. Interpretá los números, no los repitas tal cual.
+
+Datos de ${mesLabel} (${st.n} carga${st.n === 1 ? '' : 's'}):
+- Litros: ${st.litros.toFixed(1)} L
+- Gasto: $${Math.round(st.gasto)}
+- Precio promedio: ${st.ppl ? '$' + st.ppl.toFixed(2) + '/L' : 'sin datos'}
+- Lecturas de KM del odómetro: ${st.kmLecturas} de ${st.n} cargas${kmConfiable ? '' : ' — OJO: bastantes cargas no tienen foto de odómetro legible, así que el KM recorrido y la eficiencia de abajo están calculados con MENOS litros de los reales y pueden verse artificialmente peores de lo que son en realidad'}
+- KM recorridos (según las lecturas disponibles): ${st.kmRecorridos > 0 ? fmtN(st.kmRecorridos) + ' km' : 'sin datos suficientes (menos de 2 cargas con KM)'}
+- Eficiencia: ${st.kml ? st.kml.toFixed(1) + ' km/L' : 'sin datos'}
+- Costo por km: ${st.cxkm ? '$' + st.cxkm.toFixed(0) : 'sin datos'}
+- Proyección anual de KM al ritmo de este mes: ${proyeccionAnualKm ? fmtN(proyeccionAnualKm) + ' km/año' : 'sin datos suficientes'}
+
+${kmConfiable ? '' : 'IMPORTANTE: como faltan varias lecturas de KM, NO recomiendes revisión mecánica ni digas que el vehículo tiene un problema real basándote en la eficiencia — explicá que el dato de km/L no es confiable este mes por falta de fotos de odómetro y que conviene esperar a tener más lecturas antes de sacar conclusiones sobre el rendimiento del motor. Enfocate en el gasto total y litros en vez de la eficiencia.\n'}Comparado con el mes anterior (${prevSt.n} carga${prevSt.n === 1 ? '' : 's'}):
+- Gasto: ${fmtDelta(delta(st.gasto, prevSt.gasto))}
+- Eficiencia km/L: ${fmtDelta(delta(st.kml, prevSt.kml))}
+
+Si hay muy pocos datos para opinar con criterio, decilo brevemente en vez de inventar conclusiones.`;
+
+  let texto;
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.4 } }),
+    });
+    if (!res.ok) throw new Error('Gemini ' + res.status);
+    const data = await res.json();
+    texto = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    if (!texto) throw new Error('Respuesta vacía');
+  } catch (err) {
+    return json({ error: 'Error generando análisis: ' + err.message }, 500);
+  }
+
+  const generadoEn = new Date().toISOString();
+  await env.DB.prepare(`INSERT INTO analisis_ia (vehiculo_id,mes,texto,generado_en) VALUES (?,?,?,?)
+    ON CONFLICT(vehiculo_id,mes) DO UPDATE SET texto=excluded.texto, generado_en=excluded.generado_en`)
+    .bind(vehiculoId, month, texto, generadoEn).run();
+
+  return json({ ok: true, texto, generadoEn, cache: false });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

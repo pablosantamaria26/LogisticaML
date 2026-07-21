@@ -357,6 +357,12 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   <img id="foto-img" style="width:100%;border-radius:14px" alt="foto">
 </div></div>
 
+<!-- ══ MODAL ANÁLISIS IA POR VEHÍCULO ══ -->
+<div class="mbk" id="m-analisis"><div class="modal" style="max-width:440px">
+  <div class="mhdr"><b id="analisis-title">🤖 Análisis</b><button class="mx" onclick="UI.close('m-analisis')">✕</button></div>
+  <div id="analisis-body"></div>
+</div></div>
+
 <script>
 'use strict';
 // ══════════════════════════════════════════════════════════════════════════
@@ -928,11 +934,11 @@ const Mon = {
     const maxG=Math.max(...sorted.map(([,b])=>b.gasto),1);
     $('mon-rank').innerHTML=sorted.every(([,b])=>!b.gasto)?'<p class="empty">Sin datos este mes</p>':sorted.map(([vid,b],i)=>{
       const v=vehs[vid]||{nombre:vid,emoji:'🚛'};
-      return `<div class="rank"><div class="pos">${['🥇','🥈','🥉'][i]||(i+1)}</div>
+      return `<div class="rank" style="cursor:pointer" onclick="Mon.verAnalisis('${vid}')"><div class="pos">${['🥇','🥈','🥉'][i]||(i+1)}</div>
         <div class="inf"><b>${v.emoji} ${v.nombre}</b>
           <div class="bar-bg" style="margin-top:.35rem"><div class="bar-f" style="width:${Math.round(b.gasto/maxG*100)}%"></div></div>
           <div class="meta">${b.km?`<span>🛣️ ${fmtN(b.km)} km</span>`:''}${b.km&&b.litros?`<span>⚡ ${(b.km/b.litros).toFixed(1)} km/L</span>`:''}<span>👤 ${[...b.choferes].join(', ')||'—'}</span></div></div>
-        <div class="amt"><b>${fmt$0(b.gasto)}</b><small>${b.litros.toFixed(0)}L · ${b.n} cargas</small></div></div>`;
+        <div class="amt"><b>${fmt$0(b.gasto)}</b><small>${b.litros.toFixed(0)}L · ${b.n} cargas</small><small style="color:var(--acc)">🤖 análisis</small></div></div>`;
     }).join('');
     // tabla
     $('mon-table').innerHTML=`<tr><th>Vehículo</th><th>Gasto</th><th>Litros</th><th>IVA créd.</th><th>KM</th><th>km/L</th><th>$/km</th></tr>`+
@@ -959,6 +965,24 @@ const Mon = {
           ${c.foto_ticket?`<button class="chip c-acc" style="border:none;cursor:pointer;font-family:inherit" onclick="Rev.foto('${c.id}','ticket')">📷</button>`:''}</div></div>
       </div></div>`;
     }).join('');
+  },
+  async verAnalisis(vid,forzar){
+    haptic('light');
+    const v=(S.vehiculos||[]).find(x=>x.id===vid)||{nombre:vid,emoji:'🚛'};
+    const month=this.month||this.cur();
+    $('analisis-title').textContent=`🤖 ${v.emoji} ${v.nombre}`;
+    $('analisis-body').innerHTML='<p class="empty"><span class="spin"></span> Analizando con IA…</p>';
+    UI.open('m-analisis');
+    try{
+      const d=await api('/api/admin/analisis-vehiculo',{method:'POST',body:JSON.stringify({vehiculoId:vid,month,forzar:!!forzar})});
+      const fecha=d.generadoEn?new Date(d.generadoEn).toLocaleString('es-AR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'';
+      $('analisis-body').innerHTML=`
+        <p style="line-height:1.7;font-size:.9rem;white-space:pre-line">${d.texto}</p>
+        <p class="muted" style="font-size:.65rem;margin-top:.9rem">${d.cache?'Generado':'Actualizado'} el ${fecha} · se renueva solo al cambiar de mes</p>
+        <button class="btn btn-ghost btn-sm" style="margin-top:.7rem" onclick="Mon.verAnalisis('${vid}',true)">🔄 Actualizar análisis</button>`;
+    }catch(e){
+      $('analisis-body').innerHTML=`<p class="empty">${e.message}</p>`;
+    }
   },
 };
 
