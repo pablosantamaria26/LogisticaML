@@ -214,6 +214,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   <header class="hdr">
     <div class="hdr-brand"><div class="hdr-dot" id="net-dot"></div>Flota ML</div>
     <div class="hdr-veh"><span id="h-vemoji">🚛</span><b id="h-vname">—</b></div>
+    <button class="icon-btn" onclick="Perfil.setEmail()" title="Mi email">✉️</button>
     <button class="icon-btn" id="btn-theme" title="Tema">◐</button>
     <button class="icon-btn" onclick="App.logoutAsk()" title="Salir">⏻</button>
   </header>
@@ -222,6 +223,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 
     <!-- PANEL -->
     <section id="p-panel">
+      <div id="pn-fotopend"></div>
       <div id="pn-alerts"></div>
       <div class="card" id="pn-maint" style="display:none">
         <div class="row" style="margin-bottom:.5rem"><b style="font-size:.85rem">🔧 Próximo service</b><span class="muted" id="pn-maint-lbl"></span></div>
@@ -757,11 +759,30 @@ const Queue = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// PERFIL — email para recibir avisos (mantenimiento, confirmaciones)
+// ══════════════════════════════════════════════════════════════════════════
+const Perfil = {
+  async setEmail(){
+    const actual=S.user?.email||'';
+    const email=prompt('Tu email para recibir avisos (mantenimiento, confirmaciones):',actual);
+    if(email===null)return;
+    const e=email.trim();
+    if(e&&!e.includes('@')){toast('Email inválido','warn');return;}
+    try{
+      await api('/api/me/email',{method:'POST',body:JSON.stringify({email:e})});
+      S.user.email=e;localStorage.setItem('fml2_user',JSON.stringify(S.user));
+      toast(e?'✅ Email guardado':'✅ Email eliminado','ok');
+    }catch(err){toast(err.message,'err');}
+  },
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // PANEL (chofer)
 // ══════════════════════════════════════════════════════════════════════════
 const Panel = {
   async render(){
     if(S.user?.rol==='admin')return;
+    this.checkPendientesFoto().catch(()=>{});
     let cargas=null;
     try{
       const d=await api('/api/cargas?dias=30');
@@ -807,6 +828,32 @@ const Panel = {
         <div style="text-align:right"><b style="color:var(--acc)">${fmt$0(c.total)}</b>
           <div style="margin-top:.2rem">${c.validacion==='ok'?'<span class="chip c-ok">✓</span>':c.validacion==='revisar'?'<span class="chip c-warn">🔍</span>':''}</div></div>
       </div></div>`).join('');
+  },
+  async checkPendientesFoto(){
+    const el=$('pn-fotopend');if(!el)return;
+    try{
+      const d=await api('/api/cargas/pendientes-foto');
+      if(!d.cargas.length){el.innerHTML='';return;}
+      el.innerHTML=d.cargas.map(c=>`
+        <div class="aban a-warn" style="cursor:pointer" onclick="Panel.reintentarFoto('${c.id}','${c.foto_pendiente}',this)">
+          <span>📸</span><div><b>Falta la foto del ${c.foto_pendiente==='tablero'?'tablero':'ticket'}</b>
+          Carga del ${fmtF(c.fecha)} — tocá para sacarla ahora.</div>
+        </div>`).join('');
+    }catch(e){}
+  },
+  async reintentarFoto(id,tipo,el){
+    haptic('med');
+    const hint=tipo==='tablero'?'🛣️ Enfocá el odómetro (los KM totales)':'🧾 Encuadrá el ticket completo, bien iluminado';
+    const foto=await Cam.open(hint,tipo==='tablero'?1280:1600);
+    if(!foto)return;
+    if(el)el.style.opacity='.5';
+    toast('📤 Enviando foto…','info',2500);
+    try{
+      const dataUrl=await blobToDataURL(foto);
+      await api(`/api/cargas/${id}/foto`,{method:'POST',body:JSON.stringify({tipo,foto:dataUrl})});
+      toast('✅ Foto enviada — carga actualizada','ok');
+      this.render();
+    }catch(e){toast(e.message,'err');if(el)el.style.opacity='';}
   },
 };
 
@@ -956,13 +1003,25 @@ const Rev = {
       <div class="row"><b>${fmtF(c.fecha)} · ${c.vehiculo_id} · ${c.usuario_nombre||'—'}</b><b style="color:var(--acc)">${fmt$0(c.total)}</b></div>
       <div class="muted" style="font-size:.76rem;margin-top:.25rem">N° ${comp} · ${c.emisor_razon_social||'—'} · ${(c.litros||0).toFixed(1)}L${c.km?' · '+fmtN(c.km)+'km':''}</div>
       <div class="warnchips">${chips}</div>
+      ${c.foto_pendiente?`<div class="chip c-acc" style="margin-top:.4rem">⏳ Esperando que reenvíen la foto del ${c.foto_pendiente}</div>`:''}
       ${c.foto_ticket?`<img loading="lazy" src="${API}/api/cargas/${c.id}/foto/ticket?t=${S.token}" alt="ticket" onclick="Rev.foto('${c.id}','ticket')">`:''}
       <div class="rowbtns">
         ${c.foto_tablero?`<button class="btn btn-ghost btn-sm" onclick="Rev.foto('${c.id}','tablero')">🛣️ Ver tablero</button>`:''}
         <button class="btn btn-ghost btn-sm" onclick="Rev.fix('${c.id}')">✏️ Corregir</button>
         <button class="btn btn-ghost btn-sm" onclick="Rev.reproc('${c.id}',this)">🤖 Reprocesar IA</button>
+        <button class="btn btn-ghost btn-sm" onclick="Rev.pedirFoto('${c.id}','tablero',this)">📸 Pedir foto tablero</button>
+        <button class="btn btn-ghost btn-sm" onclick="Rev.pedirFoto('${c.id}','ticket',this)">📸 Pedir foto ticket</button>
         <button class="btn btn-ok btn-sm" onclick="Rev.aprobar('${c.id}',this)">✅ Aprobar</button>
       </div></div>`;
+  },
+  async pedirFoto(id,tipo,btn){
+    btn.disabled=true;
+    try{
+      const d=await api('/api/admin/solicitar-foto',{method:'POST',body:JSON.stringify({id,tipo})});
+      toast(d.sent?'📸 Aviso enviado al chofer':'⚠️ El chofer no tiene notificaciones activas — avisale por otro medio',d.sent?'ok':'warn',6000);
+      this.load();
+    }catch(e){toast(e.message,'err');}
+    btn.disabled=false;
   },
   foto(id,tipo){
     $('foto-title').textContent=tipo==='ticket'?'🧾 Ticket':'🛣️ Tablero';
@@ -971,6 +1030,7 @@ const Rev = {
   },
   fix(id){
     const c=this.cargas.find(x=>x.id===id);if(!c)return;
+    const veh=(S.vehiculos||[]).find(v=>v.id===c.vehiculo_id);
     const f=(k,lbl,type='text')=>`<div class="fld"><label>${lbl}</label><input data-k="${k}" type="${type}" value="${c[k]??''}" ${type==='number'?'step="any" inputmode="decimal"':''}></div>`;
     $('fix-body').innerHTML=`
       ${c.foto_ticket?`<img src="${API}/api/cargas/${id}/foto/ticket?t=${S.token}" style="width:100%;border-radius:12px;margin-bottom:.8rem;max-height:300px;object-fit:contain;background:#000">`:''}
@@ -984,6 +1044,7 @@ const Rev = {
         ${f('percepciones','Percepciones','number')}${f('total','Total','number')}
         ${f('km','KM','number')}${f('receptor_cuit','CUIT receptor')}
       </div>
+      ${veh?`<p class="muted" style="font-size:.68rem;margin:-.3rem 0 .7rem">Último KM conocido de ${veh.nombre} (servidor): <b style="color:var(--tx)">${fmtN(veh.km_actual)}</b>${c.foto_tablero?' — o mirá la foto del tablero con el botón "Ver tablero" en la tarjeta':''}</p>`:''}
       <button class="btn btn-acc" style="margin-top:.6rem" onclick="Rev.saveFix('${id}',this)">💾 Guardar y aprobar</button>
       <p class="muted" style="margin-top:.6rem;font-size:.7rem">Queda auditado: se guarda quién corrigió y cuándo. La lectura original de la IA no se borra.</p>`;
     UI.open('m-fix');

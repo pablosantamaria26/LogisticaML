@@ -71,6 +71,7 @@ CREATE TABLE IF NOT EXISTS cargas (
   validacion_detalle TEXT,                -- JSON array de advertencias
   foto_ticket TEXT,                       -- key en storage (KV/R2)
   foto_tablero TEXT,
+  foto_pendiente TEXT,                    -- 'ticket' | 'tablero' | NULL — admin pidió reintento sin duplicar la carga
   original_json TEXT,                     -- respuesta cruda de la IA (auditoría)
   corregido_por TEXT,
   corregido_en TEXT,

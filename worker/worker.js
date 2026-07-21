@@ -39,6 +39,7 @@ export default {
       if (p === '/api/login' && request.method === 'POST') return handleLogin(request, env);
       if (p === '/api/logout' && request.method === 'POST') return handleLogout(request, env);
       if (p === '/api/me') return handleMe(request, env);
+      if (p === '/api/me/email' && request.method === 'POST') return handleSetEmail(request, env);
       if (p === '/api/cargas' && request.method === 'POST') return handleNuevaCarga(request, env, ctx);
       if (p === '/api/cargas' && request.method === 'GET') return handleGetCargas(request, env);
       if (p === '/api/servicios' && request.method === 'POST') return handleNuevoServicio(request, env);
@@ -54,11 +55,16 @@ export default {
       if (p === '/api/admin/revision') return handleRevision(request, env);
       if (p === '/api/admin/contador-ahora' && request.method === 'POST') return handleContadorAhora(request, env);
       if (p === '/api/admin/weekly-ahora' && request.method === 'POST') return handleWeeklyAhora(request, env);
+      if (p === '/api/admin/solicitar-foto' && request.method === 'POST') return handleAdminSolicitarFoto(request, env);
+      if (p === '/api/cargas/pendientes-foto') return handlePendientesFoto(request, env);
       // Fotos: /api/cargas/{id}/foto/{ticket|tablero}?t=token  ó  /api/fotolink/{id}/{tipo}?k=firma
       const mFoto = p.match(/^\/api\/cargas\/([\w.-]+)\/foto\/(ticket|tablero)$/);
       if (mFoto) return handleFoto(request, env, mFoto[1], mFoto[2], false);
       const mLink = p.match(/^\/api\/fotolink\/([\w.-]+)\/(ticket|tablero)$/);
       if (mLink) return handleFoto(request, env, mLink[1], mLink[2], true);
+      // Subir foto puntual faltante (sin duplicar la carga): /api/cargas/{id}/foto
+      const mFotoUp = p.match(/^\/api\/cargas\/([\w.-]+)\/foto$/);
+      if (mFotoUp && request.method === 'POST') return handleSubirFotoFaltante(request, env, ctx, mFotoUp[1]);
 
       // ── LEGACY (apps viejas instaladas, hasta que actualicen) ──
       if (p === '/api/process-ticket' && request.method === 'POST') return legacyProcessTicket(request, env);
@@ -215,6 +221,16 @@ async function handleMe(request, env) {
   });
 }
 
+async function handleSetEmail(request, env) {
+  const user = await getAuthUser(request, env);
+  if (!user) return noAuth();
+  const { email } = await request.json().catch(() => ({}));
+  const e = (email || '').trim();
+  if (e && !e.includes('@')) return json({ error: 'Email inválido' }, 400);
+  await env.DB.prepare('UPDATE usuarios SET email=? WHERE id=?').bind(e, user.id).run();
+  return json({ ok: true, email: e });
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // GEMINI — extracción fiscal completa
 // ══════════════════════════════════════════════════════════════════════════════
@@ -287,6 +303,50 @@ async function geminiOdometro(b64, env) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
+// VALIDACIÓN — compartida entre carga nueva, reprocesar y retake de una sola foto
+// ══════════════════════════════════════════════════════════════════════════════
+const KM_WARN_KEYS = ['ocr_km_fallo', 'km_confianza_baja', 'km_menor_al_anterior', 'salto_km_grande'];
+
+function calcularWarningsTicket(t, veh) {
+  const w = [];
+  if (!t) { w.push('ocr_ticket_fallo'); return w; }
+  const m = t.montos || {};
+  const it = (t.items && t.items[0]) || {};
+  const partes = (m.neto_gravado || 0) + (m.iva || 0) + (m.otros_tributos || 0) + (m.percepciones || 0) + (m.exento || 0) + (m.no_gravado || 0);
+  if (m.total > 0 && partes > 0 && Math.abs(partes - m.total) > 1) w.push('montos_no_cierran');
+  if (it.litros > 0 && it.precio_unitario > 0 && m.neto_gravado > 0 &&
+    Math.abs(it.litros * it.precio_unitario - m.neto_gravado) / m.neto_gravado > 0.03) w.push('litros_x_precio_no_coincide');
+  if (t.emisor?.cuit && !cuitValido(t.emisor.cuit)) w.push('cuit_emisor_invalido');
+  if (t.receptor?.cuit && !cuitValido(t.receptor.cuit)) w.push('cuit_receptor_invalido');
+  if (!t.numero_comprobante) w.push('sin_numero_comprobante');
+  if (!m.total) w.push('sin_total');
+  if ((t.confianza ?? 0) < 70) w.push('confianza_baja');
+  if (it.litros > veh.tanque_litros) w.push('litros_superan_tanque');
+  if (t.fecha) {
+    const dif = (new Date(hoyAR()) - new Date(t.fecha)) / 86400000;
+    if (dif > 7 || dif < -1) w.push('fecha_fuera_de_rango');
+  } else w.push('sin_fecha');
+  return w;
+}
+async function comprobanteDuplicado(env, t, idExcluir) {
+  if (!t?.numero_comprobante || !t.emisor?.cuit) return false;
+  const ya = await env.DB.prepare(
+    'SELECT id FROM cargas WHERE numero_comprobante=? AND emisor_cuit=? AND punto_venta IS ? AND id!=?'
+  ).bind(t.numero_comprobante, t.emisor.cuit, t.punto_venta ?? null, idExcluir || '').first();
+  return !!ya;
+}
+function calcularWarningsKm(km, kmData, seFotografio, veh) {
+  const w = [];
+  if (seFotografio && !km) w.push('ocr_km_fallo');
+  if (km) {
+    if ((kmData.confianza ?? 0) < 70) w.push('km_confianza_baja');
+    if (veh.km_actual > 0 && km < veh.km_actual) w.push('km_menor_al_anterior');
+    if (veh.km_actual > 0 && km - veh.km_actual > 3000) w.push('salto_km_grande');
+  }
+  return w;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // CARGAS — pipeline principal
 // ══════════════════════════════════════════════════════════════════════════════
 async function handleNuevaCarga(request, env, ctx) {
@@ -324,43 +384,16 @@ async function handleNuevaCarga(request, env, ctx) {
   if (kRes.status === 'fulfilled') kmData = kRes.value;
 
   // 3. Validaciones (server-side, el chofer no toca nada)
-  const w = [];
   const m = t?.montos || {};
   const it = (t?.items && t.items[0]) || {};
   const km = kmData?.km > 0 ? Math.round(kmData.km) : null;
 
-  if (!t) w.push('ocr_ticket_fallo');
-  else {
-    const partes = (m.neto_gravado || 0) + (m.iva || 0) + (m.otros_tributos || 0) + (m.percepciones || 0) + (m.exento || 0) + (m.no_gravado || 0);
-    if (m.total > 0 && partes > 0 && Math.abs(partes - m.total) > 1) w.push('montos_no_cierran');
-    if (it.litros > 0 && it.precio_unitario > 0 && m.neto_gravado > 0 &&
-      Math.abs(it.litros * it.precio_unitario - m.neto_gravado) / m.neto_gravado > 0.03) w.push('litros_x_precio_no_coincide');
-    if (t.emisor?.cuit && !cuitValido(t.emisor.cuit)) w.push('cuit_emisor_invalido');
-    if (t.receptor?.cuit && !cuitValido(t.receptor.cuit)) w.push('cuit_receptor_invalido');
-    if (!t.numero_comprobante) w.push('sin_numero_comprobante');
-    if (!m.total) w.push('sin_total');
-    if ((t.confianza ?? 0) < 70) w.push('confianza_baja');
-    if (it.litros > veh.tanque_litros) w.push('litros_superan_tanque');
-    if (t.fecha) {
-      const dif = (new Date(hoyAR()) - new Date(t.fecha)) / 86400000;
-      if (dif > 7 || dif < -1) w.push('fecha_fuera_de_rango');
-    } else w.push('sin_fecha');
-    if (t.numero_comprobante && t.emisor?.cuit) {
-      const ya = await env.DB.prepare(
-        'SELECT id FROM cargas WHERE numero_comprobante=? AND emisor_cuit=? AND punto_venta IS ?'
-      ).bind(t.numero_comprobante, t.emisor.cuit, t.punto_venta ?? null).first();
-      if (ya) w.push('comprobante_duplicado');
-    }
-  }
+  const w = calcularWarningsTicket(t, veh);
+  if (t && await comprobanteDuplicado(env, t, body.id)) w.push('comprobante_duplicado');
+  w.push(...calcularWarningsKm(km, kmData, !!kB64, veh));
   // Notas informativas de la IA: se guardan pero NO fuerzan revisión
   const notas = [];
   if (t && Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
-  if (kB64 && !km) w.push('ocr_km_fallo');
-  if (km) {
-    if ((kmData.confianza ?? 0) < 70) w.push('km_confianza_baja');
-    if (veh.km_actual > 0 && km < veh.km_actual) w.push('km_menor_al_anterior');
-    if (veh.km_actual > 0 && km - veh.km_actual > 3000) w.push('salto_km_grande');
-  }
   const validacion = w.length ? 'revisar' : 'ok';
   const fecha = t?.fecha || hoyAR();
 
@@ -540,24 +573,51 @@ async function estadoMantenimiento(env, veh) {
 async function checkMantenimiento(env, veh) {
   const st = await estadoMantenimiento(env, veh);
   if (!st) return;
-  for (const [umbral, medio] of [[500, 'push'], [1000, 'email']]) {
-    if (st.kmRestantes > umbral) continue;
-    const clave = `maint:${veh.id}:${st.proximoKm}:${umbral}`;
+  const marcar = async clave => {
     const ya = await env.DB.prepare('SELECT 1 FROM alertas_enviadas WHERE clave=?').bind(clave).first();
-    if (ya) continue;
+    if (ya) return false;
     await env.DB.prepare('INSERT OR IGNORE INTO alertas_enviadas (clave) VALUES (?)').bind(clave).run();
-    if (medio === 'push') {
+    return true;
+  };
+  const driver = await env.DB.prepare(
+    "SELECT nombre, email FROM usuarios WHERE vehiculo_id=? AND rol='chofer' LIMIT 1").bind(veh.id).first();
+
+  // Tier 1 — 1000km antes: aviso anticipado por email (fleet/admin, para coordinar taller con tiempo)
+  if (st.kmRestantes <= 1000 && st.kmRestantes > 500 && env.SENDGRID_API_KEY) {
+    if (await marcar(`maint:${veh.id}:${st.proximoKm}:1000`)) {
+      const to = [env.FLEET_EMAIL || env.OWNER_EMAIL || env.FROM_EMAIL];
+      await sendViaBrevo({
+        to, subject: `🔧 Servicio próximo — ${veh.emoji} ${veh.nombre} (faltan ${fmtN(st.kmRestantes)} km)`,
+        html: buildMaintEmail(veh, st, false),
+      }, env);
+    }
+  }
+  // Tier 2 — 500km antes: push al chofer + admin (pushToVehicle ya incluye admins)
+  if (st.kmRestantes <= 500 && st.kmRestantes > 0) {
+    if (await marcar(`maint:${veh.id}:${st.proximoKm}:500`)) {
       await pushToVehicle(env, veh.id, {
         title: `🔧 Servicio próximo — ${veh.nombre}`,
-        body: st.kmRestantes > 0 ? `Faltan ${fmtN(st.kmRestantes)} km para el service.` : '⚠️ Service vencido — coordinar taller.',
+        body: `Faltan ${fmtN(st.kmRestantes)} km para el cambio de aceite.`,
         tag: 'maint-' + veh.id,
       });
-    } else if (env.SENDGRID_API_KEY) {
-      const to = [env.FLEET_EMAIL || env.FROM_EMAIL];
-      await sendViaBrevo({
-        to, subject: `🔧 Servicio próximo — ${veh.emoji} ${veh.nombre} (faltan ${fmtN(Math.max(0, st.kmRestantes))} km)`,
-        html: buildMaintEmail(veh, st),
-      }, env);
+    }
+  }
+  // Tier 3 — llegó o pasó el km objetivo: URGENTE. Push + email al chofer Y al admin.
+  if (st.kmRestantes <= 0) {
+    if (await marcar(`maint:${veh.id}:${st.proximoKm}:vencido`)) {
+      await pushToVehicle(env, veh.id, {
+        title: `🛑 ¡Es hora del cambio de aceite! — ${veh.nombre}`,
+        body: `Llegaste a los ${fmtN(st.proximoKm)} km previstos. Coordiná el taller cuanto antes.`,
+        tag: 'maint-venc-' + veh.id,
+      });
+      if (env.SENDGRID_API_KEY) {
+        const to = [env.OWNER_EMAIL || env.FLEET_EMAIL || env.FROM_EMAIL];
+        if (driver?.email && driver.email.includes('@') && !to.includes(driver.email)) to.push(driver.email);
+        await sendViaBrevo({
+          to, subject: `🛑 ¡Service vencido! — ${veh.emoji} ${veh.nombre}`,
+          html: buildMaintEmail(veh, st, true),
+        }, env);
+      }
     }
   }
 }
@@ -633,17 +693,29 @@ async function handleAdminReprocesar(request, env, ctx) {
   const { id } = await request.json().catch(() => ({}));
   const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
   if (!carga?.foto_ticket) return json({ error: 'Carga sin foto para reprocesar' }, 404);
+  const veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(carga.vehiculo_id).first();
   const bytes = await fotoGet(env, carga.foto_ticket);
   if (!bytes) return json({ error: 'Foto no encontrada en storage' }, 404);
   const b64 = bytesToB64(bytes);
   const t = await geminiTicket(b64, env);
   const m = t.montos || {}, it = (t.items && t.items[0]) || {};
+
+  // Recalcular warnings: los de ticket se rehacen, los de km se conservan tal cual estaban
+  let warnings = [], notas = [];
+  try { const d = JSON.parse(carga.validacion_detalle || '{}'); warnings = d.warnings || []; notas = d.notas || []; } catch (e) { }
+  const kmWarnsPrevios = warnings.filter(w => KM_WARN_KEYS.includes(w));
+  const ticketWarns = calcularWarningsTicket(t, veh);
+  if (await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
+  notas = []; if (Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
+  const nuevosWarnings = [...kmWarnsPrevios, ...ticketWarns];
+  const validacion = nuevosWarnings.length ? 'revisar' : 'ok';
+
   await env.DB.prepare(`UPDATE cargas SET
     fecha=COALESCE(?,fecha),hora=?,tipo_comprobante=?,codigo_comprobante=?,punto_venta=?,numero_comprobante=?,
     emisor_razon_social=?,emisor_cuit=?,emisor_domicilio=?,emisor_localidad=?,emisor_iibb=?,emisor_condicion_iva=?,
     receptor_nombre=?,receptor_cuit=?,producto=?,litros=?,precio_unitario=?,neto_gravado=?,iva_alicuota=?,iva=?,
     otros_tributos=?,percepciones=?,exento=?,no_gravado=?,total=?,condicion_pago=?,confianza=?,
-    original_json=?,corregido_por=?,corregido_en=datetime('now')
+    validacion=?,validacion_detalle=?,original_json=?,corregido_por=?,corregido_en=datetime('now')
     WHERE id=?`).bind(
     t.fecha ?? null, t.hora?.slice(0, 8) ?? null, t.tipo_comprobante ?? null, t.codigo_comprobante ?? null,
     t.punto_venta ?? null, t.numero_comprobante ?? null,
@@ -652,9 +724,115 @@ async function handleAdminReprocesar(request, env, ctx) {
     it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null, m.neto_gravado ?? null,
     m.iva_alicuota ?? null, m.iva ?? null, m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null,
     m.no_gravado ?? null, m.total ?? null, t.condicion_pago ?? null, t.confianza ?? null,
-    JSON.stringify(t), 'reproceso:' + admin.username, id,
+    validacion, JSON.stringify({ warnings: nuevosWarnings, notas }), JSON.stringify(t), 'reproceso:' + admin.username, id,
   ).run();
   const updated = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  return json({ ok: true, carga: publicCarga(updated) });
+}
+
+// ── Pedir/recibir una foto puntual sin duplicar la carga ─────────────────────
+async function handleAdminSolicitarFoto(request, env) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  const { id, tipo } = await request.json().catch(() => ({}));
+  if (!['ticket', 'tablero'].includes(tipo)) return json({ error: 'Tipo inválido' }, 400);
+  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  if (!carga) return json({ error: 'Carga no encontrada' }, 404);
+  await env.DB.prepare('UPDATE cargas SET foto_pendiente=? WHERE id=?').bind(tipo, id).run();
+  let sent = 0;
+  if (carga.usuario_id) {
+    const rows = await env.DB.prepare('SELECT endpoint,subscription FROM push_subs WHERE usuario_id=?').bind(carga.usuario_id).all();
+    sent = await pushSend(env, rows.results, {
+      title: '📸 Falta una foto',
+      body: `Reintentá la foto del ${tipo === 'tablero' ? 'tablero (odómetro)' : 'ticket'} de tu carga del ${carga.fecha}. Abrí Flota ML.`,
+      tag: 'foto-pendiente-' + id,
+    });
+  }
+  return json({ ok: true, sent });
+}
+
+async function handlePendientesFoto(request, env) {
+  const user = await getAuthUser(request, env);
+  if (!user) return noAuth();
+  if (user.rol === 'admin') return json({ ok: true, cargas: [] });
+  const rows = await env.DB.prepare(
+    `SELECT id,fecha,hora,vehiculo_id,foto_pendiente,total,litros FROM cargas
+     WHERE usuario_id=? AND foto_pendiente IS NOT NULL ORDER BY creado DESC`).bind(user.id).all();
+  return json({ ok: true, cargas: rows.results });
+}
+
+async function handleSubirFotoFaltante(request, env, ctx, id) {
+  const user = await getAuthUser(request, env);
+  if (!user) return noAuth();
+  const { tipo, foto } = await request.json().catch(() => ({}));
+  if (!['ticket', 'tablero'].includes(tipo) || !foto) return json({ error: 'Faltan datos' }, 400);
+  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  if (!carga) return json({ error: 'Carga no encontrada' }, 404);
+  if (user.rol !== 'admin' && carga.usuario_id !== user.id) return json({ error: 'No autorizado' }, 403);
+  if (carga.foto_pendiente !== tipo) return json({ error: 'No se pidió esta foto para esta carga' }, 400);
+  let veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(carga.vehiculo_id).first();
+
+  const b64 = foto.includes(',') ? foto.split(',')[1] : foto;
+  const key = `${id}/${tipo}.jpg`;
+  await fotoPut(env, key, b64ToBytes(b64));
+
+  let warningsPrevios = [], notas = [];
+  try { const d = JSON.parse(carga.validacion_detalle || '{}'); warningsPrevios = d.warnings || []; notas = d.notas || []; } catch (e) { }
+
+  if (tipo === 'tablero') {
+    const kmData = await geminiOdometro(b64, env).catch(err => { console.warn('retake km:', err.message); return null; });
+    const km = kmData?.km > 0 ? Math.round(kmData.km) : null;
+    const kmWarns = calcularWarningsKm(km, kmData, true, veh);
+    const warnings = warningsPrevios.filter(w => !KM_WARN_KEYS.includes(w)).concat(kmWarns);
+    const pendiente = km ? null : 'tablero'; // si sigue ilegible, queda pendiente para volver a pedir
+    await env.DB.prepare(`UPDATE cargas SET km=?, km_confianza=?, foto_tablero=?, foto_pendiente=?,
+      validacion=?, validacion_detalle=?, corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
+      .bind(km, kmData?.confianza ?? null, key, pendiente, warnings.length ? 'revisar' : 'ok',
+        JSON.stringify({ warnings, notas }), 'foto-retake:' + user.username, id).run();
+    if (km && km > (veh.km_actual || 0)) {
+      await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, veh.id).run();
+      veh = { ...veh, km_actual: km };
+      ctx.waitUntil(checkMantenimiento(env, veh).catch(() => { }));
+    }
+  } else {
+    const t = await geminiTicket(b64, env).catch(err => { console.warn('retake ticket:', err.message); return null; });
+    if (!t) {
+      const warnings = warningsPrevios.filter(w => KM_WARN_KEYS.includes(w)).concat(['ocr_ticket_fallo']);
+      await env.DB.prepare(`UPDATE cargas SET foto_ticket=?, validacion='revisar', validacion_detalle=?,
+        corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
+        .bind(key, JSON.stringify({ warnings, notas }), 'foto-retake:' + user.username, id).run();
+    } else {
+      const m = t.montos || {}, it = (t.items && t.items[0]) || {};
+      const ticketWarns = calcularWarningsTicket(t, veh);
+      if (await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
+      notas = []; if (Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
+      const warnings = warningsPrevios.filter(w => KM_WARN_KEYS.includes(w)).concat(ticketWarns);
+      await env.DB.prepare(`UPDATE cargas SET
+        fecha=COALESCE(?,fecha),hora=?,tipo_comprobante=?,codigo_comprobante=?,punto_venta=?,numero_comprobante=?,
+        emisor_razon_social=?,emisor_cuit=?,emisor_domicilio=?,emisor_localidad=?,emisor_iibb=?,emisor_condicion_iva=?,
+        receptor_nombre=?,receptor_cuit=?,producto=?,litros=?,precio_unitario=?,neto_gravado=?,iva_alicuota=?,iva=?,
+        otros_tributos=?,percepciones=?,exento=?,no_gravado=?,total=?,condicion_pago=?,confianza=?,
+        foto_ticket=?,foto_pendiente=NULL,validacion=?,validacion_detalle=?,original_json=?,
+        corregido_por=?,corregido_en=datetime('now') WHERE id=?`).bind(
+        t.fecha ?? null, t.hora?.slice(0, 8) ?? null, t.tipo_comprobante ?? null, t.codigo_comprobante ?? null,
+        t.punto_venta ?? null, t.numero_comprobante ?? null,
+        t.emisor?.razon_social ?? null, t.emisor?.cuit ?? null, t.emisor?.domicilio ?? null, t.emisor?.localidad ?? null,
+        t.emisor?.iibb ?? null, t.emisor?.condicion_iva ?? null, t.receptor?.nombre ?? null, t.receptor?.cuit ?? null,
+        it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null, m.neto_gravado ?? null,
+        m.iva_alicuota ?? null, m.iva ?? null, m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null,
+        m.no_gravado ?? null, m.total ?? null, t.condicion_pago ?? null, t.confianza ?? null,
+        key, warnings.length ? 'revisar' : 'ok', JSON.stringify({ warnings, notas }),
+        JSON.stringify(t), 'foto-retake:' + user.username, id,
+      ).run();
+    }
+  }
+
+  const updated = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  ctx.waitUntil(pushToAdmins(env, {
+    title: updated.foto_pendiente ? '⚠️ Foto sigue poco clara' : '✅ Foto recibida',
+    body: `${user.nombre} reenvió la foto del ${tipo} — ${updated.foto_pendiente ? 'sigue sin poder leerse' : 'carga actualizada'}.`,
+    tag: 'foto-recibida-' + id,
+  }).catch(() => { }));
   return json({ ok: true, carga: publicCarga(updated) });
 }
 
@@ -826,13 +1004,13 @@ async function emailConfirmacion(env, c, veh, user) {
   await sendViaBrevo({ to, subject: `⛽ Carga — ${veh.emoji} ${veh.nombre} ${fmt$(c.total)}`, html: emailShell('Carga registrada', header, body) }, env);
 }
 
-function buildMaintEmail(veh, st) {
-  const urgente = st.kmRestantes <= 200;
-  const header = `<h1 class="h-title">${urgente ? '⚠️ Servicio urgente' : '🔧 Servicio programado'}</h1><p class="h-sub">${veh.emoji} ${veh.nombre}</p>`;
+function buildMaintEmail(veh, st, urgente) {
+  if (urgente === undefined) urgente = st.kmRestantes <= 200; // compat con llamadas legacy
+  const header = `<h1 class="h-title">${urgente ? '🛑 ¡Es hora del cambio de aceite!' : '🔧 Servicio próximo'}</h1><p class="h-sub">${veh.emoji} ${veh.nombre}</p>`;
   const body = `<div class="sgrid">
     <div class="sc"><span class="sv">${fmtN(veh.km_actual)}</span><span class="sl">KM actuales</span></div>
-    <div class="sc"><span class="sv" ${urgente ? 'style="color:#dc2626"' : ''}>${fmtN(Math.max(0, st.kmRestantes))}</span><span class="sl">KM restantes</span></div></div>
-    <div class="alert ${urgente ? 'red' : ''}"><p>${urgente ? '⚠️ Coordinar taller urgente.' : `Próximo service a los ${fmtN(st.proximoKm)} km.`}</p></div>`;
+    <div class="sc"><span class="sv" ${urgente ? 'style="color:#dc2626"' : ''}>${st.kmRestantes > 0 ? fmtN(st.kmRestantes) : fmtN(Math.abs(st.kmRestantes))}</span><span class="sl">${st.kmRestantes > 0 ? 'KM restantes' : 'KM de exceso'}</span></div></div>
+    <div class="alert ${urgente ? 'red' : ''}"><p>${urgente ? `⚠️ El vehículo llegó (o superó) los ${fmtN(st.proximoKm)} km previstos para el cambio de aceite. Coordiná el taller hoy.` : `Próximo service a los ${fmtN(st.proximoKm)} km.`}</p></div>`;
   return emailShell('Alerta de servicio', header, body);
 }
 
