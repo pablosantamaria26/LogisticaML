@@ -48,6 +48,7 @@ export default {
       if (p === '/api/push/broadcast' && request.method === 'POST') return handlePushBroadcast(request, env);
       if (p === '/api/admin/usuarios') return handleAdminUsuarios(request, env);
       if (p === '/api/admin/asignar' && request.method === 'POST') return handleAdminAsignar(request, env);
+      if (p === '/api/admin/vehiculos' && request.method === 'POST') return handleAdminCrearVehiculo(request, env);
       if (p === '/api/admin/reset-pin' && request.method === 'POST') return handleAdminResetPin(request, env);
       if (p === '/api/admin/corregir' && request.method === 'POST') return handleAdminCorregir(request, env);
       if (p === '/api/admin/reprocesar' && request.method === 'POST') return handleAdminReprocesar(request, env, ctx);
@@ -630,11 +631,29 @@ async function handleAdminAsignar(request, env) {
   const admin = await reqAdmin(request, env);
   if (!admin) return noAuth();
   const { username, vehiculoId } = await request.json().catch(() => ({}));
-  if (!username || !vehiculoId) return json({ error: 'Faltan datos' }, 400);
+  if (!username) return json({ error: 'Faltan datos' }, 400);
   const r = await env.DB.prepare('UPDATE usuarios SET vehiculo_id=? WHERE username=?')
-    .bind(vehiculoId, username.toLowerCase()).run();
+    .bind(vehiculoId || null, username.toLowerCase()).run();
   if (!r.meta.changes) return json({ error: 'Usuario no encontrado' }, 404);
   return json({ ok: true });
+}
+
+async function handleAdminCrearVehiculo(request, env) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  const b = await request.json().catch(() => ({}));
+  const nombre = (b.nombre || '').trim();
+  if (!nombre) return json({ error: 'Falta el nombre' }, 400);
+  let base = nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 30) || ('vehiculo-' + Date.now());
+  let id = base, i = 2;
+  while (await env.DB.prepare('SELECT 1 FROM vehiculos WHERE id=?').bind(id).first()) id = `${base}-${i++}`;
+  await env.DB.prepare(`INSERT INTO vehiculos (id,nombre,emoji,descripcion,tanque_litros,km_actual,service_cada_km)
+    VALUES (?,?,?,?,?,?,?)`).bind(
+    id, nombre, (b.emoji || '🚗').slice(0, 4), b.descripcion || '',
+    Math.round(b.tanqueLitros) || 60, Math.round(b.kmActual) || 0, Math.round(b.serviceCadaKm) || 10000,
+  ).run();
+  return json({ ok: true, id });
 }
 async function handleAdminResetPin(request, env) {
   const admin = await reqAdmin(request, env);
@@ -833,7 +852,8 @@ async function handleRevision(request, env) {
 async function handleContadorAhora(request, env) {
   const admin = await reqAdmin(request, env);
   if (!admin) return noAuth();
-  await sendContadorReport(env);
+  const { month } = await request.json().catch(() => ({}));
+  await sendContadorReport(env, month);
   return json({ ok: true });
 }
 async function handleWeeklyAhora(request, env) {
@@ -1093,16 +1113,17 @@ function buildMaintEmail(veh, st, urgente) {
 }
 
 // ── Reporte contador (día 25) — tabla fiscal completa + CSV adjunto ─────────
-async function sendContadorReport(env) {
+async function sendContadorReport(env, month) {
   const to = env.CONTADOR_EMAIL;
   if (!to || !env.SENDGRID_API_KEY) return;
-  const month = hoyAR().slice(0, 7);
+  month = month || hoyAR().slice(0, 7);
   const rows = await cargasDelMes(env, month);
   if (!rows.length) return;
   const csv = await buildCSV(env, rows, 'https://logisticaml.santamariapablodaniel.workers.dev');
   const csvB64 = btoa(unescape(encodeURIComponent(csv)));
   const tot = k => rows.reduce((s, r) => s + (r[k] || 0), 0);
-  const mes = arNow().toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+  const [yMes, mMes] = month.split('-').map(Number);
+  const mes = `${MESES_ES[mMes - 1]} de ${yMes}`;
   const trs = rows.map(c => `<tr>
     <td>${c.fecha}</td><td style="font-family:monospace;font-size:.72rem">${c.tipo_comprobante ? 'FA' : '—'} ${c.punto_venta || ''}-${c.numero_comprobante || '—'}</td>
     <td style="font-family:monospace;font-size:.72rem">${c.emisor_cuit || '—'}</td>
@@ -1125,7 +1146,7 @@ async function sendContadorReport(env) {
       <tbody>${trs}</tbody>
       <tfoot><tr><td colspan="4"><strong>TOTALES</strong></td><td style="text-align:right">${fmt$(tot('neto_gravado'))}</td><td style="text-align:right">${fmt$(tot('iva'))}</td><td style="text-align:right">${fmt$(tot('otros_tributos'))}</td><td style="text-align:right">${fmt$(tot('total'))}</td><td></td></tr></tfoot>
     </table></div>
-    <div class="alert" style="margin-top:16px"><p>📎 El CSV adjunto tiene <strong>todos los campos por comprobante</strong> (tipo, PV, número, CUIT y razón social del emisor, neto, IVA, ITC/IDC, percepciones, total) más el link a la foto de cada ticket. Filas con 🔍 están en revisión: verificar contra la foto antes de imputar.</p></div>`;
+    <div class="alert" style="margin-top:16px"><p>📎 El CSV adjunto tiene <strong>todos los campos por comprobante</strong> (tipo, PV, número, CUIT y razón social del emisor, neto, IVA, ITC/IDC, percepciones, total) más el link a la foto de cada ticket. Filas con 🔍 están en revisión: verificar contra la foto antes de imputar.<br><br>💡 La mayoría de estos tickets (controlador fiscal de estación de servicio) <strong>no aparecen en el portal de Comprobantes Recibidos de ARCA</strong> porque la estación no los emite como factura electrónica — por eso este CSV incluye el listado completo para imputar directo en el Libro IVA Compras, sin depender de lo que muestre ARCA.</p></div>`;
   await sendViaBrevo({
     to: [to], subject: `🧾 Flota ML — Crédito Fiscal ${mes} (${rows.length} comprobantes)`,
     html: emailShell('Crédito fiscal', header, body),

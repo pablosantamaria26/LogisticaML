@@ -314,6 +314,18 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
           <button class="btn btn-ghost btn-sm" onclick="Eq.weeklyAhora(this)">📊 Reporte semanal ahora</button>
         </div>
       </div>
+      <div class="sec">Agregar vehículo</div>
+      <div class="card">
+        <div class="fgrid2">
+          <div class="fld ffull"><label>Nombre</label><input id="nv-nombre" type="text" placeholder="Ej: Ford Fiesta (personal)"></div>
+          <div class="fld"><label>Ícono</label><input id="nv-emoji" type="text" value="🚗" maxlength="4"></div>
+          <div class="fld"><label>Tanque (L)</label><input id="nv-tanque" type="number" value="60" inputmode="numeric"></div>
+          <div class="fld"><label>Service cada (km)</label><input id="nv-service" type="number" value="10000" inputmode="numeric"></div>
+          <div class="fld"><label>KM inicial</label><input id="nv-km" type="number" placeholder="0" inputmode="numeric"></div>
+        </div>
+        <button class="btn btn-acc" id="nv-btn" onclick="Eq.agregarVehiculo()">➕ Agregar vehículo</button>
+        <p class="muted" style="margin-top:.6rem;font-size:.72rem">Aparece en Monitor, ranking y reportes junto al resto de la flota. Asignáselo a un usuario (incluido vos) en la lista de abajo para poder cargarle combustible.</p>
+      </div>
       <div class="sec">Usuarios y vehículos</div>
       <div id="eq-users"><p class="empty">Cargando…</p></div>
       <div class="sec">Mensaje a la flota</div>
@@ -479,14 +491,14 @@ const App = {
   buildTabs(){
     const admin=S.user.rol==='admin';
     const tabs=admin
-      ? [['mon','📊','Monitor'],['rev','🔍','Revisión'],['cargar','⛽','Cargar'],['eq','👥','Equipo']]
+      ? [['mon','📊','Monitor'],['rev','🔍','Revisión'],['cargar','⛽','Cargar'],['serv','🔧','Servicio'],['eq','👥','Equipo']]
       : [['panel','📊','Panel'],['cargar','⛽','Cargar'],['serv','🔧','Servicio']];
     $('tabs').innerHTML=tabs.map(([id,ic,lb],i)=>
       `<button class="tab${i===0?' on':''}" data-t="${id}" onclick="App.tab('${id}',this)"><span>${ic}</span>${lb}<b class="bdg hidden" id="bdg-${id}"></b></button>`).join('');
     document.querySelectorAll('#main > section').forEach(s=>s.classList.add('hidden'));
     $(admin?'p-mon':'p-panel').classList.remove('hidden');
-    $('h-vemoji').textContent=admin?'👑':(S.veh?.emoji||'🚛');
-    $('h-vname').textContent=admin?'Administrador':(S.veh?.nombre||'Sin vehículo');
+    $('h-vemoji').textContent=S.veh?.emoji||(admin?'👑':'🚛');
+    $('h-vname').textContent=admin?(S.veh?'👑 '+S.veh.nombre:'Administrador'):(S.veh?.nombre||'Sin vehículo');
   },
   tab(id,btn){
     document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
@@ -637,7 +649,7 @@ const Carga = {
   activa:false,
   async start(){
     if(this.activa)return;
-    if(!S.veh && S.user.rol!=='admin'){toast('No tenés vehículo asignado — avisale al admin','warn');return;}
+    if(!S.veh){toast(S.user.rol==='admin'?'Asigná un vehículo a tu perfil en Equipo antes de cargar':'No tenés vehículo asignado — avisale al admin','warn',6000);return;}
     this.activa=true; haptic('heavy');
     $('cg-idle').classList.add('hidden');
     $('cg-result').classList.add('hidden');$('cg-result').innerHTML='';
@@ -1096,18 +1108,38 @@ const Eq = {
         <div class="card" style="padding:.85rem 1rem"><div class="row" style="flex-wrap:wrap;gap:.5rem">
           <div style="flex:1;min-width:130px"><b>${u.nombre}</b> ${u.rol==='admin'?'<span class="chip c-acc">admin</span>':''}
             <div class="muted" style="font-size:.72rem">@${u.username} · ${u.tiene_pin?'🔐 PIN activo':'⏳ sin PIN (se define al ingresar)'}${u.push_activo?' · 🔔':''}</div></div>
-          ${u.rol!=='admin'?`
           <select onchange="Eq.asignar('${u.username}',this.value)" style="padding:.5rem;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:inherit;font-size:.8rem">
+            <option value="">Sin vehículo</option>
             ${(S.vehiculos||[]).map(v=>`<option value="${v.id}"${u.vehiculo_id===v.id?' selected':''}>${v.emoji} ${v.nombre}</option>`).join('')}
           </select>
-          <button class="btn btn-ghost btn-sm" onclick="Eq.resetPin('${u.username}')">🔑 Reset PIN</button>`:''}
+          ${u.rol!=='admin'?`<button class="btn btn-ghost btn-sm" onclick="Eq.resetPin('${u.username}')">🔑 Reset PIN</button>`:''}
         </div></div>`).join('');
     }catch(e){$('eq-users').innerHTML='<p class="empty">'+e.message+'</p>';}
   },
   async asignar(username,vehiculoId){
-    try{ await api('/api/admin/asignar',{method:'POST',body:JSON.stringify({username,vehiculoId})});
-      toast(`✅ ${username} → ${vehiculoId}. Se aplica en su próximo ingreso.`,'ok');
+    try{
+      await api('/api/admin/asignar',{method:'POST',body:JSON.stringify({username,vehiculoId})});
+      if(username===S.user.username){await App.refreshMe();toast('✅ Vehículo asignado a tu perfil — ya podés usar "Cargar"','ok',5000);}
+      else toast(`✅ ${username} → ${vehiculoId||'sin vehículo'}. Se aplica en su próximo ingreso.`,'ok');
     }catch(e){toast(e.message,'err');}
+  },
+  async agregarVehiculo(){
+    const nombre=$('nv-nombre').value.trim();
+    if(!nombre){toast('Completá el nombre','warn');return;}
+    UI.setBtn('nv-btn',true,'Agregando…');
+    try{
+      const d=await api('/api/admin/vehiculos',{method:'POST',body:JSON.stringify({
+        nombre,emoji:$('nv-emoji').value.trim()||'🚗',
+        tanqueLitros:parseInt($('nv-tanque').value)||60,
+        serviceCadaKm:parseInt($('nv-service').value)||10000,
+        kmActual:parseInt($('nv-km').value)||0,
+      })});
+      toast(`✅ ${nombre} agregado`,'ok');
+      ['nv-nombre','nv-km'].forEach(id=>$(id).value='');
+      $('nv-emoji').value='🚗';$('nv-tanque').value='60';$('nv-service').value='10000';
+      await App.refreshMe();this.load();
+    }catch(e){toast(e.message,'err');}
+    UI.setBtn('nv-btn',false,'➕ Agregar vehículo');
   },
   async resetPin(username){
     if(!confirm(`¿Resetear el PIN de ${username}? El próximo PIN que ingrese queda como nuevo.`))return;
@@ -1120,8 +1152,9 @@ const Eq = {
     window.open(`${API}/api/export.csv?month=${m}&t=${S.token}`,'_blank');
   },
   async contadorAhora(btn){
+    const month=$('ex-month').value||Mon.cur();
     btn.disabled=true;
-    try{ await api('/api/admin/contador-ahora',{method:'POST'}); toast('📧 Reporte contador enviado','ok'); }
+    try{ await api('/api/admin/contador-ahora',{method:'POST',body:JSON.stringify({month})}); toast(`📧 Reporte contador enviado (${month})`,'ok'); }
     catch(e){toast(e.message,'err');}
     btn.disabled=false;
   },
