@@ -88,9 +88,13 @@ CREATE TABLE IF NOT EXISTS servicios (
   tipo TEXT,                              -- oil-change | tires | suspension | brakes | other
   fecha TEXT,
   km INTEGER,
-  proximo_cada_km INTEGER DEFAULT 10000,
+  proximo_cada_km INTEGER DEFAULT 10000,  -- SIEMPRE un intervalo (km), nunca el km absoluto del próximo cambio
   taller TEXT,
   notas TEXT,
+  foto TEXT,                              -- key en storage (KV/R2) de la foto de la tarjeta de servicio
+  confianza INTEGER,                      -- confianza OCR 0-100 (NULL si se cargó a mano)
+  validacion TEXT DEFAULT 'ok',           -- ok | revisar
+  validacion_detalle TEXT,
   creado TEXT DEFAULT (datetime('now'))
 );
 

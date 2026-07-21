@@ -258,8 +258,17 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 
     <!-- SERVICIO -->
     <section id="p-serv" class="hidden">
+      <button class="mega" style="min-height:108px;margin-bottom:1rem" onclick="Serv.startFoto()">
+        <span class="ic" style="font-size:2.5rem">📇</span>
+        <span><h2 style="font-size:1.15rem">Sacar foto del service</h2><p>La IA lee la tarjeta del taller y registra todo sola</p></span>
+      </button>
+      <div id="sv-proc" class="hidden steps">
+        <div class="step act"><div class="dot"><span class="spin" style="border-top-color:#fff;width:13px;height:13px"></span></div>
+          <div style="flex:1"><b>Leyendo la tarjeta…</b><small>Procesando con IA</small></div></div>
+      </div>
+      <div id="sv-result" class="hidden"></div>
+      <div class="sec">O cargalo a mano</div>
       <div class="card">
-        <div class="sec" style="margin-top:0">Nuevo servicio</div>
         <div class="fgrid2">
           <div class="fld"><label>Tipo</label><select id="sv-tipo">
             <option value="">Elegir…</option><option value="oil-change">🛢️ Service completo</option>
@@ -267,7 +276,8 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
             <option value="brakes">🛑 Frenos</option><option value="other">🔩 Otro</option></select></div>
           <div class="fld"><label>Fecha</label><input id="sv-fecha" type="date"></div>
           <div class="fld"><label>KM actual</label><input id="sv-km" type="number" inputmode="numeric" placeholder="150000"></div>
-          <div class="fld"><label>Próximo cada (km)</label><input id="sv-cada" type="number" inputmode="numeric" value="10000"></div>
+          <div class="fld"><label>Próximo cada (km)</label><input id="sv-cada" type="number" inputmode="numeric" value="10000">
+            <small class="muted" style="font-size:.62rem;display:block;margin-top:.3rem">Es un intervalo (ej: 10.000), NO el kilometraje absoluto del próximo cambio</small></div>
           <div class="fld ffull"><label>Taller</label><input id="sv-taller" type="text" placeholder="Nombre del taller"></div>
           <div class="fld ffull"><label>Notas</label><textarea id="sv-notas" rows="2" placeholder="Detalles…"></textarea></div>
         </div>
@@ -387,7 +397,9 @@ const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no ci
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
   sin_total:'Sin total', confianza_baja:'Confianza baja', litros_superan_tanque:'Litros > tanque', fecha_fuera_de_rango:'Fecha fuera de rango',
   sin_fecha:'Sin fecha', comprobante_duplicado:'Posible duplicado', ocr_km_fallo:'KM ilegible', km_confianza_baja:'KM dudoso',
-  km_menor_al_anterior:'KM menor al anterior', salto_km_grande:'Salto de KM grande'};
+  km_menor_al_anterior:'KM menor al anterior', salto_km_grande:'Salto de KM grande',
+  ocr_servicio_fallo:'OCR falló', sin_km:'Sin KM', km_menor_al_actual:'KM menor al actual',
+  sin_intervalo_service:'Sin intervalo (default 10.000km)', intervalo_fuera_de_rango:'Intervalo raro (revisar)'};
 
 let S = { token:null, user:null, veh:null, mant:null, vehiculos:[] };
 
@@ -878,13 +890,59 @@ const Serv = {
   async load(){
     try{
       const d=await api('/api/servicios');
-      $('sv-list').innerHTML=!d.servicios.length?'<p class="empty">Sin servicios</p>':d.servicios.map(s=>`
-        <div class="card" style="padding:.9rem 1rem"><div class="row" style="margin-bottom:.3rem">
+      $('sv-list').innerHTML=!d.servicios.length?'<p class="empty">Sin servicios</p>':d.servicios.map(s=>{
+        const chips=(s.warnings||[]).map(w=>`<span class="chip c-warn">${W_LABELS[w]||w}</span>`).join('');
+        return `<div class="card" style="padding:.9rem 1rem"><div class="row" style="margin-bottom:.3rem">
           <b style="font-size:.9rem">${SV_NOMBRES[s.tipo]||s.tipo}</b><span class="chip c-acc">${fmtN(s.km)} km</span></div>
         <div class="muted" style="font-size:.76rem;line-height:1.7">${fmtF(s.fecha)} · Próximo: ${fmtN(s.km+(s.proximo_cada_km||10000))} km
-          ${s.taller?'<br>🏪 '+s.taller:''}${s.notas?'<br>📝 '+s.notas:''}</div></div>`).join('');
+          ${s.taller?'<br>🏪 '+s.taller:''}${s.notas?'<br>📝 '+s.notas:''}</div>
+        ${chips?`<div class="warnchips">${chips}</div>`:''}
+        ${s.foto?`<button class="chip c-acc" style="border:none;cursor:pointer;font-family:inherit;margin-top:.4rem" onclick="Serv.verFoto('${s.id}')">📷 Ver foto</button>`:''}
+        </div>`;
+      }).join('');
     }catch(e){ $('sv-list').innerHTML='<p class="empty">'+e.message+'</p>'; }
   },
+  verFoto(id){
+    $('foto-title').textContent='📇 Tarjeta de service';
+    $('foto-img').src=`${API}/api/servicios/${id}/foto?t=${S.token}`;
+    UI.open('m-foto');
+  },
+  async startFoto(){
+    if(!S.veh){toast(S.user.rol==='admin'?'Asigná un vehículo a tu perfil en Equipo antes de cargar':'No tenés vehículo asignado — avisale al admin','warn',6000);return;}
+    haptic('heavy');
+    $('sv-result').classList.add('hidden');$('sv-result').innerHTML='';
+    const foto=await Cam.open('📇 Encuadrá la tarjeta de service completa',1600);
+    if(!foto)return;
+    $('sv-proc').classList.remove('hidden');
+    try{
+      const dataUrl=await blobToDataURL(foto);
+      const d=await api('/api/servicios/foto',{method:'POST',body:JSON.stringify({vehiculoId:S.veh?.id,foto:dataUrl})});
+      this.showResultFoto(d.servicio);
+    }catch(e){
+      toast('Error: '+e.message,'err');
+      $('sv-proc').classList.add('hidden');
+    }
+  },
+  showResultFoto(s){
+    haptic('heavy');
+    $('sv-proc').classList.add('hidden');
+    const rev=s.validacion!=='ok';
+    $('sv-result').classList.remove('hidden');
+    $('sv-result').innerHTML=`<div class="result${rev?' rev':''}">
+      <div style="font-size:2.2rem">🛢️</div>
+      <h3 style="margin:.3rem 0 .4rem">Service registrado</h3>
+      ${rev?'<span class="chip c-warn">🔍 Revisar datos</span>':'<span class="chip c-ok">✅ Verificado</span>'}
+      <div class="rgrid">
+        <div><b>${s.km?fmtN(s.km):'—'}</b><i>KM</i></div>
+        <div><b>${s.km&&s.proximo_cada_km?fmtN(s.km+s.proximo_cada_km):'—'}</b><i>Próximo</i></div>
+        <div><b>${s.taller||'—'}</b><i>Taller</i></div>
+      </div>
+      ${s.notas?`<p class="muted" style="font-size:.78rem;margin-bottom:.9rem">${s.notas}</p>`:''}
+      <button class="btn btn-acc" onclick="Serv.dismissResult()">Listo ✓</button>
+    </div>`;
+    this.load();App.refreshMe().catch(()=>{});
+  },
+  dismissResult(){$('sv-result').classList.add('hidden');$('sv-result').innerHTML='';},
 };
 
 // ══════════════════════════════════════════════════════════════════════════

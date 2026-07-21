@@ -43,6 +43,9 @@ export default {
       if (p === '/api/cargas' && request.method === 'GET') return handleGetCargas(request, env);
       if (p === '/api/servicios' && request.method === 'POST') return handleNuevoServicio(request, env);
       if (p === '/api/servicios' && request.method === 'GET') return handleGetServicios(request, env);
+      if (p === '/api/servicios/foto' && request.method === 'POST') return handleServicioFoto(request, env, ctx);
+      const mServFoto = p.match(/^\/api\/servicios\/([\w.-]+)\/foto$/);
+      if (mServFoto) return handleServicioFotoGet(request, env, mServFoto[1]);
       if (p === '/api/export.csv') return handleExportCSV(request, env);
       if (p === '/api/push/register' && request.method === 'POST') return handlePushRegister(request, env);
       if (p === '/api/push/broadcast' && request.method === 'POST') return handlePushBroadcast(request, env);
@@ -529,14 +532,118 @@ async function handleNuevoServicio(request, env) {
   const b = await request.json().catch(() => ({}));
   const vehiculoId = user.rol === 'admin' ? (b.vehiculoId || user.vehiculo_id) : user.vehiculo_id;
   if (!vehiculoId || !b.tipo || !b.fecha || !b.km) return json({ error: 'Faltan datos (tipo, fecha, km)' }, 400);
+  const proximoCadaKm = Math.round(b.proximoCadaKm || 10000);
+  if (proximoCadaKm < 500 || proximoCadaKm > 50000)
+    return json({ error: 'El intervalo del próximo service debe ser un número entre 500 y 50.000 km (¿pusiste el KM absoluto del próximo cambio en vez del intervalo?)' }, 400);
   const id = uuid();
   await env.DB.prepare(`INSERT INTO servicios (id,vehiculo_id,usuario_id,tipo,fecha,km,proximo_cada_km,taller,notas)
     VALUES (?,?,?,?,?,?,?,?,?)`)
-    .bind(id, vehiculoId, user.id, b.tipo, b.fecha, Math.round(b.km), Math.round(b.proximoCadaKm || 10000),
+    .bind(id, vehiculoId, user.id, b.tipo, b.fecha, Math.round(b.km), proximoCadaKm,
       b.taller || null, b.notas || null).run();
   await env.DB.prepare('UPDATE vehiculos SET km_actual=MAX(km_actual,?) WHERE id=?').bind(Math.round(b.km), vehiculoId).run();
   await env.DB.prepare("DELETE FROM alertas_enviadas WHERE clave LIKE ?").bind(`maint:${vehiculoId}:%`).run();
   return json({ ok: true, id });
+}
+
+// ── OCR de tarjeta de servicio — layout varía según el taller ────────────────
+async function geminiServicio(b64, env) {
+  const prompt = `Extraé los datos de esta foto de una tarjeta/etiqueta de servicio de taller (cambio de aceite, service, etc). El diseño VARÍA mucho según el taller — puede ser una tarjeta impresa con casilleros, una etiqueta autoadhesiva, o un ticket. Buscá estos conceptos sin importar cómo estén rotulados exactamente:
+
+- fecha del service (puede estar en 3 casilleros separados día/mes/año, o junto).
+- km: el kilometraje del vehículo EN EL MOMENTO de este service (no el próximo).
+- proximo_km_absoluto: si la tarjeta indica el kilometraje ABSOLUTO del próximo cambio (ej: "PRÓXIMO CAMBIO KM: 92295", "Next service at: 145000"), poné ese número tal cual.
+- proximo_intervalo: si en cambio la tarjeta indica un INTERVALO (ej: "cada 10.000 km", "next 5000 km"), poné ese número. Si hay AMBOS o ninguno, dejá el que corresponda en null.
+- taller: nombre del comercio/taller (suele estar en el logo o encabezado).
+- items: array corto de strings con lo que se hizo (ej: "Aceite Shell 5W40", "Filtro de aceite", "Filtro de aire", "Filtro de combustible", "Filtro de habitáculo", "Engrase", "Aditivos", "Caja", "Diferencial") — incluí solo los que la tarjeta marca como hechos (tildados, "SI", o con datos escritos); ignorá los casilleros vacíos o tachados.
+- confianza: 0-100 según nitidez y qué tan seguro estás de la lectura.
+
+Devolvé SOLO este JSON:
+{"fecha":"YYYY-MM-DD","km":82295,"proximo_km_absoluto":92295,"proximo_intervalo":null,"taller":"Lube Stop","items":["Aceite Shell 5W40","Filtro de aceite"],"confianza":90}`;
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
+    {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos, con diseños muy variables entre talleres. Respondés SOLO JSON válido.' }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+      }),
+    });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('Gemini servicio: ' + (e.error?.message || res.status)); }
+  const data = await res.json();
+  return JSON.parse(data.candidates[0].content.parts[0].text.trim());
+}
+
+async function handleServicioFoto(request, env, ctx) {
+  const user = await getAuthUser(request, env);
+  if (!user) return noAuth();
+  const b = await request.json().catch(() => ({}));
+  const vehiculoId = user.rol === 'admin' ? (b.vehiculoId || user.vehiculo_id) : user.vehiculo_id;
+  if (!vehiculoId || !b.foto) return json({ error: 'Faltan datos (vehículo o foto)' }, 400);
+  const veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(vehiculoId).first();
+  if (!veh) return json({ error: 'Vehículo inexistente' }, 400);
+
+  const b64 = b.foto.includes(',') ? b.foto.split(',')[1] : b.foto;
+  const id = uuid();
+  const fotoKey = `servicio/${id}.jpg`;
+  await fotoPut(env, fotoKey, b64ToBytes(b64));
+
+  let t = null, ocrErr = null;
+  try { t = await geminiServicio(b64, env); } catch (err) { ocrErr = err.message; }
+
+  const w = [];
+  if (!t) w.push('ocr_servicio_fallo');
+  let km = null, proximoCadaKm = null, tipo = 'oil-change', taller = null, notas = null, confianza = null;
+  if (t) {
+    km = Number.isFinite(t.km) ? Math.round(t.km) : null;
+    if (!km) w.push('sin_km');
+    else if (veh.km_actual > 0 && km < veh.km_actual - 500) w.push('km_menor_al_actual');
+    taller = t.taller || null;
+    notas = Array.isArray(t.items) && t.items.length ? t.items.join(', ') : null;
+    confianza = Number.isFinite(t.confianza) ? Math.round(t.confianza) : null;
+    if ((confianza ?? 0) < 70) w.push('confianza_baja');
+
+    if (Number.isFinite(t.proximo_km_absoluto) && km) proximoCadaKm = Math.round(t.proximo_km_absoluto) - km;
+    else if (Number.isFinite(t.proximo_intervalo)) proximoCadaKm = Math.round(t.proximo_intervalo);
+    if (proximoCadaKm !== null && (proximoCadaKm < 500 || proximoCadaKm > 50000)) {
+      w.push('intervalo_fuera_de_rango');
+      proximoCadaKm = 10000; // fallback razonable, queda marcado para revisar
+    }
+    if (proximoCadaKm === null) { w.push('sin_intervalo_service'); proximoCadaKm = 10000; }
+  }
+  const fecha = t?.fecha || hoyAR();
+  const validacion = w.length ? 'revisar' : 'ok';
+
+  await env.DB.prepare(`INSERT INTO servicios (id,vehiculo_id,usuario_id,tipo,fecha,km,proximo_cada_km,taller,notas,foto,confianza,validacion,validacion_detalle)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .bind(id, vehiculoId, user.id, tipo, fecha, km, proximoCadaKm, taller, notas, fotoKey, confianza,
+      validacion, JSON.stringify({ warnings: w, ocrErr })).run();
+  if (km && km > (veh.km_actual || 0)) {
+    await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, vehiculoId).run();
+    veh.km_actual = km;
+  }
+  await env.DB.prepare("DELETE FROM alertas_enviadas WHERE clave LIKE ?").bind(`maint:${vehiculoId}:%`).run();
+
+  if (validacion === 'revisar') {
+    ctx.waitUntil(pushToAdmins(env, {
+      title: '🔍 Service para revisar', tag: 'revision-servicio',
+      body: `${veh.emoji} ${veh.nombre} — ${user.nombre}. Motivos: ${w.slice(0, 3).join(', ')}`,
+    }).catch(() => { }));
+  }
+
+  const registro = await env.DB.prepare('SELECT * FROM servicios WHERE id=?').bind(id).first();
+  const { validacion_detalle, ...rest } = registro;
+  rest.warnings = w;
+  return json({ ok: true, servicio: rest });
+}
+async function handleServicioFotoGet(request, env, id) {
+  const user = await getAuthUser(request, env);
+  if (!user) return noAuth();
+  const s = await env.DB.prepare('SELECT foto FROM servicios WHERE id=?').bind(id).first();
+  if (!s?.foto) return json({ error: 'Sin foto' }, 404);
+  const bytes = await fotoGet(env, s.foto);
+  if (!bytes) return json({ error: 'Foto no encontrada' }, 404);
+  return new Response(bytes, { headers: { ...CORS, 'Content-Type': 'image/jpeg', 'Cache-Control': 'private, max-age=86400' } });
 }
 async function handleGetServicios(request, env) {
   const user = await getAuthUser(request, env);
@@ -547,7 +654,12 @@ async function handleGetServicios(request, env) {
   const rows = vehiculo
     ? await env.DB.prepare('SELECT * FROM servicios WHERE vehiculo_id=? ORDER BY fecha DESC LIMIT 100').bind(vehiculo).all()
     : await env.DB.prepare('SELECT * FROM servicios ORDER BY fecha DESC LIMIT 100').all();
-  return json({ ok: true, servicios: rows.results });
+  const servicios = rows.results.map(s => {
+    const { validacion_detalle, ...rest } = s;
+    try { rest.warnings = JSON.parse(validacion_detalle || '{}').warnings || []; } catch (e) { rest.warnings = []; }
+    return rest;
+  });
+  return json({ ok: true, servicios });
 }
 
 async function estadoMantenimiento(env, veh) {
