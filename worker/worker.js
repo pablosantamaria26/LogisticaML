@@ -39,7 +39,6 @@ export default {
       if (p === '/api/login' && request.method === 'POST') return handleLogin(request, env);
       if (p === '/api/logout' && request.method === 'POST') return handleLogout(request, env);
       if (p === '/api/me') return handleMe(request, env);
-      if (p === '/api/me/email' && request.method === 'POST') return handleSetEmail(request, env);
       if (p === '/api/cargas' && request.method === 'POST') return handleNuevaCarga(request, env, ctx);
       if (p === '/api/cargas' && request.method === 'GET') return handleGetCargas(request, env);
       if (p === '/api/servicios' && request.method === 'POST') return handleNuevoServicio(request, env);
@@ -219,16 +218,6 @@ async function handleMe(request, env) {
     vehiculo: veh, mantenimiento: maint,
     vehiculos: user.rol === 'admin' ? vehiculos.results : undefined,
   });
-}
-
-async function handleSetEmail(request, env) {
-  const user = await getAuthUser(request, env);
-  if (!user) return noAuth();
-  const { email } = await request.json().catch(() => ({}));
-  const e = (email || '').trim();
-  if (e && !e.includes('@')) return json({ error: 'Email inválido' }, 400);
-  await env.DB.prepare('UPDATE usuarios SET email=? WHERE id=?').bind(e, user.id).run();
-  return json({ ok: true, email: e });
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -579,8 +568,6 @@ async function checkMantenimiento(env, veh) {
     await env.DB.prepare('INSERT OR IGNORE INTO alertas_enviadas (clave) VALUES (?)').bind(clave).run();
     return true;
   };
-  const driver = await env.DB.prepare(
-    "SELECT nombre, email FROM usuarios WHERE vehiculo_id=? AND rol='chofer' LIMIT 1").bind(veh.id).first();
 
   // Tier 1 — 1000km antes: aviso anticipado por email (fleet/admin, para coordinar taller con tiempo)
   if (st.kmRestantes <= 1000 && st.kmRestantes > 500 && env.SENDGRID_API_KEY) {
@@ -602,7 +589,7 @@ async function checkMantenimiento(env, veh) {
       });
     }
   }
-  // Tier 3 — llegó o pasó el km objetivo: URGENTE. Push + email al chofer Y al admin.
+  // Tier 3 — llegó o pasó el km objetivo: URGENTE. Push a chofer+admin, email al administrador.
   if (st.kmRestantes <= 0) {
     if (await marcar(`maint:${veh.id}:${st.proximoKm}:vencido`)) {
       await pushToVehicle(env, veh.id, {
@@ -612,7 +599,6 @@ async function checkMantenimiento(env, veh) {
       });
       if (env.SENDGRID_API_KEY) {
         const to = [env.OWNER_EMAIL || env.FLEET_EMAIL || env.FROM_EMAIL];
-        if (driver?.email && driver.email.includes('@') && !to.includes(driver.email)) to.push(driver.email);
         await sendViaBrevo({
           to, subject: `🛑 ¡Service vencido! — ${veh.emoji} ${veh.nombre}`,
           html: buildMaintEmail(veh, st, true),

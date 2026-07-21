@@ -214,7 +214,6 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   <header class="hdr">
     <div class="hdr-brand"><div class="hdr-dot" id="net-dot"></div>Flota ML</div>
     <div class="hdr-veh"><span id="h-vemoji">🚛</span><b id="h-vname">—</b></div>
-    <button class="icon-btn" onclick="Perfil.setEmail()" title="Mi email">✉️</button>
     <button class="icon-btn" id="btn-theme" title="Tema">◐</button>
     <button class="icon-btn" onclick="App.logoutAsk()" title="Salir">⏻</button>
   </header>
@@ -755,24 +754,6 @@ const Queue = {
       const pd=$('cg-pend');
       if(pd)pd.innerHTML=n?`<div class="aban a-warn" style="margin-top:1rem"><span>📤</span><div><b>${n} carga(s) esperando señal</b>Se envían automáticamente. No borres la app.</div></div>`:'';
     }catch(e){}
-  },
-};
-
-// ══════════════════════════════════════════════════════════════════════════
-// PERFIL — email para recibir avisos (mantenimiento, confirmaciones)
-// ══════════════════════════════════════════════════════════════════════════
-const Perfil = {
-  async setEmail(){
-    const actual=S.user?.email||'';
-    const email=prompt('Tu email para recibir avisos (mantenimiento, confirmaciones):',actual);
-    if(email===null)return;
-    const e=email.trim();
-    if(e&&!e.includes('@')){toast('Email inválido','warn');return;}
-    try{
-      await api('/api/me/email',{method:'POST',body:JSON.stringify({email:e})});
-      S.user.email=e;localStorage.setItem('fml2_user',JSON.stringify(S.user));
-      toast(e?'✅ Email guardado':'✅ Email eliminado','ok');
-    }catch(err){toast(err.message,'err');}
   },
 };
 
