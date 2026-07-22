@@ -561,7 +561,7 @@ netUI();
 // CÁMARA IN-APP (getUserMedia) — no usa la app de cámara del teléfono
 // ══════════════════════════════════════════════════════════════════════════
 const Cam = {
-  stream:null, track:null, torchOn:false, _resolve:null, _blob:null, _maxPx:1600, _q:.82,
+  stream:null, track:null, torchOn:false, _resolve:null, _blob:null, _maxPx:1600, _q:.82, _lastClosedAt:0,
   async open(hint, maxPx){
     this._maxPx=maxPx||1600;
     $('cam-hint').textContent=hint;
@@ -569,11 +569,15 @@ const Cam = {
     $('cam-video').classList.remove('hidden');
     $('cam-confirm').classList.add('hidden');
     $('cam-controls').style.display='flex';
+    // Algunos celulares (sobre todo gama baja) no liberan la cámara al instante
+    // tras la foto anterior — darle un respiro evita que la 2da apertura quede colgada.
+    const sinceClose=Date.now()-this._lastClosedAt;
+    if(sinceClose<500)await new Promise(r=>setTimeout(r,500-sinceClose));
     try{
-      this.stream=await navigator.mediaDevices.getUserMedia({
-        video:{facingMode:{ideal:'environment'},width:{ideal:2560},height:{ideal:1440}}, audio:false });
+      this.stream=await this._getUserMediaConTimeout(8000);
     }catch(e){
-      // sin permiso o sin soporte → fallback al selector clásico
+      // sin permiso, sin soporte, o la cámara no respondió a tiempo → fallback al selector clásico
+      console.warn('camara:',e.message);
       return this.fallback();
     }
     $('cam-video').srcObject=this.stream;
@@ -594,6 +598,17 @@ const Cam = {
       };
       inp.click();
     });
+  },
+  _getUserMediaConTimeout(ms){
+    let timedOut=false;
+    const p=navigator.mediaDevices.getUserMedia({
+      video:{facingMode:{ideal:'environment'},width:{ideal:2560},height:{ideal:1440}}, audio:false });
+    // si el navegador contesta tarde (después del timeout) igual liberamos la cámara que abrió
+    p.then(s=>{if(timedOut)s.getTracks().forEach(t=>t.stop());}).catch(()=>{});
+    return Promise.race([
+      p,
+      new Promise((_,rej)=>setTimeout(()=>{timedOut=true;rej(new Error('timeout esperando la cámara'));},ms)),
+    ]);
   },
   shoot(){
     haptic('med');
@@ -623,6 +638,8 @@ const Cam = {
   cancel(){ this._done(null); },
   _done(blob){
     if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;this.track=null;}
+    $('cam-video').srcObject=null;
+    this._lastClosedAt=Date.now();
     const c=$('cam-prev'); c.width=0;c.height=0; // liberar memoria
     $('cam').classList.remove('on');
     const r=this._resolve;this._resolve=null;
