@@ -336,6 +336,8 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
         <button class="btn btn-acc" id="nv-btn" onclick="Eq.agregarVehiculo()">➕ Agregar vehículo</button>
         <p class="muted" style="margin-top:.6rem;font-size:.72rem">Aparece en Monitor, ranking y reportes junto al resto de la flota. Asignáselo a un usuario (incluido vos) en la lista de abajo para poder cargarle combustible.</p>
       </div>
+      <div class="sec">Vehículos de la flota</div>
+      <div id="eq-vehiculos"><p class="empty">Cargando…</p></div>
       <div class="sec">Usuarios y vehículos</div>
       <div id="eq-users"><p class="empty">Cargando…</p></div>
       <div class="sec">Mensaje a la flota</div>
@@ -1177,7 +1179,8 @@ const Eq = {
     if(S.user?.rol!=='admin')return;
     $('ex-month').value=Mon.cur();
     try{
-      if(!S.vehiculos.length)await App.refreshMe();
+      await App.refreshMe();
+      this.renderVehiculos();
       const d=await api('/api/admin/usuarios');
       $('eq-users').innerHTML=d.usuarios.map(u=>`
         <div class="card" style="padding:.85rem 1rem"><div class="row" style="flex-wrap:wrap;gap:.5rem">
@@ -1215,6 +1218,28 @@ const Eq = {
       await App.refreshMe();this.load();
     }catch(e){toast(e.message,'err');}
     UI.setBtn('nv-btn',false,'➕ Agregar vehículo');
+  },
+  renderVehiculos(){
+    const el=$('eq-vehiculos');if(!el)return;
+    const vs=S.vehiculos||[];
+    el.innerHTML=!vs.length?'<p class="empty">Sin vehículos</p>':vs.map(v=>`
+      <div class="card" style="padding:.75rem 1rem"><div class="row" style="flex-wrap:wrap;gap:.5rem">
+        <div style="flex:1;min-width:110px"><b>${v.emoji} ${v.nombre}</b></div>
+        <input type="number" id="km-${v.id}" value="${v.km_actual||0}" inputmode="numeric"
+          style="width:110px;padding:.5rem;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:inherit;font-size:.82rem;text-align:right">
+        <button class="btn btn-ghost btn-sm" onclick="Eq.corregirKm('${v.id}',this)">💾 Corregir KM</button>
+      </div></div>`).join('');
+  },
+  async corregirKm(vid,btn){
+    const km=parseInt($('km-'+vid).value);
+    if(!Number.isFinite(km)||km<0){toast('KM inválido','warn');return;}
+    btn.disabled=true;
+    try{
+      await api(`/api/admin/vehiculos/${vid}/km`,{method:'POST',body:JSON.stringify({km})});
+      toast('✅ KM corregido','ok');
+      await App.refreshMe();this.renderVehiculos();Mon.render();
+    }catch(e){toast(e.message,'err');}
+    btn.disabled=false;
   },
   async resetPin(username){
     if(!confirm(`¿Resetear el PIN de ${username}? El próximo PIN que ingrese queda como nuevo.`))return;

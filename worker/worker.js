@@ -52,6 +52,8 @@ export default {
       if (p === '/api/admin/usuarios') return handleAdminUsuarios(request, env);
       if (p === '/api/admin/asignar' && request.method === 'POST') return handleAdminAsignar(request, env);
       if (p === '/api/admin/vehiculos' && request.method === 'POST') return handleAdminCrearVehiculo(request, env);
+      const mSetKm = p.match(/^\/api\/admin\/vehiculos\/([\w.-]+)\/km$/);
+      if (mSetKm && request.method === 'POST') return handleAdminSetKm(request, env, mSetKm[1]);
       if (p === '/api/admin/reset-pin' && request.method === 'POST') return handleAdminResetPin(request, env);
       if (p === '/api/admin/corregir' && request.method === 'POST') return handleAdminCorregir(request, env);
       if (p === '/api/admin/reprocesar' && request.method === 'POST') return handleAdminReprocesar(request, env, ctx);
@@ -767,6 +769,16 @@ async function handleAdminCrearVehiculo(request, env) {
   ).run();
   return json({ ok: true, id });
 }
+async function handleAdminSetKm(request, env, vehiculoId) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  const { km } = await request.json().catch(() => ({}));
+  if (!Number.isFinite(km) || km < 0) return json({ error: 'KM inválido' }, 400);
+  const r = await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(Math.round(km), vehiculoId).run();
+  if (!r.meta.changes) return json({ error: 'Vehículo no encontrado' }, 404);
+  await env.DB.prepare("DELETE FROM alertas_enviadas WHERE clave LIKE ?").bind(`maint:${vehiculoId}:%`).run();
+  return json({ ok: true });
+}
 async function handleAdminResetPin(request, env) {
   const admin = await reqAdmin(request, env);
   if (!admin) return noAuth();
@@ -1409,8 +1421,14 @@ async function legacySyncRecord(request, env) {
         record.cuit || null, record.location || null, record.address || null,
         record.liters || null, record.iva || null, record.amount || null, record.km || null,
         record.createdAt || new Date().toISOString()).run();
-    if (record.km > 0)
-      await env.DB.prepare('UPDATE vehiculos SET km_actual=MAX(km_actual,?) WHERE id=?').bind(record.km, vehicleId).run();
+    if (record.km > 0) {
+      // La app vieja no valida nada — un solo KM mal leído acá "envenena" el contador
+      // del vehículo para siempre (MAX nunca baja). Si el salto es absurdo, no lo tomamos.
+      const veh = await env.DB.prepare('SELECT km_actual FROM vehiculos WHERE id=?').bind(vehicleId).first();
+      if (!veh || veh.km_actual === 0 || Math.abs(record.km - veh.km_actual) <= 3000) {
+        await env.DB.prepare('UPDATE vehiculos SET km_actual=MAX(km_actual,?) WHERE id=?').bind(record.km, vehicleId).run();
+      }
+    }
     return json({ ok: true, stored: true });
   } catch (err) { return json({ error: err.message }, 500); }
 }
