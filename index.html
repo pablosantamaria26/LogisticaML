@@ -251,6 +251,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
           <div class="step" id="stp-2"><div class="dot">2</div><div style="flex:1"><b>Foto del tablero</b><small id="stp-2-s">—</small></div><span id="stp-2-i">🛣️</span></div>
           <div class="step" id="stp-3"><div class="dot">3</div><div style="flex:1"><b>Procesando con IA</b><small id="stp-3-s">—</small></div><span id="stp-3-i">🤖</span></div>
         </div>
+        <button class="btn btn-ghost" style="margin-top:.9rem" onclick="Carga.cancelarFlujo()">✕ Cancelar</button>
       </div>
       <div id="cg-result" class="hidden"></div>
       <div id="cg-pend"></div>
@@ -262,9 +263,12 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
         <span class="ic" style="font-size:2.5rem">📇</span>
         <span><h2 style="font-size:1.15rem">Sacar foto del service</h2><p>La IA lee la tarjeta del taller y registra todo sola</p></span>
       </button>
-      <div id="sv-proc" class="hidden steps">
-        <div class="step act"><div class="dot"><span class="spin" style="border-top-color:#fff;width:13px;height:13px"></span></div>
-          <div style="flex:1"><b>Leyendo la tarjeta…</b><small>Procesando con IA</small></div></div>
+      <div id="sv-proc" class="hidden">
+        <div class="steps">
+          <div class="step act"><div class="dot"><span class="spin" style="border-top-color:#fff;width:13px;height:13px"></span></div>
+            <div style="flex:1"><b>Leyendo la tarjeta…</b><small>Procesando con IA</small></div></div>
+        </div>
+        <button class="btn btn-ghost" style="margin-top:.9rem" onclick="Serv.cancelarFoto()">✕ Cancelar</button>
       </div>
       <div id="sv-result" class="hidden"></div>
       <div class="sec">O cargalo a mano</div>
@@ -571,7 +575,9 @@ netUI();
 // ══════════════════════════════════════════════════════════════════════════
 const Cam = {
   stream:null, track:null, torchOn:false, _resolve:null, _blob:null, _maxPx:1600, _q:.82, _lastClosedAt:0,
+  _aborted:false, _fallbackFinish:null,
   async open(hint, maxPx){
+    this._aborted=false;
     this._maxPx=maxPx||1600;
     $('cam-hint').textContent=hint;
     $('cam-prev').classList.add('hidden');
@@ -582,13 +588,16 @@ const Cam = {
     // tras la foto anterior — darle un respiro evita que la 2da apertura quede colgada.
     const sinceClose=Date.now()-this._lastClosedAt;
     if(sinceClose<500)await new Promise(r=>setTimeout(r,500-sinceClose));
+    if(this._aborted)return null;
     try{
       this.stream=await this._getUserMediaConTimeout(8000);
     }catch(e){
       // sin permiso, sin soporte, o la cámara no respondió a tiempo → fallback al selector clásico
-      console.warn('camara:',e.message);
-      return this.fallback();
+      console.warn('camara:',e.name,e.message);
+      if(this._aborted)return null;
+      return this.fallback(`${e.name||'Error'}: ${e.message||'sin detalle'}`);
     }
+    if(this._aborted){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;return null;}
     $('cam-video').srcObject=this.stream;
     this.track=this.stream.getVideoTracks()[0];
     const caps=this.track.getCapabilities?this.track.getCapabilities():{};
@@ -597,12 +606,13 @@ const Cam = {
     UI.open('cam');$('cam').classList.add('on');
     return new Promise(res=>{this._resolve=res;});
   },
-  fallback(){
-    reportarError('camara_fallback','Se usó el selector de archivo nativo (getUserMedia no disponible o falló)');
+  fallback(motivo){
+    reportarError('camara_fallback','Se usó el selector nativo — motivo: '+(motivo||'getUserMedia no disponible'));
     return new Promise(res=>{
       const inp=$('cam-fallback');
       let done=false;
-      const finish=v=>{if(done)return;done=true;inp.onchange=null;res(v);};
+      const finish=v=>{if(done)return;done=true;inp.onchange=null;this._fallbackFinish=null;res(v);};
+      this._fallbackFinish=finish;
       inp.onchange=async e=>{
         const f=e.target.files[0]; inp.value='';
         if(!f){finish(null);return;}
@@ -619,12 +629,24 @@ const Cam = {
     let timedOut=false;
     const p=navigator.mediaDevices.getUserMedia({
       video:{facingMode:{ideal:'environment'},width:{ideal:2560},height:{ideal:1440}}, audio:false });
-    // si el navegador contesta tarde (después del timeout) igual liberamos la cámara que abrió
-    p.then(s=>{if(timedOut)s.getTracks().forEach(t=>t.stop());}).catch(()=>{});
+    // si el navegador contesta tarde (después del timeout, o tras cancelar) igual liberamos la cámara
+    p.then(s=>{if(timedOut||this._aborted)s.getTracks().forEach(t=>t.stop());}).catch(()=>{});
     return Promise.race([
       p,
       new Promise((_,rej)=>setTimeout(()=>{timedOut=true;rej(new Error('timeout esperando la cámara'));},ms)),
     ]);
+  },
+  // Botón "Cancelar" visible en la pantalla de espera — corta cualquier cosa
+  // que esté colgada adentro (permiso, hardware, selector nativo) y libera al usuario.
+  abort(){
+    this._aborted=true;
+    if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;this.track=null;}
+    $('cam-video').srcObject=null;
+    $('cam').classList.remove('on');
+    this._lastClosedAt=Date.now();
+    if(this._fallbackFinish){this._fallbackFinish(null);}
+    const r=this._resolve;this._resolve=null;
+    if(r)r(null);
   },
   shoot(){
     haptic('med');
@@ -784,6 +806,13 @@ const Carga = {
       Queue.updateBadge();
     };
     delay?setTimeout(go,delay):go();
+  },
+  cancelarFlujo(){
+    haptic('med');
+    Cam.abort();
+    reportarError('cancelado_por_usuario','El chofer canceló manualmente una carga que no avanzaba');
+    toast('Cancelado — podés reintentar cuando quieras','info',4000);
+    this.reset();
   },
 };
 
@@ -968,6 +997,13 @@ const Serv = {
       reportarError('excepcion_servicio_foto',e.message);
       $('sv-proc').classList.add('hidden');
     }
+  },
+  cancelarFoto(){
+    haptic('med');
+    Cam.abort();
+    reportarError('cancelado_por_usuario_servicio','El chofer canceló manualmente un service que no avanzaba');
+    toast('Cancelado — podés reintentar cuando quieras','info',4000);
+    $('sv-proc').classList.add('hidden');
   },
   showResultFoto(s){
     haptic('heavy');
