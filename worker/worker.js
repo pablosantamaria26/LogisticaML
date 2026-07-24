@@ -49,6 +49,7 @@ export default {
       if (p === '/api/export.csv') return handleExportCSV(request, env);
       if (p === '/api/push/register' && request.method === 'POST') return handlePushRegister(request, env);
       if (p === '/api/push/broadcast' && request.method === 'POST') return handlePushBroadcast(request, env);
+      if (p === '/api/diag' && request.method === 'POST') return handleDiag(request, env, ctx);
       if (p === '/api/admin/usuarios') return handleAdminUsuarios(request, env);
       if (p === '/api/admin/asignar' && request.method === 'POST') return handleAdminAsignar(request, env);
       if (p === '/api/admin/vehiculos' && request.method === 'POST') return handleAdminCrearVehiculo(request, env);
@@ -1130,6 +1131,31 @@ async function pushToAdmins(env, payload) {
   const rows = await env.DB.prepare(
     `SELECT p.endpoint, p.subscription FROM push_subs p JOIN usuarios u ON u.id=p.usuario_id WHERE u.rol='admin'`).all();
   return pushSend(env, rows.results, payload);
+}
+
+// ── Diagnóstico remoto — el cliente avisa apenas algo falla, con detalle técnico,
+// para no depender de que el chofer sepa describir el problema.
+function resumirUA(ua) {
+  if (!ua) return '';
+  const marca = ua.match(/;\s*([A-Za-z0-9 _-]+)\s+Build\//)?.[1]?.trim();
+  const chrome = ua.match(/Chrome\/(\d+)/)?.[1];
+  const android = ua.match(/Android\s([\d.]+)/)?.[1];
+  return [marca, android ? `Android ${android}` : null, chrome ? `Chrome ${chrome}` : null].filter(Boolean).join(' · ');
+}
+async function handleDiag(request, env, ctx) {
+  const user = await getAuthUser(request, env);
+  if (!user) return noAuth();
+  const b = await request.json().catch(() => ({}));
+  const evento = String(b.evento || 'evento').slice(0, 60);
+  const detalle = String(b.detalle || '').slice(0, 300);
+  const dispositivo = resumirUA(b.userAgent || '');
+  console.log('DIAG', user.username, evento, detalle, dispositivo);
+  ctx.waitUntil(pushToAdmins(env, {
+    title: `⚠️ ${user.nombre} — ${evento}`,
+    body: `${detalle}${dispositivo ? ' · ' + dispositivo : ''}`,
+    tag: 'diag-' + evento,
+  }).catch(() => { }));
+  return json({ ok: true });
 }
 
 // ── Web Push RFC 8291 aes128gcm (probado en producción v1) ──────────────────

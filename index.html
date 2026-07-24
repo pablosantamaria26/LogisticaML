@@ -471,6 +471,13 @@ async function api(path, opts={}){
   return data;
 }
 
+// Avisa al admin por push en el momento, con detalle técnico — para no depender
+// de que el chofer sepa describir lo que le pasó.
+function reportarError(evento,detalle){
+  if(!S.token)return;
+  api('/api/diag',{method:'POST',body:JSON.stringify({evento,detalle,userAgent:navigator.userAgent})}).catch(()=>{});
+}
+
 // ══════════════════════════════════════════════════════════════════════════
 // APP — sesión, tabs
 // ══════════════════════════════════════════════════════════════════════════
@@ -591,14 +598,21 @@ const Cam = {
     return new Promise(res=>{this._resolve=res;});
   },
   fallback(){
+    reportarError('camara_fallback','Se usó el selector de archivo nativo (getUserMedia no disponible o falló)');
     return new Promise(res=>{
       const inp=$('cam-fallback');
+      let done=false;
+      const finish=v=>{if(done)return;done=true;inp.onchange=null;res(v);};
       inp.onchange=async e=>{
         const f=e.target.files[0]; inp.value='';
-        if(!f){res(null);return;}
-        res(await comprimir(f,this._maxPx,this._q));
+        if(!f){finish(null);return;}
+        finish(await comprimir(f,this._maxPx,this._q));
       };
       inp.click();
+      // Si ni el selector nativo contesta (raro, pero pasa en algunos Android) no colgar para siempre
+      setTimeout(()=>{
+        if(!done){reportarError('fallback_sin_respuesta','El selector de archivo nativo no respondió en 60s');finish(null);}
+      },60000);
     });
   },
   _getUserMediaConTimeout(ms){
@@ -688,11 +702,18 @@ const Carga = {
     this.step(1,'act','Sacando foto…');this.step(2,'','—');this.step(3,'','—');
     try{
       const ticket=await Cam.open('🧾 Encuadrá el ticket completo, bien iluminado',1600);
-      if(!ticket){this.reset();return;}
+      if(!ticket){
+        toast('No se pudo tomar la foto del ticket — revisá el permiso de cámara e intentá de nuevo','warn',7000);
+        reportarError('sin_foto_ticket','Cam.open devolvió null en la foto del ticket');
+        this.reset();return;
+      }
       this.step(1,'ok','Foto lista ✓');
       this.step(2,'act','Sacando foto…');
       const tablero=await Cam.open('🛣️ Enfocá el odómetro (los KM totales)',1280);
-      if(!tablero){this.step(2,'err','Sin foto del tablero — la carga sigue igual');}
+      if(!tablero){
+        this.step(2,'err','Sin foto del tablero — la carga sigue igual');
+        reportarError('sin_foto_tablero','Cam.open devolvió null en la foto del tablero');
+      }
       else this.step(2,'ok','Foto lista ✓');
       // Guardar en cola local ANTES de intentar enviar (sobrevive sin señal y cierres)
       const item={id:uuid(),vehiculoId:S.veh?.id||null,ticket,tablero:tablero||null,creada:new Date().toISOString()};
@@ -714,6 +735,7 @@ const Carga = {
     }catch(e){
       console.error(e);
       toast('Error: '+e.message,'err');
+      reportarError('excepcion_carga',e.message);
       this.reset(1500);
     }
   },
@@ -931,7 +953,11 @@ const Serv = {
     haptic('heavy');
     $('sv-result').classList.add('hidden');$('sv-result').innerHTML='';
     const foto=await Cam.open('📇 Encuadrá la tarjeta de service completa',1600);
-    if(!foto)return;
+    if(!foto){
+      toast('No se pudo tomar la foto — revisá el permiso de cámara e intentá de nuevo','warn',7000);
+      reportarError('sin_foto_servicio','Cam.open devolvió null en la foto de service');
+      return;
+    }
     $('sv-proc').classList.remove('hidden');
     try{
       const dataUrl=await blobToDataURL(foto);
@@ -939,6 +965,7 @@ const Serv = {
       this.showResultFoto(d.servicio);
     }catch(e){
       toast('Error: '+e.message,'err');
+      reportarError('excepcion_servicio_foto',e.message);
       $('sv-proc').classList.add('hidden');
     }
   },
