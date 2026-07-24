@@ -522,6 +522,12 @@ const App = {
       `<button class="tab${i===0?' on':''}" data-t="${id}" onclick="App.tab('${id}',this)"><span>${ic}</span>${lb}<b class="bdg hidden" id="bdg-${id}"></b></button>`).join('');
     document.querySelectorAll('#main > section').forEach(s=>s.classList.add('hidden'));
     $(admin?'p-mon':'p-panel').classList.remove('hidden');
+    this.updateHeader();
+  },
+  // Solo actualiza emoji/nombre del header — a diferencia de buildTabs(), NO
+  // toca qué pestaña está activa (se llama seguido, desde refreshMe()).
+  updateHeader(){
+    const admin=S.user.rol==='admin';
     $('h-vemoji').textContent=S.veh?.emoji||(admin?'👑':'🚛');
     $('h-vname').textContent=admin?(S.veh?'👑 '+S.veh.nombre:'Administrador'):(S.veh?.nombre||'Sin vehículo');
   },
@@ -542,7 +548,7 @@ const App = {
     S.user=d.user; S.veh=d.vehiculo; S.mant=d.mantenimiento; S.vehiculos=d.vehiculos||[];
     localStorage.setItem('fml2_user',JSON.stringify(d.user));
     if(d.vehiculo)localStorage.setItem('fml2_veh',JSON.stringify(d.vehiculo));
-    this.buildTabs();
+    this.updateHeader();
   },
   logoutAsk(){ if(confirm('¿Cerrar sesión?'))this.logout(); },
   logout(silent){
