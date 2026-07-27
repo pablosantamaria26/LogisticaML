@@ -511,7 +511,19 @@ const App = {
     Panel.render();
     Queue.updateBadge(); Queue.flush();
     setTimeout(()=>Push.setup(),4000);
+    this.avisarSiFirefoxAndroid();
     if(S.user.rol==='admin'){ Mon.render(); Rev.load(); }
+  },
+  // Firefox para Android tiene soporte poco confiable de cámara (getUserMedia y
+  // el selector nativo con capture=camera) — mejor avisar de entrada que usar
+  // Chrome/Edge/Samsung Internet, en vez de que el chofer se quede sin poder cargar.
+  avisarSiFirefoxAndroid(){
+    if(localStorage.getItem('fml2_firefox_avisado'))return;
+    const ua=navigator.userAgent;
+    if(/Firefox/i.test(ua)&&/Android/i.test(ua)){
+      localStorage.setItem('fml2_firefox_avisado','1');
+      setTimeout(()=>toast('⚠️ Firefox no siempre deja sacar fotos bien — te recomendamos usar Chrome para esta app','warn',10000),1500);
+    }
   },
   buildTabs(){
     const admin=S.user.rol==='admin';
