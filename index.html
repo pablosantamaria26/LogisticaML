@@ -126,20 +126,6 @@ body.light{--bg:#f2f4f8;--s1:#ffffff;--s2:#e9edf3;--bd:#dde2ea;--bd2:#c3cad6;--t
 .rdetail{text-align:left;font-size:.8rem;color:var(--mut);line-height:1.8;background:var(--s2);border-radius:13px;padding:.8rem .95rem;margin-bottom:1rem}
 .rdetail b{color:var(--tx)}
 
-/* ══ CÁMARA ══════════════════════════════════════════════════════════════ */
-#cam{display:none;position:fixed;inset:0;z-index:900;background:#000;flex-direction:column}
-#cam.on{display:flex}
-#cam video,#cam canvas.prev{flex:1;width:100%;object-fit:contain;background:#000;min-height:0}
-.cam-top{position:absolute;top:calc(var(--sat) + .8rem);left:0;right:0;display:flex;justify-content:space-between;align-items:flex-start;padding:0 1rem;z-index:2}
-.cam-hint{background:rgba(0,0,0,.65);color:#fff;border-radius:14px;padding:.55rem .95rem;font-size:.85rem;font-weight:600;backdrop-filter:blur(8px);max-width:75%}
-.cam-x{width:44px;height:44px;border-radius:50%;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:1.15rem;cursor:pointer}
-.cam-bot{flex-shrink:0;background:#000;padding:1rem 1.4rem calc(1.1rem + var(--sab));display:flex;align-items:center;justify-content:space-between}
-.cam-shot{width:76px;height:76px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.35);cursor:pointer;transition:transform .1s}
-.cam-shot:active{transform:scale(.9)}
-.cam-side{width:56px;height:56px;border-radius:50%;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;font-size:1.4rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.cam-side.on{background:var(--acc)}
-.cam-confirm{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.9) 40%);padding:2.5rem 1.4rem calc(1.2rem + var(--sab));display:flex;gap:.8rem}
-.cam-confirm .btn{flex:1}
 
 /* ══ MODALES ═════════════════════════════════════════════════════════════ */
 .mbk{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);z-index:600;align-items:flex-end;justify-content:center}
@@ -214,6 +200,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   <header class="hdr">
     <div class="hdr-brand"><div class="hdr-dot" id="net-dot"></div>Flota ML</div>
     <div class="hdr-veh"><span id="h-vemoji">🚛</span><b id="h-vname">—</b></div>
+    <button class="icon-btn" onclick="App.liberarEspacio()" title="Liberar espacio">🧹</button>
     <button class="icon-btn" id="btn-theme" title="Tema">◐</button>
     <button class="icon-btn" onclick="App.logoutAsk()" title="Salir">⏻</button>
   </header>
@@ -243,7 +230,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
           <span class="ic">⛽</span>
           <span><h2>Registrar carga</h2><p>2 fotos: ticket y tablero.<br>El resto es automático.</p></span>
         </button>
-        <p class="hint" style="margin-top:.9rem">📸 La cámara se abre acá adentro — no usa la cámara del teléfono ni guarda fotos en la galería.</p>
+        <p class="hint" style="margin-top:.9rem">📸 Se abre la cámara del teléfono — sacá la foto y confirmala normal, como cualquier foto.</p>
       </div>
       <div id="cg-proc" class="hidden">
         <div class="steps">
@@ -353,25 +340,8 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   </main>
 </div>
 
-<!-- ══ CÁMARA IN-APP ══ -->
-<div id="cam">
-  <div class="cam-top">
-    <div class="cam-hint" id="cam-hint">Encuadrá el ticket completo</div>
-    <button class="cam-x" onclick="Cam.cancel()">✕</button>
-  </div>
-  <video id="cam-video" autoplay playsinline muted></video>
-  <canvas id="cam-prev" class="prev hidden"></canvas>
-  <div class="cam-bot" id="cam-controls">
-    <button class="cam-side" id="cam-torch" onclick="Cam.torch()">🔦</button>
-    <button class="cam-shot" onclick="Cam.shoot()" aria-label="Sacar foto"></button>
-    <div style="width:56px"></div>
-  </div>
-  <div class="cam-confirm hidden" id="cam-confirm">
-    <button class="btn btn-ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="Cam.retake()">🔄 Repetir</button>
-    <button class="btn btn-acc" onclick="Cam.accept()">✅ Usar foto</button>
-  </div>
-</div>
-<input type="file" id="cam-fallback" accept="image/*" capture="environment" class="hidden">
+<!-- Cámara: delega a la app de cámara nativa del teléfono (input file + capture) -->
+<input type="file" id="cam-input" accept="image/*" capture="environment" class="hidden">
 
 <!-- ══ MODAL CORREGIR (admin) ══ -->
 <div class="mbk" id="m-fix"><div class="modal">
@@ -570,16 +540,23 @@ const App = {
     $('v-app').classList.remove('on');$('v-login').classList.add('on');
     $('l-user').value='';$('l-pin').value='';
   },
+  // Limpia lo que la app guarda en el celular (no borra cargas pendientes de
+  // enviar ni tu sesión). Si el teléfono sigue avisando "sin espacio" al sacar
+  // fotos, es la cámara/Chrome — ver el tip que se muestra abajo.
+  async liberarEspacio(){
+    if(!confirm('Esto borra archivos temporales que la app guardó en el celular (no borra cargas pendientes ni tu sesión). ¿Continuar?'))return;
+    try{
+      const keys=await caches.keys();
+      await Promise.all(keys.map(k=>caches.delete(k)));
+      if('serviceWorker' in navigator){
+        const regs=await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r=>r.unregister()));
+      }
+      toast('✅ Listo. Si igual te dice "sin espacio" al sacar una foto, es la app de Cámara o Chrome: Ajustes del celular → Apps → Chrome (o Cámara) → Almacenamiento → Borrar caché.','ok',10000);
+      setTimeout(()=>location.reload(),2500);
+    }catch(e){toast('Error: '+e.message,'err');}
+  },
 };
-
-// restaurar sesión
-(function(){
-  const t=localStorage.getItem('fml2_token');
-  if(!t)return;
-  S.token=t;
-  try{ S.user=JSON.parse(localStorage.getItem('fml2_user')); S.veh=JSON.parse(localStorage.getItem('fml2_veh')||'null'); }catch(e){}
-  if(S.user)App.enter();
-})();
 
 // red
 function netUI(){ $('net-dot')?.classList.toggle('off',!navigator.onLine); }
@@ -589,126 +566,52 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden){netUI();
 netUI();
 
 // ══════════════════════════════════════════════════════════════════════════
-// CÁMARA IN-APP (getUserMedia) — no usa la app de cámara del teléfono
+// CÁMARA — delega a la app de cámara nativa del teléfono. Misma foto de
+// calidad y fluidez de siempre, funciona igual en Chrome/Firefox/Safari,
+// sin cámara propia que mantener. Nunca deja al usuario colgado: el único
+// evento que esperamos es "onchange" del input (o el timeout de seguridad),
+// y el botón "Cancelar" en pantalla corta la espera en cualquier momento.
 // ══════════════════════════════════════════════════════════════════════════
 const Cam = {
-  stream:null, track:null, torchOn:false, _resolve:null, _blob:null, _maxPx:1600, _q:.82, _lastClosedAt:0,
-  _aborted:false, _fallbackFinish:null,
-  async open(hint, maxPx){
-    this._aborted=false;
+  _maxPx:1600, _q:.82, _finish:null, _watchdog:null,
+  open(hint, maxPx){
     this._maxPx=maxPx||1600;
-    $('cam-hint').textContent=hint;
-    $('cam-prev').classList.add('hidden');
-    $('cam-video').classList.remove('hidden');
-    $('cam-confirm').classList.add('hidden');
-    $('cam-controls').style.display='flex';
-    // Algunos celulares (sobre todo gama baja) no liberan la cámara al instante
-    // tras la foto anterior — darle un respiro evita que la 2da apertura quede colgada.
-    const sinceClose=Date.now()-this._lastClosedAt;
-    if(sinceClose<500)await new Promise(r=>setTimeout(r,500-sinceClose));
-    if(this._aborted)return null;
-    try{
-      this.stream=await this._getUserMediaConTimeout(8000);
-    }catch(e){
-      // sin permiso, sin soporte, o la cámara no respondió a tiempo → fallback al selector clásico
-      console.warn('camara:',e.name,e.message);
-      if(this._aborted)return null;
-      return this.fallback(`${e.name||'Error'}: ${e.message||'sin detalle'}`);
-    }
-    if(this._aborted){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;return null;}
-    $('cam-video').srcObject=this.stream;
-    this.track=this.stream.getVideoTracks()[0];
-    const caps=this.track.getCapabilities?this.track.getCapabilities():{};
-    $('cam-torch').style.visibility=caps.torch?'visible':'hidden';
-    this.torchOn=false;$('cam-torch').classList.remove('on');
-    UI.open('cam');$('cam').classList.add('on');
-    return new Promise(res=>{this._resolve=res;});
-  },
-  fallback(motivo){
-    reportarError('camara_fallback','Se usó el selector nativo — motivo: '+(motivo||'getUserMedia no disponible'));
+    toast(hint,'info',3000);
     return new Promise(res=>{
-      const inp=$('cam-fallback');
+      const inp=$('cam-input');
       let done=false;
-      const finish=v=>{if(done)return;done=true;inp.onchange=null;this._fallbackFinish=null;res(v);};
-      this._fallbackFinish=finish;
+      const finish=v=>{
+        if(done)return; done=true;
+        inp.onchange=null; clearTimeout(this._watchdog); this._finish=null;
+        res(v);
+      };
+      this._finish=finish;
       inp.onchange=async e=>{
         const f=e.target.files[0]; inp.value='';
         if(!f){finish(null);return;}
-        finish(await comprimir(f,this._maxPx,this._q));
+        try{
+          finish(await comprimir(f,this._maxPx,this._q));
+        }catch(err){
+          // Si la foto no se pudo procesar (formato raro, archivo corrupto, etc.)
+          // avisar YA en vez de esperar el watchdog — nunca dejar colgado en silencio.
+          console.warn('comprimir:',err.message);
+          reportarError('comprimir_fallo',err.message);
+          finish(null);
+        }
       };
       inp.click();
-      // Si ni el selector nativo contesta (raro, pero pasa en algunos Android) no colgar para siempre
-      setTimeout(()=>{
-        if(!done){reportarError('fallback_sin_respuesta','El selector de archivo nativo no respondió en 60s');finish(null);}
-      },60000);
+      // Watchdog de seguridad — el input es un evento simple del sistema y
+      // prácticamente nunca debería quedarse sin disparar, pero por las dudas.
+      this._watchdog=setTimeout(()=>{
+        if(!done){reportarError('camara_sin_respuesta','El selector nativo no respondió en 90s');finish(null);}
+      },90000);
     });
   },
-  _getUserMediaConTimeout(ms){
-    let timedOut=false;
-    const p=navigator.mediaDevices.getUserMedia({
-      video:{facingMode:{ideal:'environment'},width:{ideal:2560},height:{ideal:1440}}, audio:false });
-    // si el navegador contesta tarde (después del timeout, o tras cancelar) igual liberamos la cámara
-    p.then(s=>{if(timedOut||this._aborted)s.getTracks().forEach(t=>t.stop());}).catch(()=>{});
-    return Promise.race([
-      p,
-      new Promise((_,rej)=>setTimeout(()=>{timedOut=true;rej(new Error('timeout esperando la cámara'));},ms)),
-    ]);
-  },
-  // Botón "Cancelar" visible en la pantalla de espera — corta cualquier cosa
-  // que esté colgada adentro (permiso, hardware, selector nativo) y libera al usuario.
-  abort(){
-    this._aborted=true;
-    if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;this.track=null;}
-    $('cam-video').srcObject=null;
-    $('cam').classList.remove('on');
-    this._lastClosedAt=Date.now();
-    if(this._fallbackFinish){this._fallbackFinish(null);}
-    const r=this._resolve;this._resolve=null;
-    if(r)r(null);
-  },
-  shoot(){
-    haptic('med');
-    const v=$('cam-video');
-    if(!v.videoWidth){toast('La cámara todavía no está lista','warn');return;}
-    const c=$('cam-prev');
-    let w=v.videoWidth,h=v.videoHeight;
-    const max=this._maxPx;
-    if(w>max||h>max){ if(w>=h){h=Math.round(h*max/w);w=max;} else {w=Math.round(w*max/h);h=max;} }
-    c.width=w;c.height=h;
-    c.getContext('2d',{alpha:false}).drawImage(v,0,0,w,h);
-    c.classList.remove('hidden');
-    v.classList.add('hidden');
-    $('cam-controls').style.display='none';
-    $('cam-confirm').classList.remove('hidden');
-  },
-  retake(){
-    $('cam-prev').classList.add('hidden');
-    $('cam-video').classList.remove('hidden');
-    $('cam-confirm').classList.add('hidden');
-    $('cam-controls').style.display='flex';
-  },
-  accept(){
-    haptic('med');
-    $('cam-prev').toBlob(b=>{ this._blob=b; this._done(b); },'image/jpeg',this._q);
-  },
-  cancel(){ this._done(null); },
-  _done(blob){
-    if(this.stream){this.stream.getTracks().forEach(t=>t.stop());this.stream=null;this.track=null;}
-    $('cam-video').srcObject=null;
-    this._lastClosedAt=Date.now();
-    const c=$('cam-prev'); c.width=0;c.height=0; // liberar memoria
-    $('cam').classList.remove('on');
-    const r=this._resolve;this._resolve=null;
-    if(r)r(blob);
-  },
-  async torch(){
-    if(!this.track)return;
-    this.torchOn=!this.torchOn;
-    try{await this.track.applyConstraints({advanced:[{torch:this.torchOn}]});}catch(e){}
-    $('cam-torch').classList.toggle('on',this.torchOn);
-  },
+  // Botón "Cancelar" visible en pantalla — corta la espera en cualquier momento.
+  abort(){ if(this._finish)this._finish(null); },
 };
-// compresión para el fallback de <input> (mismo pipeline que v1, probado)
+// Compresión de la foto que devuelve la cámara nativa — reduce a ~200-400KB
+// antes de mandarla, así el celular no acumula fotos pesadas en ningún lado.
 function comprimir(file,maxPx,q){
   return new Promise((res,rej)=>{
     let url=URL.createObjectURL(file);
@@ -1412,6 +1315,18 @@ window.addEventListener('appinstalled',()=>{localStorage.setItem('fml2_pwa_ok','
 
 // flush inicial de pendientes al abrir
 setTimeout(()=>Queue.flush(),2500);
+
+// Restaurar sesión — va al final del script a propósito: App.enter() usa
+// Panel/Mon/Rev/Queue/Push, que están declarados más abajo en el archivo.
+// Llamarlo antes de que existan tira ReferenceError (temporal dead zone de
+// los const) y corta silenciosamente el resto de App.enter() a mitad de camino.
+(function restaurarSesion(){
+  const t=localStorage.getItem('fml2_token');
+  if(!t)return;
+  S.token=t;
+  try{ S.user=JSON.parse(localStorage.getItem('fml2_user')); S.veh=JSON.parse(localStorage.getItem('fml2_veh')||'null'); }catch(e){}
+  if(S.user)App.enter();
+})();
 </script>
 </body>
 </html>
