@@ -1090,7 +1090,18 @@ const Rev = {
         <button class="btn btn-ghost btn-sm" onclick="Rev.pedirFoto('${c.id}','tablero',this)">📸 Pedir foto tablero</button>
         <button class="btn btn-ghost btn-sm" onclick="Rev.pedirFoto('${c.id}','ticket',this)">📸 Pedir foto ticket</button>
         <button class="btn btn-ok btn-sm" onclick="Rev.aprobar('${c.id}',this)">✅ Aprobar</button>
+        <button class="btn btn-err btn-sm" onclick="Rev.eliminar('${c.id}',this)">🗑️ Eliminar</button>
       </div></div>`;
+  },
+  async eliminar(id,btn){
+    if(!confirm('¿Eliminar esta carga? Se borra el registro y sus fotos — no se puede deshacer.'))return;
+    btn.disabled=true;
+    try{
+      await api(`/api/admin/cargas/${id}`,{method:'DELETE'});
+      toast('🗑️ Carga eliminada','ok');
+      $('rev-'+id)?.remove();
+      this.load();Mon.render();
+    }catch(e){toast(e.message,'err');btn.disabled=false;}
   },
   async pedirFoto(id,tipo,btn){
     btn.disabled=true;

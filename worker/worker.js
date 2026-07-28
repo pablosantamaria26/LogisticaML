@@ -21,7 +21,7 @@ const GEMINI_MODEL = 'gemini-2.5-flash';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   'Access-Control-Max-Age': '86400',
 };
@@ -59,6 +59,8 @@ export default {
       if (p === '/api/admin/corregir' && request.method === 'POST') return handleAdminCorregir(request, env);
       if (p === '/api/admin/reprocesar' && request.method === 'POST') return handleAdminReprocesar(request, env, ctx);
       if (p === '/api/admin/revision') return handleRevision(request, env);
+      const mDelCarga = p.match(/^\/api\/admin\/cargas\/([\w.-]+)$/);
+      if (mDelCarga && request.method === 'DELETE') return handleAdminEliminarCarga(request, env, mDelCarga[1]);
       if (p === '/api/admin/contador-ahora' && request.method === 'POST') return handleContadorAhora(request, env);
       if (p === '/api/admin/weekly-ahora' && request.method === 'POST') return handleWeeklyAhora(request, env);
       if (p === '/api/admin/analisis-vehiculo' && request.method === 'POST') return handleAnalisisVehiculo(request, env);
@@ -150,6 +152,11 @@ async function fotoPut(env, key, bytes) {
 async function fotoGet(env, key) {
   if (env.FOTOS) { const o = await env.FOTOS.get(key); return o ? await o.arrayBuffer() : null; }
   return env.FLOTA_KV.get('foto:' + key, 'arrayBuffer');
+}
+async function fotoDelete(env, key) {
+  if (!key) return;
+  if (env.FOTOS) return env.FOTOS.delete(key).catch(() => { });
+  return env.FLOTA_KV.delete('foto:' + key).catch(() => { });
 }
 async function fotoFirma(env, id, tipo) {
   return (await sha256hex(`fotolink:${id}:${tipo}:${env.AUTH_PEPPER || ''}`)).slice(0, 24);
@@ -973,6 +980,16 @@ async function handleRevision(request, env) {
   const rows = await env.DB.prepare(
     "SELECT * FROM cargas WHERE validacion='revisar' ORDER BY creado DESC LIMIT 50").all();
   return json({ ok: true, cargas: rows.results.map(publicCarga) });
+}
+async function handleAdminEliminarCarga(request, env, id) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  if (!carga) return json({ error: 'Carga no encontrada' }, 404);
+  await env.DB.prepare('DELETE FROM cargas WHERE id=?').bind(id).run();
+  if (carga.foto_ticket) await fotoDelete(env, carga.foto_ticket);
+  if (carga.foto_tablero) await fotoDelete(env, carga.foto_tablero);
+  return json({ ok: true });
 }
 async function handleContadorAhora(request, env) {
   const admin = await reqAdmin(request, env);
