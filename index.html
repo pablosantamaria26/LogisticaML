@@ -32,7 +32,7 @@ body.light{--bg:#eef9f7;--s1:#ffffff;--s2:#e1f2ee;--bd:#c9e6df;--bd2:#a3d2c8;--t
 /* ══ LOGIN ═══════════════════════════════════════════════════════════════ */
 #v-login{align-items:center;justify-content:center;padding:1.25rem;overflow-y:auto}
 .login-card{background:var(--s1);border:1px solid var(--bd);border-radius:24px;padding:2rem 1.6rem;width:100%;max-width:370px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.brand{text-align:center;margin-bottom:1.6rem;isolation:isolate}
+.brand{text-align:center;margin-bottom:1.6rem}
 /* Logo original es tinta negra sobre blanco (sin transparencia real) — se adapta
    por CSS a los 2 temas sin tocar el archivo: en claro, "multiply" hace que el
    blanco se funda con el fondo de la tarjeta y solo quede la tinta negra; en
@@ -62,7 +62,7 @@ body.dark .brand-logo{filter:invert(1);mix-blend-mode:screen}
 
 /* ══ HEADER + TABS ═══════════════════════════════════════════════════════ */
 .hdr{flex-shrink:0;height:58px;background:var(--s1);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.6rem;padding:0 .9rem}
-.hdr-brand{font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:.45rem;isolation:isolate}
+.hdr-brand{font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:.45rem}
 .hdr-logo{height:28px;width:auto}
 body.light .hdr-logo{mix-blend-mode:multiply}
 body.dark .hdr-logo{filter:invert(1);mix-blend-mode:screen}
@@ -396,7 +396,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260729-121608';
+const APP_VERSION = '20260729-122218';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
