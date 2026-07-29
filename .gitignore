@@ -7,3 +7,4 @@ node_modules/
 .wrangler/
 WhatsApp Image*.jpeg
 *.jpeg
+!logo.jpeg

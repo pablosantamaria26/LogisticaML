@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0b0d10">
+<meta name="theme-color" content="#0a1a1c">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -16,12 +16,12 @@
 html,body{height:100%}
 body{position:fixed;width:100%;height:100%;overflow:hidden;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
   background:var(--bg);color:var(--tx);transition:background .3s,color .3s}
-body.dark{--bg:#0b0d10;--s1:#14171c;--s2:#1c2027;--bd:#262b33;--bd2:#39404b;--tx:#eef1f5;--mut:#8b93a1;--dim:#4a515c;
-  --acc:#ff7a1a;--acc-soft:rgba(255,122,26,.14);--ok:#34d178;--ok-soft:rgba(52,209,120,.12);
-  --warn:#fbbf24;--warn-soft:rgba(251,191,36,.12);--err:#f87171;--err-soft:rgba(248,113,113,.12);--blue:#60a5fa}
-body.light{--bg:#f2f4f8;--s1:#ffffff;--s2:#e9edf3;--bd:#dde2ea;--bd2:#c3cad6;--tx:#131720;--mut:#5f6875;--dim:#aab2bf;
-  --acc:#e56000;--acc-soft:rgba(229,96,0,.1);--ok:#0e9f57;--ok-soft:rgba(14,159,87,.1);
-  --warn:#b45309;--warn-soft:rgba(180,83,9,.1);--err:#dc2626;--err-soft:rgba(220,38,38,.09);--blue:#2563eb}
+body.dark{--bg:#0a1a1c;--s1:#102426;--s2:#173231;--bd:#20403c;--bd2:#2d544e;--tx:#eef7f5;--mut:#8fada8;--dim:#4d6d68;
+  --acc:#2dd4bf;--acc-soft:rgba(45,212,191,.16);--ok:#34d178;--ok-soft:rgba(52,209,120,.12);
+  --warn:#ff9736;--warn-soft:rgba(255,151,54,.14);--err:#f87171;--err-soft:rgba(248,113,113,.12);--blue:#60a5fa}
+body.light{--bg:#eef9f7;--s1:#ffffff;--s2:#e1f2ee;--bd:#c9e6df;--bd2:#a3d2c8;--tx:#0e2a2c;--mut:#4f7975;--dim:#a8c9c4;
+  --acc:#0d9488;--acc-soft:rgba(13,148,136,.1);--ok:#0e9f57;--ok-soft:rgba(14,159,87,.1);
+  --warn:#e8710f;--warn-soft:rgba(232,113,15,.1);--err:#dc2626;--err-soft:rgba(220,38,38,.09);--blue:#2563eb}
 
 /* ══ LAYOUT ══════════════════════════════════════════════════════════════ */
 .view{display:none;position:fixed;inset:0;flex-direction:column;padding-top:var(--sat)}
@@ -32,8 +32,15 @@ body.light{--bg:#f2f4f8;--s1:#ffffff;--s2:#e9edf3;--bd:#dde2ea;--bd2:#c3cad6;--t
 /* ══ LOGIN ═══════════════════════════════════════════════════════════════ */
 #v-login{align-items:center;justify-content:center;padding:1.25rem;overflow-y:auto}
 .login-card{background:var(--s1);border:1px solid var(--bd);border-radius:24px;padding:2rem 1.6rem;width:100%;max-width:370px;box-shadow:0 24px 60px rgba(0,0,0,.35)}
-.brand{text-align:center;margin-bottom:1.6rem}
-.brand-icon{width:70px;height:70px;border-radius:20px;background:var(--acc);display:inline-flex;align-items:center;justify-content:center;font-size:2.2rem;margin-bottom:.8rem;box-shadow:0 10px 30px var(--acc-soft)}
+.brand{text-align:center;margin-bottom:1.6rem;isolation:isolate}
+/* Logo original es tinta negra sobre blanco (sin transparencia real) — se adapta
+   por CSS a los 2 temas sin tocar el archivo: en claro, "multiply" hace que el
+   blanco se funda con el fondo de la tarjeta y solo quede la tinta negra; en
+   oscuro, se invierte primero (tinta blanca sobre negro) y "screen" hace que
+   el negro se funda con el fondo, dejando solo el trazo en blanco. */
+.brand-logo{max-height:62px;width:auto;margin-bottom:.7rem}
+body.light .brand-logo{mix-blend-mode:multiply}
+body.dark .brand-logo{filter:invert(1);mix-blend-mode:screen}
 .brand h1{font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
 .brand p{color:var(--mut);font-size:.72rem;text-transform:uppercase;letter-spacing:.15em;margin-top:.2rem}
 .fld{margin-bottom:.9rem}
@@ -55,7 +62,11 @@ body.light{--bg:#f2f4f8;--s1:#ffffff;--s2:#e9edf3;--bd:#dde2ea;--bd2:#c3cad6;--t
 
 /* ══ HEADER + TABS ═══════════════════════════════════════════════════════ */
 .hdr{flex-shrink:0;height:58px;background:var(--s1);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:.6rem;padding:0 .9rem}
-.hdr-brand{font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:.45rem}
+.hdr-brand{font-weight:800;font-size:1.05rem;display:flex;align-items:center;gap:.45rem;isolation:isolate}
+.hdr-logo{height:28px;width:auto}
+body.light .hdr-logo{mix-blend-mode:multiply}
+body.dark .hdr-logo{filter:invert(1);mix-blend-mode:screen}
+.hdr-flota{font-size:.72rem;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
 .hdr-dot{width:9px;height:9px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok)}
 .hdr-dot.off{background:var(--warn);box-shadow:0 0 8px var(--warn)}
 .hdr-veh{flex:1;display:flex;align-items:center;gap:.35rem;background:var(--s2);border:1px solid var(--bd);border-radius:20px;padding:.32rem .8rem;font-size:.8rem;color:var(--mut);min-width:0}
@@ -86,10 +97,13 @@ body.light{--bg:#f2f4f8;--s1:#ffffff;--s2:#e9edf3;--bd:#dde2ea;--bd2:#c3cad6;--t
 .empty{color:var(--mut);text-align:center;padding:1.8rem 0;font-size:.85rem}
 .bar-bg{background:var(--s2);border-radius:5px;height:7px;overflow:hidden}
 .bar-f{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--ok),var(--acc));transition:width .5s}
-.aban{border-radius:14px;padding:.8rem .95rem;margin-bottom:.7rem;display:flex;gap:.6rem;font-size:.82rem;align-items:flex-start}
-.aban b{display:block;margin-bottom:.1rem}
-.a-warn{background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn)}
-.a-err{background:var(--err-soft);border:1px solid var(--err);color:var(--err)}
+.aban{background:var(--s1);border:1px solid var(--bd);border-radius:20px;padding:.8rem .95rem;margin-bottom:.7rem;display:flex;gap:.7rem;font-size:.82rem;align-items:flex-start}
+.aban>span{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.aban b{display:block;margin-bottom:.1rem;color:var(--tx)}
+.a-warn>span{background:var(--warn-soft);color:var(--warn)}
+.a-warn b{color:var(--warn)}
+.a-err>span{background:var(--err-soft);color:var(--err)}
+.a-err b{color:var(--err)}
 
 /* ══ BOTÓN GIGANTE CARGA ═════════════════════════════════════════════════ */
 .mega{width:100%;min-height:150px;border:none;border-radius:22px;background:var(--acc);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:1.1rem;padding:1.4rem;font-family:inherit;box-shadow:0 8px 0 rgba(0,0,0,.25),0 14px 40px var(--acc-soft);transition:transform .1s,box-shadow .1s;position:relative;overflow:hidden}
@@ -141,14 +155,16 @@ body.light{--bg:#f2f4f8;--s1:#ffffff;--s2:#e9edf3;--bd:#dde2ea;--bd2:#c3cad6;--t
 .ffull{grid-column:1/-1}
 
 /* ══ TOASTS ══════════════════════════════════════════════════════════════ */
-#toasts{position:fixed;top:calc(var(--sat) + .7rem);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.45rem;width:calc(100% - 1.6rem);max-width:420px;pointer-events:none}
-.toast{padding:.8rem 1.05rem;border-radius:14px;font-size:.85rem;font-weight:600;display:flex;gap:.55rem;backdrop-filter:blur(14px);box-shadow:0 8px 24px rgba(0,0,0,.3);animation:tin .25s cubic-bezier(.16,1,.3,1)}
+#toasts{position:fixed;top:calc(var(--sat) + .7rem);left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:.5rem;width:calc(100% - 1.6rem);max-width:420px;pointer-events:none}
+.toast{background:var(--s1);border:1.5px solid var(--bd);padding:.5rem .95rem .5rem .5rem;border-radius:999px;font-size:.83rem;font-weight:600;display:flex;align-items:center;gap:.6rem;backdrop-filter:blur(14px);box-shadow:0 10px 28px rgba(0,0,0,.35);animation:tin .25s cubic-bezier(.16,1,.3,1)}
 @keyframes tin{from{opacity:0;transform:translateY(-8px)}}
 .toast.bye{opacity:0;transition:opacity .2s}
-.t-ok{background:var(--ok-soft);border:1px solid var(--ok);color:var(--ok)}
-.t-err{background:var(--err-soft);border:1px solid var(--err);color:var(--err)}
-.t-warn{background:var(--warn-soft);border:1px solid var(--warn);color:var(--warn)}
-.t-info{background:var(--acc-soft);border:1px solid var(--acc);color:var(--acc)}
+.toast .ic{width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0}
+.toast .msg{flex:1;color:var(--tx)}
+.t-ok .ic{background:var(--ok-soft);color:var(--ok)}
+.t-err .ic{background:var(--err-soft);color:var(--err)}
+.t-warn .ic{background:var(--warn-soft);color:var(--warn)}
+.t-info .ic{background:var(--acc-soft);color:var(--acc)}
 
 /* ══ ADMIN ═══════════════════════════════════════════════════════════════ */
 .mnav{display:flex;align-items:center;gap:.4rem;background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:.45rem .6rem;margin-bottom:.9rem}
@@ -181,7 +197,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 <div id="v-login" class="view on">
   <div class="login-card">
     <div class="brand">
-      <div class="brand-icon">🚛</div>
+      <img src="logo.jpeg" alt="Mercado Limpio Distribuidora" class="brand-logo">
       <h1>Flota ML</h1><p>Control de flota</p>
     </div>
     <div class="fld"><label>Usuario</label>
@@ -198,7 +214,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 <!-- ══ APP ══ -->
 <div id="v-app" class="view">
   <header class="hdr">
-    <div class="hdr-brand"><div class="hdr-dot" id="net-dot"></div>Flota ML</div>
+    <div class="hdr-brand"><div class="hdr-dot" id="net-dot"></div><img src="logo.jpeg" alt="Mercado Limpio" class="hdr-logo"><span class="hdr-flota">Flota</span></div>
     <div class="hdr-veh"><span id="h-vemoji">🚛</span><b id="h-vname">—</b></div>
     <button class="icon-btn" onclick="App.liberarEspacio()" title="Liberar espacio">🧹</button>
     <button class="icon-btn" id="btn-theme" title="Tema">◐</button>
@@ -365,6 +381,12 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   <div id="analisis-body"></div>
 </div></div>
 
+<!-- ══ MODAL EDITAR VEHÍCULO (admin) ══ -->
+<div class="mbk" id="m-veh"><div class="modal" style="max-width:440px">
+  <div class="mhdr"><b>✏️ Editar vehículo</b><button class="mx" onclick="UI.close('m-veh')">✕</button></div>
+  <div id="veh-body"></div>
+</div></div>
+
 <script>
 'use strict';
 // ══════════════════════════════════════════════════════════════════════════
@@ -374,7 +396,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260729-115807';
+const APP_VERSION = '20260729-121608';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -397,7 +419,7 @@ const uuid = () => crypto.randomUUID ? crypto.randomUUID() : 'x'+Date.now()+Math
 function toast(msg, tipo='info', ms=4200){
   const el=document.createElement('div');
   el.className='toast t-'+tipo;
-  el.innerHTML=`<span>${{ok:'✅',err:'❌',warn:'⚠️',info:'ℹ️'}[tipo]}</span><span style="flex:1">${msg}</span>`;
+  el.innerHTML=`<span class="ic">${{ok:'✅',err:'❌',warn:'⚠️',info:'ℹ️'}[tipo]}</span><span class="msg">${msg}</span>`;
   $('toasts').appendChild(el);
   setTimeout(()=>{el.classList.add('bye');setTimeout(()=>el.remove(),220)},ms);
 }
@@ -1311,7 +1333,37 @@ const Eq = {
         <input type="number" id="km-${v.id}" value="${v.km_actual||0}" inputmode="numeric"
           style="width:110px;padding:.5rem;background:var(--s2);border:1px solid var(--bd);border-radius:10px;color:var(--tx);font-family:inherit;font-size:.82rem;text-align:right">
         <button class="btn btn-ghost btn-sm" onclick="Eq.corregirKm('${v.id}',this)">💾 Corregir KM</button>
+        <button class="btn btn-ghost btn-sm" onclick="Eq.editarVehiculo('${v.id}')">✏️ Editar</button>
       </div></div>`).join('');
+  },
+  editarVehiculo(vid){
+    const v=(S.vehiculos||[]).find(x=>x.id===vid);
+    if(!v)return;
+    $('veh-body').innerHTML=`
+      <div class="fgrid2">
+        <div class="fld ffull"><label>Nombre</label><input id="ev-nombre" type="text" value="${v.nombre.replace(/"/g,'&quot;')}"></div>
+        <div class="fld"><label>Ícono</label><input id="ev-emoji" type="text" value="${v.emoji}" maxlength="4"></div>
+        <div class="fld"><label>Tanque (L)</label><input id="ev-tanque" type="number" value="${v.tanque_litros||60}" inputmode="numeric"></div>
+        <div class="fld ffull"><label>Service cada (km)</label><input id="ev-service" type="number" value="${v.service_cada_km||10000}" inputmode="numeric"></div>
+      </div>
+      <button class="btn btn-acc" id="ev-btn" onclick="Eq.guardarVehiculo('${vid}')">💾 Guardar cambios</button>
+      <p class="muted" style="margin-top:.6rem;font-size:.72rem">El KM se corrige aparte, con el campo de KM de la tarjeta.</p>`;
+    UI.open('m-veh');
+  },
+  async guardarVehiculo(vid){
+    const nombre=$('ev-nombre').value.trim();
+    if(!nombre){toast('Completá el nombre','warn');return;}
+    UI.setBtn('ev-btn',true,'Guardando…');
+    try{
+      await api(`/api/admin/vehiculos/${vid}/editar`,{method:'POST',body:JSON.stringify({
+        nombre,emoji:$('ev-emoji').value.trim()||'🚗',
+        tanqueLitros:parseInt($('ev-tanque').value)||60,
+        serviceCadaKm:parseInt($('ev-service').value)||10000,
+      })});
+      toast('✅ Vehículo actualizado','ok');
+      UI.close('m-veh');
+      await App.refreshMe();this.renderVehiculos();Mon.render();
+    }catch(e){toast(e.message,'err');UI.setBtn('ev-btn',false,'💾 Guardar cambios');}
   },
   async corregirKm(vid,btn){
     const km=parseInt($('km-'+vid).value);

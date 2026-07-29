@@ -55,6 +55,8 @@ export default {
       if (p === '/api/admin/vehiculos' && request.method === 'POST') return handleAdminCrearVehiculo(request, env);
       const mSetKm = p.match(/^\/api\/admin\/vehiculos\/([\w.-]+)\/km$/);
       if (mSetKm && request.method === 'POST') return handleAdminSetKm(request, env, mSetKm[1]);
+      const mEditVeh = p.match(/^\/api\/admin\/vehiculos\/([\w.-]+)\/editar$/);
+      if (mEditVeh && request.method === 'POST') return handleAdminEditarVehiculo(request, env, mEditVeh[1]);
       if (p === '/api/admin/reset-pin' && request.method === 'POST') return handleAdminResetPin(request, env);
       if (p === '/api/admin/corregir' && request.method === 'POST') return handleAdminCorregir(request, env);
       if (p === '/api/admin/reprocesar' && request.method === 'POST') return handleAdminReprocesar(request, env, ctx);
@@ -776,6 +778,22 @@ async function handleAdminCrearVehiculo(request, env) {
     Math.round(b.tanqueLitros) || 60, Math.round(b.kmActual) || 0, Math.round(b.serviceCadaKm) || 10000,
   ).run();
   return json({ ok: true, id });
+}
+async function handleAdminEditarVehiculo(request, env, vehiculoId) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  const b = await request.json().catch(() => ({}));
+  const nombre = (b.nombre || '').trim();
+  if (!nombre) return json({ error: 'Falta el nombre' }, 400);
+  const r = await env.DB.prepare(`UPDATE vehiculos SET nombre=?, emoji=?, descripcion=?, tanque_litros=?, service_cada_km=? WHERE id=?`)
+    .bind(nombre, (b.emoji || '🚗').slice(0, 4), b.descripcion || '',
+      Math.round(b.tanqueLitros) || 60, Math.round(b.serviceCadaKm) || 10000, vehiculoId).run();
+  if (!r.meta.changes) return json({ error: 'Vehículo no encontrado' }, 404);
+  // El intervalo de service pudo cambiar — limpiar avisos de mantenimiento ya
+  // enviados para que se recalculen contra el nuevo umbral en vez de quedar
+  // silenciados por avisos viejos basados en el intervalo anterior.
+  await env.DB.prepare("DELETE FROM alertas_enviadas WHERE clave LIKE ?").bind(`maint:${vehiculoId}:%`).run();
+  return json({ ok: true });
 }
 async function handleAdminSetKm(request, env, vehiculoId) {
   const admin = await reqAdmin(request, env);
