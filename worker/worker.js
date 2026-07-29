@@ -439,7 +439,10 @@ async function handleNuevaCarga(request, env, ctx) {
     try { await checkMantenimiento(env, veh); } catch (e) { console.error('maint:', e.message); }
     if (validacion === 'revisar') {
       try {
-        await pushToAdmins(env, {
+        await pushToAdmins(env, ocrErr ? {
+          title: '❌ Falló la IA — revisar ya', tag: 'revision',
+          body: `${veh.emoji} ${veh.nombre} — ${user.nombre}. ${ocrErr}`,
+        } : {
           title: '🔍 Carga para revisar', tag: 'revision',
           body: `${veh.emoji} ${veh.nombre} — ${user.nombre}. Motivos: ${w.slice(0, 3).join(', ')}`,
         });

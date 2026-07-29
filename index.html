@@ -72,6 +72,11 @@ body.dark .hdr-logo{filter:invert(1);mix-blend-mode:screen}
 .hdr-veh{flex:1;display:flex;align-items:center;gap:.35rem;background:var(--s2);border:1px solid var(--bd);border-radius:20px;padding:.32rem .8rem;font-size:.8rem;color:var(--mut);min-width:0}
 .hdr-veh b{color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .icon-btn{width:42px;height:42px;border-radius:12px;border:1.5px solid var(--bd);background:var(--s1);color:var(--mut);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+/* Variante con etiqueta visible — un ícono solo (con tooltip) no sirve en el
+   celular, porque el "title" no se ve nunca con un toque. Si a un chofer le
+   aparece "sin espacio" en Android, tiene que poder reconocer a simple vista
+   cuál botón es "el de liberar espacio", sin tener que probar a ciegas. */
+.icon-btn.wide{width:auto;padding:0 .7rem;gap:.35rem;font-size:.78rem;font-weight:700;white-space:nowrap}
 .tabs{flex-shrink:0;display:flex;background:var(--s1);border-bottom:1px solid var(--bd)}
 .tab{flex:1;padding:.55rem .3rem .6rem;border:none;background:none;color:var(--dim);font-family:inherit;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:.15rem;border-bottom:2.5px solid transparent;min-height:54px}
 .tab span{font-size:1.3rem;line-height:1}
@@ -216,7 +221,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
   <header class="hdr">
     <div class="hdr-brand"><div class="hdr-dot" id="net-dot"></div><img src="logo.jpeg" alt="Mercado Limpio" class="hdr-logo"><span class="hdr-flota">Flota</span></div>
     <div class="hdr-veh"><span id="h-vemoji">🚛</span><b id="h-vname">—</b></div>
-    <button class="icon-btn" onclick="App.liberarEspacio()" title="Liberar espacio">🧹</button>
+    <button class="icon-btn wide" onclick="App.liberarEspacio()" title="Si el celular dice 'sin espacio' al sacar una foto, tocá acá">🧹 Espacio</button>
     <button class="icon-btn" id="btn-theme" title="Tema">◐</button>
     <button class="icon-btn" onclick="App.logoutAsk()" title="Salir">⏻</button>
   </header>
@@ -396,7 +401,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260729-122218';
+const APP_VERSION = '20260729-123632';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -1187,10 +1192,12 @@ const Rev = {
   card(c){
     const comp=(c.punto_venta&&c.numero_comprobante)?`${c.punto_venta}-${c.numero_comprobante}`:(c.numero_comprobante||'—');
     const chips=(c.warnings||[]).map(w=>`<span class="chip c-warn">${W_LABELS[w]||w}</span>`).join('');
+    let detalle={};try{detalle=JSON.parse(c.validacion_detalle||'{}');}catch(e){}
     return `<div class="card rev-card" id="rev-${c.id}">
       <div class="row"><b>${fmtF(c.fecha)} · ${c.vehiculo_id} · ${c.usuario_nombre||'—'}</b><b style="color:var(--acc)">${fmt$0(c.total)}</b></div>
       <div class="muted" style="font-size:.76rem;margin-top:.25rem">N° ${comp} · ${c.emisor_razon_social||'—'} · ${(c.litros||0).toFixed(1)}L${c.km?' · '+fmtN(c.km)+'km':''}</div>
       <div class="warnchips">${chips}</div>
+      ${detalle.ocrErr?`<div class="aban a-err" style="margin-top:.4rem"><span>❌</span><div><b>Falló la lectura con IA</b>${detalle.ocrErr}</div></div>`:''}
       ${c.foto_pendiente?`<div class="chip c-acc" style="margin-top:.4rem">⏳ Esperando que reenvíen la foto del ${c.foto_pendiente}</div>`:''}
       ${c.foto_ticket?`<img loading="lazy" src="${API}/api/cargas/${c.id}/foto/ticket?t=${S.token}" alt="ticket" onclick="Rev.foto('${c.id}','ticket')">`:''}
       <div class="rowbtns">
