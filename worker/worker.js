@@ -853,20 +853,38 @@ async function handleAdminReprocesar(request, env, ctx) {
   const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
   if (!carga?.foto_ticket) return json({ error: 'Carga sin foto para reprocesar' }, 404);
   const veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(carga.vehiculo_id).first();
-  const bytes = await fotoGet(env, carga.foto_ticket);
-  if (!bytes) return json({ error: 'Foto no encontrada en storage' }, 404);
-  const b64 = bytesToB64(bytes);
-  const t = await geminiTicket(b64, env);
-  const m = t.montos || {}, it = (t.items && t.items[0]) || {};
+  const ticketBytes = await fotoGet(env, carga.foto_ticket);
+  if (!ticketBytes) return json({ error: 'Foto de ticket no encontrada en storage' }, 404);
+  const tB64 = bytesToB64(ticketBytes);
+  // Reprocesa TAMBIÉN el tablero (si hay foto guardada) — antes esto solo
+  // rehacía el ticket y dejaba el KM tal cual, aunque hubiera fallado antes
+  // por el mismo motivo (ej. corte de la API de Gemini). Un solo botón para
+  // resolver los dos, sin pedirle nada de nuevo al chofer.
+  const kBytes = carga.foto_tablero ? await fotoGet(env, carga.foto_tablero) : null;
+  const kB64 = kBytes ? bytesToB64(kBytes) : null;
 
-  // Recalcular warnings: los de ticket se rehacen, los de km se conservan tal cual estaban
-  let warnings = [], notas = [];
-  try { const d = JSON.parse(carga.validacion_detalle || '{}'); warnings = d.warnings || []; notas = d.notas || []; } catch (e) { }
-  const kmWarnsPrevios = warnings.filter(w => KM_WARN_KEYS.includes(w));
+  let t = null, kmData = null, ocrErr = null;
+  const [tRes, kRes] = await Promise.allSettled([
+    geminiTicket(tB64, env),
+    kB64 ? geminiOdometro(kB64, env) : Promise.resolve(null),
+  ]);
+  if (tRes.status === 'fulfilled') t = tRes.value; else ocrErr = tRes.reason?.message;
+  if (kRes.status === 'fulfilled' && kRes.value) kmData = kRes.value;
+  else if (kRes.status === 'rejected' && !ocrErr) ocrErr = kRes.reason?.message;
+  if (!t) return json({ error: ocrErr || 'Gemini no devolvió datos del ticket' }, 502);
+
+  const m = t.montos || {}, it = (t.items && t.items[0]) || {};
+  // Si la relectura del odómetro vuelve a fallar, no perder un KM que ya
+  // estaba bien leído de antes — solo se pisa si esta vez sí vino un valor.
+  const km = kmData?.km > 0 ? Math.round(kmData.km) : (carga.km ?? null);
+  const kmConfianza = kmData?.km > 0 ? (kmData.confianza ?? null) : (carga.km_confianza ?? null);
+
+  const notas = [];
+  if (Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
   const ticketWarns = calcularWarningsTicket(t, veh);
   if (await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
-  notas = []; if (Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
-  const nuevosWarnings = [...kmWarnsPrevios, ...ticketWarns];
+  const kmWarns = calcularWarningsKm(km, { confianza: kmConfianza }, !!carga.foto_tablero, veh);
+  const nuevosWarnings = [...ticketWarns, ...kmWarns];
   const validacion = nuevosWarnings.length ? 'revisar' : 'ok';
 
   await env.DB.prepare(`UPDATE cargas SET
@@ -874,6 +892,7 @@ async function handleAdminReprocesar(request, env, ctx) {
     emisor_razon_social=?,emisor_cuit=?,emisor_domicilio=?,emisor_localidad=?,emisor_iibb=?,emisor_condicion_iva=?,
     receptor_nombre=?,receptor_cuit=?,producto=?,litros=?,precio_unitario=?,neto_gravado=?,iva_alicuota=?,iva=?,
     otros_tributos=?,percepciones=?,exento=?,no_gravado=?,total=?,condicion_pago=?,confianza=?,
+    km=?,km_confianza=?,
     validacion=?,validacion_detalle=?,original_json=?,corregido_por=?,corregido_en=datetime('now')
     WHERE id=?`).bind(
     t.fecha ?? null, t.hora?.slice(0, 8) ?? null, t.tipo_comprobante ?? null, t.codigo_comprobante ?? null,
@@ -883,8 +902,14 @@ async function handleAdminReprocesar(request, env, ctx) {
     it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null, m.neto_gravado ?? null,
     m.iva_alicuota ?? null, m.iva ?? null, m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null,
     m.no_gravado ?? null, m.total ?? null, t.condicion_pago ?? null, t.confianza ?? null,
-    validacion, JSON.stringify({ warnings: nuevosWarnings, notas }), JSON.stringify(t), 'reproceso:' + admin.username, id,
+    km, kmConfianza,
+    validacion, JSON.stringify({ warnings: nuevosWarnings, notas, ocrErr }), JSON.stringify(t), 'reproceso:' + admin.username, id,
   ).run();
+
+  if (km && km > (veh.km_actual || 0)) {
+    await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, carga.vehiculo_id).run();
+  }
+
   const updated = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
   return json({ ok: true, carga: publicCarga(updated) });
 }
