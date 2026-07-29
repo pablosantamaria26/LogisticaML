@@ -17,7 +17,13 @@ const TZ = 'America/Argentina/Buenos_Aires';
 const FROM_NAME = 'Flota ML';
 const VAPID_SUBJECT = 'mailto:santamariapablodaniel@gmail.com';
 const SESSION_DAYS = 180;
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// flash-lite: mismo enfoque (visión + JSON estructurado), bastante más barato
+// por llamada que flash — para el volumen de esta flota (unas 50-150 cargas/mes)
+// baja el costo real sin cambiar la lógica de extracción. Si en el futuro la
+// precisión del ticket fiscal empeora notablemente, priorizar volver a
+// 'gemini-2.5-flash' para geminiTicket (el odómetro es una lectura mucho más
+// simple y tolera mejor un modelo más chico).
+const GEMINI_MODEL = 'gemini-2.5-flash-lite';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
