@@ -18,6 +18,12 @@ self.addEventListener('fetch', e => {
   // API y externos: siempre red
   if (url.hostname.includes('workers.dev')) return;
   if (url.origin !== self.location.origin) return;
+  // version.json: siempre red, nunca pasa por Cache Storage. El chequeo de
+  // actualización le agrega ?t=timestamp para evitar el caché HTTP, pero eso
+  // haría que el cache-first de abajo guarde una entrada NUEVA por cada
+  // chequeo (cada pocos minutos, para siempre) sin limpiarlas nunca — un
+  // leak de storage lento. Se deja pasar directo, sin interceptar.
+  if (url.pathname.endsWith('/version.json')) return;
 
   // HTML: SIEMPRE red, ignorando el caché HTTP del navegador (GitHub Pages manda
   // Cache-Control: max-age=600 — sin esto, un fix recién publicado puede tardar

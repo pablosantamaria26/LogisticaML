@@ -230,7 +230,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
           <span class="ic">⛽</span>
           <span><h2>Registrar carga</h2><p>2 fotos: ticket y tablero.<br>El resto es automático.</p></span>
         </button>
-        <p class="hint" style="margin-top:.9rem">📸 Se abre la cámara del teléfono — sacá la foto y confirmala normal, como cualquier foto.</p>
+        <p class="hint" style="margin-top:.9rem">📸 Te va a pedir 2 fotos, una por vez: elegí "Cámara" en el menú que aparece cada vez.</p>
       </div>
       <div id="cg-proc" class="hidden">
         <div class="steps">
@@ -238,7 +238,8 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
           <div class="step" id="stp-2"><div class="dot">2</div><div style="flex:1"><b>Foto del tablero</b><small id="stp-2-s">—</small></div><span id="stp-2-i">🛣️</span></div>
           <div class="step" id="stp-3"><div class="dot">3</div><div style="flex:1"><b>Procesando con IA</b><small id="stp-3-s">—</small></div><span id="stp-3-i">🤖</span></div>
         </div>
-        <button class="btn btn-ghost" style="margin-top:.9rem" onclick="Carga.cancelarFlujo()">✕ Cancelar</button>
+        <button class="btn btn-acc hidden" id="cg-btn-tablero" style="margin-top:.9rem" onclick="Carga.sacarTablero()">🛣️ Sacar foto del tablero</button>
+        <button class="btn btn-ghost" style="margin-top:.6rem" onclick="Carga.cancelarFlujo()">✕ Cancelar</button>
       </div>
       <div id="cg-result" class="hidden"></div>
       <div id="cg-pend"></div>
@@ -341,7 +342,10 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 </div>
 
 <!-- Cámara: delega a la app de cámara nativa del teléfono (input file + capture) -->
-<input type="file" id="cam-input" accept="image/*" capture="environment" class="hidden">
+<!-- Sin "capture": deja que el navegador muestre su selector estándar (Cámara/
+     Archivos/Galería) — es el mecanismo más compatible que existe en la web,
+     soportado por absolutamente todos los navegadores, incluido Firefox. -->
+<input type="file" id="cam-input" accept="image/*" class="hidden">
 
 <!-- ══ MODAL CORREGIR (admin) ══ -->
 <div class="mbk" id="m-fix"><div class="modal">
@@ -368,6 +372,9 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 // ══════════════════════════════════════════════════════════════════════════
 const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
+// Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
+// permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
+const APP_VERSION = '20260729-115807';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -574,9 +581,14 @@ netUI();
 // ══════════════════════════════════════════════════════════════════════════
 const Cam = {
   _maxPx:1600, _q:.82, _finish:null, _watchdog:null,
+  // IMPORTANTE: open() debe llamarse SIEMPRE desde dentro de un handler de tap
+  // del usuario (nunca encadenado después de un await) — algunos navegadores
+  // exigen un gesto genuino y directo para abrir el selector de archivos; si
+  // no lo tienen, pueden ignorar el .click() en silencio. Por eso el flujo de
+  // 2 fotos pide un toque explícito para cada una en vez de encadenarlas solas.
   open(hint, maxPx){
     this._maxPx=maxPx||1600;
-    toast(hint,'info',3000);
+    toast(hint+' — elegí "Cámara" en el menú que aparece','info',4000);
     return new Promise(res=>{
       const inp=$('cam-input');
       let done=false;
@@ -600,32 +612,77 @@ const Cam = {
         }
       };
       inp.click();
-      // Watchdog de seguridad — el input es un evento simple del sistema y
-      // prácticamente nunca debería quedarse sin disparar, pero por las dudas.
+      // Watchdog de seguridad — el selector ahora muestra un menú (Cámara/
+      // Archivos/Galería) y puede tardar más que antes; igual nunca colgar.
       this._watchdog=setTimeout(()=>{
-        if(!done){reportarError('camara_sin_respuesta','El selector nativo no respondió en 90s');finish(null);}
-      },90000);
+        if(!done){reportarError('camara_sin_respuesta','El selector nativo no respondió en 120s');finish(null);}
+      },120000);
     });
   },
   // Botón "Cancelar" visible en pantalla — corta la espera en cualquier momento.
   abort(){ if(this._finish)this._finish(null); },
 };
-// Compresión de la foto que devuelve la cámara nativa — reduce a ~200-400KB
-// antes de mandarla, así el celular no acumula fotos pesadas en ningún lado.
+// ══════════════════════════════════════════════════════════════════════════
+// COMPRESIÓN — reduce la foto a ~200-400KB antes de mandarla. Fotos de cámaras
+// modernas (12-48MP) pueden saturar la memoria de un celular de gama baja si
+// se decodifican a resolución completa antes de escalar — por eso el camino
+// preferido es createImageBitmap con resize (el navegador puede decodificar
+// ya en tamaño chico), con un respaldo clásico si no está disponible, y un
+// timeout general para que esto NUNCA quede colgado pase lo que pase adentro.
+// ══════════════════════════════════════════════════════════════════════════
 function comprimir(file,maxPx,q){
-  return new Promise((res,rej)=>{
-    let url=URL.createObjectURL(file);
-    const img=new Image();
-    img.onerror=()=>{URL.revokeObjectURL(url);rej(new Error('No se pudo leer la imagen'));};
-    img.onload=()=>{
-      let w=img.naturalWidth,h=img.naturalHeight;
-      if(w>maxPx||h>maxPx){ if(w>=h){h=Math.round(h*maxPx/w);w=maxPx;} else {w=Math.round(w*maxPx/h);h=maxPx;} }
-      const c=document.createElement('canvas');c.width=w;c.height=h;
-      const ctx=c.getContext('2d',{alpha:false});ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
-      URL.revokeObjectURL(url);img.src='';
-      c.toBlob(b=>{c.width=0;c.height=0;res(b);},'image/jpeg',q);
+  return new Promise((resolve,reject)=>{
+    let done=false;
+    const finish=(fn,val)=>{ if(done)return; done=true; clearTimeout(watchdog); fn(val); };
+    const watchdog=setTimeout(()=>finish(reject,new Error('timeout procesando la imagen')),20000);
+
+    const viaCanvasClasico=()=>{
+      let url;
+      try{ url=URL.createObjectURL(file); }catch(e){ finish(reject,new Error('archivo inválido')); return; }
+      const img=new Image();
+      img.onerror=()=>{ URL.revokeObjectURL(url); finish(reject,new Error('no se pudo leer la imagen')); };
+      img.onload=()=>{
+        try{
+          let w=img.naturalWidth,h=img.naturalHeight;
+          if(!w||!h){ URL.revokeObjectURL(url); finish(reject,new Error('imagen sin dimensiones')); return; }
+          if(w>maxPx||h>maxPx){ if(w>=h){h=Math.round(h*maxPx/w);w=maxPx;} else {w=Math.round(w*maxPx/h);h=maxPx;} }
+          const c=document.createElement('canvas');c.width=w;c.height=h;
+          const ctx=c.getContext('2d',{alpha:false});
+          if(!ctx){ URL.revokeObjectURL(url); finish(reject,new Error('no se pudo procesar la imagen')); return; }
+          ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);
+          URL.revokeObjectURL(url);img.src='';
+          c.toBlob(b=>{
+            c.width=0;c.height=0;
+            if(!b){ finish(reject,new Error('no se pudo comprimir la imagen')); return; }
+            finish(resolve,b);
+          },'image/jpeg',q);
+        }catch(e){ URL.revokeObjectURL(url); finish(reject,e); }
+      };
+      img.src=url;
     };
-    img.src=url;
+
+    // Camino preferido: decodifica ya escalada, evita picos de memoria en
+    // fotos grandes en celulares de gama baja.
+    if(typeof createImageBitmap==='function'){
+      createImageBitmap(file,{resizeWidth:maxPx,resizeQuality:'medium'})
+        .then(bitmap=>{
+          try{
+            const c=document.createElement('canvas');c.width=bitmap.width;c.height=bitmap.height;
+            const ctx=c.getContext('2d',{alpha:false});
+            if(!ctx){ bitmap.close(); viaCanvasClasico(); return; }
+            ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(bitmap,0,0);
+            bitmap.close();
+            c.toBlob(b=>{
+              c.width=0;c.height=0;
+              if(!b){ finish(reject,new Error('no se pudo comprimir la imagen')); return; }
+              finish(resolve,b);
+            },'image/jpeg',q);
+          }catch(e){ viaCanvasClasico(); }
+        })
+        .catch(()=>viaCanvasClasico());
+    }else{
+      viaCanvasClasico();
+    }
   });
 }
 const blobToDataURL=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
@@ -634,13 +691,16 @@ const blobToDataURL=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload
 // FLUJO DE CARGA — 2 fotos → cola local → servidor procesa todo
 // ══════════════════════════════════════════════════════════════════════════
 const Carga = {
-  activa:false,
+  activa:false, _ticket:null,
+  // Paso 1: se llama directo desde el tap en "Registrar carga" — gesto
+  // genuino del usuario, garantiza que el selector se abra siempre.
   async start(){
     if(this.activa)return;
     if(!S.veh){toast(S.user.rol==='admin'?'Asigná un vehículo a tu perfil en Equipo antes de cargar':'No tenés vehículo asignado — avisale al admin','warn',6000);return;}
-    this.activa=true; haptic('heavy');
+    this.activa=true; this._ticket=null; haptic('heavy');
     $('cg-idle').classList.add('hidden');
     $('cg-result').classList.add('hidden');$('cg-result').innerHTML='';
+    $('cg-btn-tablero').classList.add('hidden');
     $('cg-proc').classList.remove('hidden');
     this.step(1,'act','Sacando foto…');this.step(2,'','—');this.step(3,'','—');
     try{
@@ -651,35 +711,58 @@ const Carga = {
         this.reset();return;
       }
       this.step(1,'ok','Foto lista ✓');
-      this.step(2,'act','Sacando foto…');
+      this._ticket=ticket;
+      // El paso 2 (tablero) NO se dispara solo: pedimos un toque nuevo y
+      // directo del usuario para abrir el selector una segunda vez — así
+      // el gesto siempre es genuino, sin depender de que el navegador
+      // "recuerde" el permiso después de varios pasos async de por medio.
+      this.step(2,'','Tocá el botón de abajo 👇');
+      $('cg-btn-tablero').classList.remove('hidden');
+    }catch(e){
+      console.error(e);
+      toast('Error: '+e.message,'err');
+      reportarError('excepcion_carga_ticket',e.message);
+      this.reset(1500);
+    }
+  },
+  // Paso 2: se llama directo desde el tap en "Sacar foto del tablero".
+  async sacarTablero(){
+    $('cg-btn-tablero').classList.add('hidden');
+    haptic('med');
+    this.step(2,'act','Sacando foto…');
+    try{
       const tablero=await Cam.open('🛣️ Enfocá el odómetro (los KM totales)',1280);
       if(!tablero){
         this.step(2,'err','Sin foto del tablero — la carga sigue igual');
         reportarError('sin_foto_tablero','Cam.open devolvió null en la foto del tablero');
-      }
-      else this.step(2,'ok','Foto lista ✓');
-      // Guardar en cola local ANTES de intentar enviar (sobrevive sin señal y cierres)
-      const item={id:uuid(),vehiculoId:S.veh?.id||null,ticket,tablero:tablero||null,creada:new Date().toISOString()};
-      await IDB.put('pendientes',item);
-      Queue.updateBadge();
-      this.step(3,'act','Enviando y leyendo con IA…',true);
-      const r=await Queue.enviar(item);
-      if(r==='offline'){
-        this.step(3,'err','Sin señal — queda guardada y se envía sola');
-        toast('📴 Carga guardada. Se envía automáticamente cuando haya señal.','warn',6000);
-        this.reset(4000);
-      }else if(r&&r.ok){
-        this.step(3,'ok','Procesada ✓');
-        this.showResult(r.carga);
       }else{
-        this.step(3,'err','Error al procesar — se reintenta solo');
-        this.reset(4000);
+        this.step(2,'ok','Foto lista ✓');
       }
+      await this._finalizar(this._ticket,tablero);
     }catch(e){
       console.error(e);
       toast('Error: '+e.message,'err');
-      reportarError('excepcion_carga',e.message);
+      reportarError('excepcion_carga_tablero',e.message);
       this.reset(1500);
+    }
+  },
+  async _finalizar(ticket,tablero){
+    // Guardar en cola local ANTES de intentar enviar (sobrevive sin señal y cierres)
+    const item={id:uuid(),vehiculoId:S.veh?.id||null,ticket,tablero:tablero||null,creada:new Date().toISOString()};
+    await IDB.put('pendientes',item);
+    Queue.updateBadge();
+    this.step(3,'act','Enviando y leyendo con IA…',true);
+    const r=await Queue.enviar(item);
+    if(r==='offline'){
+      this.step(3,'err','Sin señal — queda guardada y se envía sola');
+      toast('📴 Carga guardada. Se envía automáticamente cuando haya señal.','warn',6000);
+      this.reset(4000);
+    }else if(r&&r.ok){
+      this.step(3,'ok','Procesada ✓');
+      this.showResult(r.carga);
+    }else{
+      this.step(3,'err','Error al procesar — se reintenta solo');
+      this.reset(4000);
     }
   },
   step(n,estado,txt,spin){
@@ -720,7 +803,8 @@ const Carga = {
   },
   reset(delay){
     const go=()=>{
-      this.activa=false;
+      this.activa=false; this._ticket=null;
+      $('cg-btn-tablero').classList.add('hidden');
       $('cg-proc').classList.add('hidden');
       $('cg-result').classList.add('hidden');
       $('cg-idle').classList.remove('hidden');
@@ -898,12 +982,15 @@ const Serv = {
     $('foto-img').src=`${API}/api/servicios/${id}/foto?t=${S.token}`;
     UI.open('m-foto');
   },
+  _procesando:false,
   async startFoto(){
     if(!S.veh){toast(S.user.rol==='admin'?'Asigná un vehículo a tu perfil en Equipo antes de cargar':'No tenés vehículo asignado — avisale al admin','warn',6000);return;}
     haptic('heavy');
+    this._procesando=true;
     $('sv-result').classList.add('hidden');$('sv-result').innerHTML='';
     const foto=await Cam.open('📇 Encuadrá la tarjeta de service completa',1600);
     if(!foto){
+      this._procesando=false;
       toast('No se pudo tomar la foto — revisá el permiso de cámara e intentá de nuevo','warn',7000);
       reportarError('sin_foto_servicio','Cam.open devolvió null en la foto de service');
       return;
@@ -918,6 +1005,7 @@ const Serv = {
       reportarError('excepcion_servicio_foto',e.message);
       $('sv-proc').classList.add('hidden');
     }
+    this._procesando=false;
   },
   cancelarFoto(){
     haptic('med');
@@ -1338,6 +1426,40 @@ setTimeout(()=>Queue.flush(),2500);
   try{ S.user=JSON.parse(localStorage.getItem('fml2_user')); S.veh=JSON.parse(localStorage.getItem('fml2_veh')||'null'); }catch(e){}
   if(S.user)App.enter();
 })();
+
+// ══════════════════════════════════════════════════════════════════════════
+// ACTUALIZACIÓN GARANTIZADA — si Android deja la pestaña "pausada" en vez de
+// cerrarla, reabrirla NO vuelve a pedir el archivo por red: sigue el JS viejo
+// en memoria, y ningún Service Worker puede hacer nada al respecto. Por eso
+// esto chequea la versión activamente (no depende de que el navegador decida
+// refrescar solo) al abrir, al volver de segundo plano, y cada pocos minutos.
+// ══════════════════════════════════════════════════════════════════════════
+async function chequearActualizacion(){
+  try{
+    const r=await fetch('/LogisticaML/version.json?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d.v && d.v!==APP_VERSION)aplicarActualizacion();
+  }catch(e){ /* sin señal — no hacer nada, se reintenta en el próximo chequeo */ }
+}
+function aplicarActualizacion(){
+  // No cortar una foto en curso — reintentar en breve en vez de recargar a mitad de camino
+  if(Carga.activa || Serv._procesando){ setTimeout(chequearActualizacion,5000); return; }
+  // Freno de seguridad: si algo quedó mal versionado y esto entrara en loop,
+  // no recargar sin parar — avisar y dejar que el próximo chequeo (en minutos) reintente.
+  const key='fml2_reload_guard';
+  let g; try{ g=JSON.parse(sessionStorage.getItem(key)||'{}'); }catch(e){ g={}; }
+  const ahora=Date.now();
+  if(!g.ts || ahora-g.ts>60000) g={ts:ahora,n:0};
+  g.n=(g.n||0)+1;
+  sessionStorage.setItem(key,JSON.stringify(g));
+  if(g.n>4){ console.warn('Actualización: demasiados intentos de recarga, se pausa por esta vez.'); return; }
+  location.reload();
+}
+setTimeout(chequearActualizacion,3000);
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)chequearActualizacion(); });
+window.addEventListener('focus',()=>chequearActualizacion());
+setInterval(chequearActualizacion,3*60*1000);
 </script>
 </body>
 </html>
