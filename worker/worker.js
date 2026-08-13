@@ -17,13 +17,15 @@ const TZ = 'America/Argentina/Buenos_Aires';
 const FROM_NAME = 'Flota ML';
 const VAPID_SUBJECT = 'mailto:santamariapablodaniel@gmail.com';
 const SESSION_DAYS = 180;
-// flash-lite: mismo enfoque (visión + JSON estructurado), bastante más barato
-// por llamada que flash — para el volumen de esta flota (unas 50-150 cargas/mes)
-// baja el costo real sin cambiar la lógica de extracción. Si en el futuro la
-// precisión del ticket fiscal empeora notablemente, priorizar volver a
-// 'gemini-2.5-flash' para geminiTicket (el odómetro es una lectura mucho más
-// simple y tolera mejor un modelo más chico).
-const GEMINI_MODEL = 'gemini-2.5-flash-lite';
+// gemini-2.5-flash-lite quedó retirado para este proyecto ("no longer available
+// to new users" — la familia 2.5 pasó a legacy). Modelo GA vigente (jul 2026):
+// gemini-3.5-flash-lite — visión + JSON estructurado, documentado por Google
+// específicamente para "high-volume data parsing and document extraction",
+// y bastante más barato por token que gemini-3.6-flash. Si en el futuro la
+// precisión del ticket fiscal empeora notablemente, priorizar volver a un
+// modelo más grande (ej. gemini-3.6-flash) solo para geminiTicket (el
+// odómetro es una lectura mucho más simple y tolera mejor un modelo chico).
+const GEMINI_MODEL = 'gemini-3.5-flash-lite';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -326,8 +328,20 @@ function calcularWarningsTicket(t, veh) {
   const it = (t.items && t.items[0]) || {};
   const partes = (m.neto_gravado || 0) + (m.iva || 0) + (m.otros_tributos || 0) + (m.percepciones || 0) + (m.exento || 0) + (m.no_gravado || 0);
   if (m.total > 0 && partes > 0 && Math.abs(partes - m.total) > 1) w.push('montos_no_cierran');
-  if (it.litros > 0 && it.precio_unitario > 0 && m.neto_gravado > 0 &&
-    Math.abs(it.litros * it.precio_unitario - m.neto_gravado) / m.neto_gravado > 0.03) w.push('litros_x_precio_no_coincide');
+  if (it.litros > 0 && it.precio_unitario > 0) {
+    // El "precio unitario"/PPU de los tickets argentinos de combustible es el
+    // precio final al público (el que está en el cartel del surtidor, con
+    // IVA + impuestos internos + tasa vial ya incluidos) — litros×precio
+    // reconstruye el TOTAL del ticket, no el neto_gravado pre-impositivo.
+    // Comparar contra neto_gravado (como se hacía antes) daba falso positivo
+    // en prácticamente todos los tickets reales. Se acepta que coincida con
+    // cualquiera de los dos, por si algún formato de ticket sí muestra el
+    // precio unitario neto.
+    const producto = it.litros * it.precio_unitario;
+    const coincideTotal = m.total > 0 && Math.abs(producto - m.total) / m.total <= 0.03;
+    const coincideNeto = m.neto_gravado > 0 && Math.abs(producto - m.neto_gravado) / m.neto_gravado <= 0.03;
+    if (!coincideTotal && !coincideNeto) w.push('litros_x_precio_no_coincide');
+  }
   if (t.emisor?.cuit && !cuitValido(t.emisor.cuit)) w.push('cuit_emisor_invalido');
   if (t.receptor?.cuit && !cuitValido(t.receptor.cuit)) w.push('cuit_receptor_invalido');
   if (!t.numero_comprobante) w.push('sin_numero_comprobante');
