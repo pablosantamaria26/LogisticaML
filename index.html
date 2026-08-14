@@ -329,9 +329,9 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
       <div class="card">
         <div class="row">
           <input id="ex-month" type="month" style="flex:1;padding:.7rem;background:var(--s2);border:1.5px solid var(--bd);border-radius:12px;color:var(--tx);font-family:inherit">
-          <button class="btn btn-acc btn-sm" onclick="Eq.exportCSV()">📥 CSV</button>
+          <button class="btn btn-acc btn-sm" onclick="Eq.exportXLSX()">📥 Excel</button>
         </div>
-        <p class="muted" style="margin-top:.6rem;font-size:.72rem">CSV con todos los campos fiscales por comprobante + link a cada foto. El día 25 se envía solo al contador.</p>
+        <p class="muted" style="margin-top:.6rem;font-size:.72rem">Excel con todos los campos fiscales por comprobante + link a cada foto, y una hoja de resumen por vehículo. El día 25 se envía solo al contador.</p>
         <div class="rowbtns">
           <button class="btn btn-ghost btn-sm" onclick="Eq.contadorAhora(this)">📧 Enviar reporte contador ahora</button>
           <button class="btn btn-ghost btn-sm" onclick="Eq.weeklyAhora(this)">📊 Reporte semanal ahora</button>
@@ -1389,9 +1389,9 @@ const Eq = {
       toast('🔑 PIN reseteado','ok');this.load();
     }catch(e){toast(e.message,'err');}
   },
-  exportCSV(){
+  exportXLSX(){
     const m=$('ex-month').value||Mon.cur();
-    window.open(`${API}/api/export.csv?month=${m}&t=${S.token}`,'_blank');
+    window.open(`${API}/api/export.xlsx?month=${m}&t=${S.token}`,'_blank');
   },
   async contadorAhora(btn){
     const month=$('ex-month').value||Mon.cur();

@@ -12,6 +12,7 @@
  * VARS (wrangler.toml): CONTADOR_EMAIL, FROM_EMAIL, VAPID_PUBLIC_KEY
  * BINDINGS: DB (D1), FLOTA_KV (KV; fotos con prefijo foto:), FOTOS (R2 opcional futuro)
  */
+import ExcelJS from 'exceljs/dist/exceljs.min.js';
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const FROM_NAME = 'Flota ML';
@@ -54,7 +55,7 @@ export default {
       if (p === '/api/servicios/foto' && request.method === 'POST') return handleServicioFoto(request, env, ctx);
       const mServFoto = p.match(/^\/api\/servicios\/([\w.-]+)\/foto$/);
       if (mServFoto) return handleServicioFotoGet(request, env, mServFoto[1]);
-      if (p === '/api/export.csv') return handleExportCSV(request, env);
+      if (p === '/api/export.xlsx') return handleExportXLSX(request, env);
       if (p === '/api/push/register' && request.method === 'POST') return handlePushRegister(request, env);
       if (p === '/api/push/broadcast' && request.method === 'POST') return handlePushBroadcast(request, env);
       if (p === '/api/diag' && request.method === 'POST') return handleDiag(request, env, ctx);
@@ -516,44 +517,180 @@ async function handleFoto(request, env, id, tipo, firmada) {
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// EXPORT CSV — Libro IVA Compras (ARCA)
+// EXPORT XLSX — Libro IVA Compras (ARCA), para el contador
 // ══════════════════════════════════════════════════════════════════════════════
 async function cargasDelMes(env, month) {
   const r = await env.DB.prepare(
     "SELECT * FROM cargas WHERE substr(fecha,1,7)=? ORDER BY fecha, hora").bind(month).all();
   return r.results;
 }
-const csvNum = n => n === null || n === undefined ? '' : String(n).replace('.', ',');
-async function buildCSV(env, rows, origin) {
-  const header = ['Fecha', 'Hora', 'Vehiculo', 'Chofer', 'Tipo Comprobante', 'Cod AFIP', 'Punto Venta', 'Numero',
-    'CUIT Emisor', 'Razon Social Emisor', 'Domicilio Emisor', 'CUIT Receptor', 'Producto', 'Litros', 'Precio Unitario',
-    'Neto Gravado', 'Alicuota IVA', 'IVA', 'Otros Tributos (ITC/IDC)', 'Percepciones', 'Exento', 'No Gravado', 'Total',
-    'Condicion Pago', 'KM', 'Estado', 'Foto Ticket'];
-  const lines = [header.join(';')];
-  for (const c of rows) {
-    const foto = c.foto_ticket ? `${origin}/api/fotolink/${c.id}/ticket?k=${await fotoFirma(env, c.id, 'ticket')}` : '';
-    lines.push([
-      c.fecha, c.hora || '', c.vehiculo_id, (c.usuario_nombre || '').replace(/;/g, ','),
-      c.tipo_comprobante || '', c.codigo_comprobante || '', c.punto_venta || '', c.numero_comprobante || '',
-      c.emisor_cuit || '', (c.emisor_razon_social || '').replace(/;/g, ','), (c.emisor_domicilio || '').replace(/;/g, ','),
-      c.receptor_cuit || '', (c.producto || '').replace(/;/g, ','), csvNum(c.litros), csvNum(c.precio_unitario),
-      csvNum(c.neto_gravado), csvNum(c.iva_alicuota), csvNum(c.iva), csvNum(c.otros_tributos), csvNum(c.percepciones),
-      csvNum(c.exento), csvNum(c.no_gravado), csvNum(c.total), c.condicion_pago || '', c.km ?? '', c.validacion, foto,
-    ].join(';'));
-  }
-  return '﻿' + lines.join('\r\n');
+
+const XLS_BRAND = 'FF0D6E64';       // teal oscuro (marca Mercado Limpio)
+const XLS_BRAND_TXT = 'FFFFFFFF';
+const XLS_WARN_BG = 'FFFFF3CD';
+const XLS_WARN_TXT = 'FF92400E';
+const XLS_ALT_BG = 'FFF7F9FA';
+const XLS_TOTAL_BG = 'FFE2E8F0';
+const MONEY_FMT = '#,##0.00';
+const INT_FMT = '#,##0';
+const ESTADO_LABEL = { ok: '✅ Verificado', revisar: '🔍 A revisar', migrado: '⚠️ Incompleto (histórico)', legacy: '⚠️ Incompleto (histórico)' };
+
+const XLS_COLS = [
+  { header: 'Fecha', width: 11 }, { header: 'Hora', width: 9 }, { header: 'Vehículo', width: 10 },
+  { header: 'Chofer', width: 16 }, { header: 'Tipo Comp.', width: 15 }, { header: 'PV', width: 7 },
+  { header: 'Número', width: 11 }, { header: 'CUIT Emisor', width: 14 }, { header: 'Razón Social Emisor', width: 26 },
+  { header: 'Domicilio Emisor', width: 30 }, { header: 'CUIT Receptor', width: 14 }, { header: 'Producto', width: 14 },
+  { header: 'Litros', width: 9, fmt: MONEY_FMT }, { header: 'Precio Unit.', width: 11, fmt: MONEY_FMT },
+  { header: 'Neto Gravado', width: 12, fmt: MONEY_FMT }, { header: 'Alíc. IVA %', width: 10, fmt: '0"%"' },
+  { header: 'IVA', width: 11, fmt: MONEY_FMT }, { header: 'Otros Tributos', width: 12, fmt: MONEY_FMT },
+  { header: 'Percepciones', width: 11, fmt: MONEY_FMT }, { header: 'Exento', width: 10, fmt: MONEY_FMT },
+  { header: 'No Gravado', width: 10, fmt: MONEY_FMT }, { header: 'Total', width: 12, fmt: MONEY_FMT },
+  { header: 'Cond. Pago', width: 11 }, { header: 'KM', width: 9, fmt: INT_FMT },
+  { header: 'Estado', width: 20 }, { header: 'Foto', width: 10 },
+];
+// Índices (1-based) de columnas numéricas — deben coincidir con XLS_COLS arriba
+const XLS_NUM = { litros: 13, pu: 14, neto: 15, alic: 16, iva: 17, otros: 18, percep: 19, exento: 20, noGrav: 21, total: 22, km: 24 };
+
+function xlsTituloHoja(ws, ncols, titulo, subtitulo) {
+  ws.mergeCells(1, 1, 1, ncols);
+  const t = ws.getCell(1, 1);
+  t.value = titulo;
+  t.font = { bold: true, size: 13, color: { argb: XLS_BRAND_TXT } };
+  t.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_BRAND } };
+  t.alignment = { vertical: 'middle' };
+  ws.getRow(1).height = 26;
+  ws.mergeCells(2, 1, 2, ncols);
+  const s = ws.getCell(2, 1);
+  s.value = subtitulo;
+  s.font = { italic: true, size: 9, color: { argb: 'FF64748B' } };
+  ws.getRow(3).height = 4;
 }
-async function handleExportCSV(request, env) {
+
+async function buildXLSX(env, rows, month, origin) {
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'Flota ML — Mercado Limpio Distribuidora';
+  wb.created = new Date();
+
+  const [y, m] = month.split('-').map(Number);
+  const mesNombre = `${MESES_ES[m - 1]} ${y}`;
+  const generado = new Date().toLocaleString('es-AR', { timeZone: TZ, dateStyle: 'short', timeStyle: 'short' });
+
+  // ── HOJA 1: Comprobantes (una fila por carga) ───────────────────────────────
+  const ws = wb.addWorksheet('Comprobantes', { views: [{ state: 'frozen', ySplit: 4 }] });
+  ws.columns = XLS_COLS.map(c => ({ width: c.width }));
+  xlsTituloHoja(ws, XLS_COLS.length, `MERCADO LIMPIO DISTRIBUIDORA — Libro IVA Compras · Combustible — ${mesNombre}`,
+    `Generado el ${generado} · ${rows.length} comprobante${rows.length === 1 ? '' : 's'}`);
+  const headerRow = ws.getRow(4);
+  XLS_COLS.forEach((c, i) => { headerRow.getCell(i + 1).value = c.header; });
+  headerRow.font = { bold: true, color: { argb: XLS_BRAND_TXT } };
+  headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_BRAND } };
+  headerRow.height = 20;
+  headerRow.alignment = { vertical: 'middle' };
+  headerRow.eachCell(c => { c.border = { bottom: { style: 'thin', color: { argb: 'FFFFFFFF' } } }; });
+
+  let rIdx = 5;
+  for (const c of rows) {
+    const foto = c.foto_ticket ? `${origin}/api/fotolink/${c.id}/ticket?k=${await fotoFirma(env, c.id, 'ticket')}` : null;
+    const row = ws.getRow(rIdx);
+    const vals = [
+      c.fecha, c.hora || '', c.vehiculo_id, c.usuario_nombre || '',
+      c.tipo_comprobante || '', c.punto_venta || '', c.numero_comprobante || '',
+      c.emisor_cuit || '', c.emisor_razon_social || '', c.emisor_domicilio || '',
+      c.receptor_cuit || '', c.producto || '', c.litros ?? null, c.precio_unitario ?? null,
+      c.neto_gravado ?? null, c.iva_alicuota ?? null, c.iva ?? null, c.otros_tributos ?? null,
+      c.percepciones ?? null, c.exento ?? null, c.no_gravado ?? null, c.total ?? null,
+      c.condicion_pago || '', c.km ?? null, ESTADO_LABEL[c.validacion] || c.validacion,
+    ];
+    vals.forEach((v, i) => { row.getCell(i + 1).value = v; });
+    XLS_COLS.forEach((c2, i) => { if (c2.fmt) row.getCell(i + 1).numFmt = c2.fmt; });
+    if (foto) {
+      const fc = row.getCell(XLS_COLS.length);
+      fc.value = { text: 'Ver foto', hyperlink: foto };
+      fc.font = { color: { argb: 'FF2563EB' }, underline: true };
+    }
+    if (c.validacion !== 'ok') {
+      row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_WARN_BG } };
+      row.getCell(25).font = { color: { argb: XLS_WARN_TXT }, bold: true };
+    } else if (rIdx % 2 === 0) {
+      row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_ALT_BG } };
+    }
+    rIdx++;
+  }
+  // Fila de totales
+  const sum = k => rows.reduce((s, x) => s + (x[k] || 0), 0);
+  const totalRow = ws.getRow(rIdx);
+  ws.mergeCells(rIdx, 1, rIdx, 12);
+  totalRow.getCell(1).value = `TOTALES (${rows.length} comprobantes)`;
+  totalRow.getCell(XLS_NUM.litros).value = sum('litros'); totalRow.getCell(XLS_NUM.litros).numFmt = MONEY_FMT;
+  totalRow.getCell(XLS_NUM.neto).value = sum('neto_gravado'); totalRow.getCell(XLS_NUM.neto).numFmt = MONEY_FMT;
+  totalRow.getCell(XLS_NUM.iva).value = sum('iva'); totalRow.getCell(XLS_NUM.iva).numFmt = MONEY_FMT;
+  totalRow.getCell(XLS_NUM.otros).value = sum('otros_tributos'); totalRow.getCell(XLS_NUM.otros).numFmt = MONEY_FMT;
+  totalRow.getCell(XLS_NUM.total).value = sum('total'); totalRow.getCell(XLS_NUM.total).numFmt = MONEY_FMT;
+  totalRow.font = { bold: true };
+  totalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_TOTAL_BG } };
+  totalRow.eachCell(c => { c.border = { top: { style: 'medium', color: { argb: 'FF94A3B8' } } }; });
+
+  // ── HOJA 2: Resumen por vehículo ─────────────────────────────────────────────
+  const ws2 = wb.addWorksheet('Resumen');
+  ws2.columns = [{ width: 14 }, { width: 12 }, { width: 12 }, { width: 14 }, { width: 14 }];
+  xlsTituloHoja(ws2, 5, `MERCADO LIMPIO DISTRIBUIDORA — Resumen · ${mesNombre}`, `Generado el ${generado}`);
+  const h2 = ws2.getRow(4);
+  ['Vehículo', 'Cargas', 'Litros', 'Gasto Total', 'IVA Crédito Fiscal'].forEach((h, i) => { h2.getCell(i + 1).value = h; });
+  h2.font = { bold: true, color: { argb: XLS_BRAND_TXT } };
+  h2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_BRAND } };
+  h2.height = 20;
+
+  const porVeh = {};
+  for (const c of rows) {
+    const k = c.vehiculo_id;
+    porVeh[k] = porVeh[k] || { n: 0, litros: 0, total: 0, iva: 0 };
+    porVeh[k].n++; porVeh[k].litros += c.litros || 0; porVeh[k].total += c.total || 0; porVeh[k].iva += c.iva || 0;
+  }
+  let r2 = 5;
+  for (const [veh, s] of Object.entries(porVeh).sort((a, b) => b[1].total - a[1].total)) {
+    const row = ws2.getRow(r2);
+    row.getCell(1).value = veh; row.getCell(2).value = s.n;
+    row.getCell(3).value = s.litros; row.getCell(3).numFmt = MONEY_FMT;
+    row.getCell(4).value = s.total; row.getCell(4).numFmt = MONEY_FMT;
+    row.getCell(5).value = s.iva; row.getCell(5).numFmt = MONEY_FMT;
+    if (r2 % 2 === 0) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_ALT_BG } };
+    r2++;
+  }
+  const totRow2 = ws2.getRow(r2);
+  totRow2.getCell(1).value = 'TOTAL';
+  totRow2.getCell(2).value = rows.length;
+  totRow2.getCell(3).value = sum('litros'); totRow2.getCell(3).numFmt = MONEY_FMT;
+  totRow2.getCell(4).value = sum('total'); totRow2.getCell(4).numFmt = MONEY_FMT;
+  totRow2.getCell(5).value = sum('iva'); totRow2.getCell(5).numFmt = MONEY_FMT;
+  totRow2.font = { bold: true };
+  totRow2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: XLS_TOTAL_BG } };
+  totRow2.eachCell(c => { c.border = { top: { style: 'medium', color: { argb: 'FF94A3B8' } } }; });
+
+  // Calidad de datos: cuántas cargas quedaron sin verificar / incompletas
+  const incompletas = rows.filter(c => c.validacion !== 'ok').length;
+  if (incompletas) {
+    const noteRow = r2 + 2;
+    ws2.mergeCells(noteRow, 1, noteRow, 5);
+    const nc = ws2.getCell(noteRow, 1);
+    nc.value = `⚠️ ${incompletas} comprobante${incompletas === 1 ? '' : 's'} sin verificar o con datos incompletos — están resaltados en amarillo en la hoja "Comprobantes". Revisar antes de imputar en ARCA.`;
+    nc.font = { color: { argb: XLS_WARN_TXT }, italic: true };
+    ws2.getRow(noteRow).height = 18;
+  }
+
+  return wb.xlsx.writeBuffer();
+}
+
+async function handleExportXLSX(request, env) {
   const user = await getAuthUser(request, env);
   if (!user || user.rol !== 'admin') return noAuth();
   const url = new URL(request.url);
   const month = url.searchParams.get('month') || hoyAR().slice(0, 7);
   const rows = await cargasDelMes(env, month);
-  const csv = await buildCSV(env, rows, url.origin);
-  return new Response(csv, {
+  const buf = await buildXLSX(env, rows, month, url.origin);
+  return new Response(buf, {
     headers: {
-      ...CORS, 'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="flota-ml-${month}.csv"`,
+      ...CORS, 'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="flota-ml-${month}.xlsx"`,
     },
   });
 }
@@ -1345,15 +1482,15 @@ function buildMaintEmail(veh, st, urgente) {
   return emailShell('Alerta de servicio', header, body);
 }
 
-// ── Reporte contador (día 25) — tabla fiscal completa + CSV adjunto ─────────
+// ── Reporte contador (día 25) — tabla fiscal completa + Excel adjunto ───────
 async function sendContadorReport(env, month) {
   const to = env.CONTADOR_EMAIL;
   if (!to || !env.SENDGRID_API_KEY) return;
   month = month || hoyAR().slice(0, 7);
   const rows = await cargasDelMes(env, month);
   if (!rows.length) return;
-  const csv = await buildCSV(env, rows, 'https://logisticaml.santamariapablodaniel.workers.dev');
-  const csvB64 = btoa(unescape(encodeURIComponent(csv)));
+  const xlsxBuf = await buildXLSX(env, rows, month, 'https://logisticaml.santamariapablodaniel.workers.dev');
+  const xlsxB64 = Buffer.from(xlsxBuf).toString('base64');
   const tot = k => rows.reduce((s, r) => s + (r[k] || 0), 0);
   const [yMes, mMes] = month.split('-').map(Number);
   const mes = `${MESES_ES[mMes - 1]} de ${yMes}`;
@@ -1366,7 +1503,7 @@ async function sendContadorReport(env, month) {
     <td style="text-align:right">${csvNumHtml(c.otros_tributos)}</td>
     <td style="text-align:right;font-weight:700">${csvNumHtml(c.total)}</td>
     <td>${c.validacion === 'ok' ? '✅' : c.validacion === 'revisar' ? '🔍' : '·'}</td></tr>`).join('');
-  const header = `<h1 class="h-title">🧾 Crédito Fiscal — Combustibles</h1><p class="h-sub">Período <strong>${mes}</strong> · CSV completo adjunto para importar</p>`;
+  const header = `<h1 class="h-title">🧾 Crédito Fiscal — Combustibles</h1><p class="h-sub">Período <strong>${mes}</strong> · Excel completo adjunto para importar</p>`;
   const body = `
     <div class="sgrid">
       <div class="sc"><span class="sv">${rows.length}</span><span class="sl">Comprobantes</span></div>
@@ -1379,11 +1516,11 @@ async function sendContadorReport(env, month) {
       <tbody>${trs}</tbody>
       <tfoot><tr><td colspan="4"><strong>TOTALES</strong></td><td style="text-align:right">${fmt$(tot('neto_gravado'))}</td><td style="text-align:right">${fmt$(tot('iva'))}</td><td style="text-align:right">${fmt$(tot('otros_tributos'))}</td><td style="text-align:right">${fmt$(tot('total'))}</td><td></td></tr></tfoot>
     </table></div>
-    <div class="alert" style="margin-top:16px"><p>📎 El CSV adjunto tiene <strong>todos los campos por comprobante</strong> (tipo, PV, número, CUIT y razón social del emisor, neto, IVA, ITC/IDC, percepciones, total) más el link a la foto de cada ticket. Filas con 🔍 están en revisión: verificar contra la foto antes de imputar.<br><br>💡 La mayoría de estos tickets (controlador fiscal de estación de servicio) <strong>no aparecen en el portal de Comprobantes Recibidos de ARCA</strong> porque la estación no los emite como factura electrónica — por eso este CSV incluye el listado completo para imputar directo en el Libro IVA Compras, sin depender de lo que muestre ARCA.</p></div>`;
+    <div class="alert" style="margin-top:16px"><p>📎 El Excel adjunto tiene <strong>todos los campos por comprobante</strong> (tipo, PV, número, CUIT y razón social del emisor, neto, IVA, ITC/IDC, percepciones, total) más el link a la foto de cada ticket, y una segunda hoja con el resumen por vehículo. Las filas resaltadas en amarillo están sin verificar o con datos incompletos: revisar contra la foto antes de imputar.<br><br>💡 La mayoría de estos tickets (controlador fiscal de estación de servicio) <strong>no siempre aparecen en el portal de Comprobantes Recibidos de ARCA</strong> — depende de si la estación los emite con CAE electrónico. Por eso este Excel incluye el listado completo para imputar directo en el Libro IVA Compras, sin depender de lo que muestre ARCA.</p></div>`;
   await sendViaBrevo({
     to: [to], subject: `🧾 Flota ML — Crédito Fiscal ${mes} (${rows.length} comprobantes)`,
     html: emailShell('Crédito fiscal', header, body),
-    attachment: [{ name: `flota-ml-${month}.csv`, content: csvB64 }],
+    attachment: [{ name: `flota-ml-${month}.xlsx`, content: xlsxB64 }],
   }, env);
 }
 const csvNumHtml = n => n ? fmt$(n) : '—';
