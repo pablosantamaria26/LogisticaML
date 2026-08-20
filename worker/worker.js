@@ -317,6 +317,45 @@ async function geminiOdometro(b64, env) {
   return JSON.parse(data.candidates[0].content.parts[0].text.trim());
 }
 
+// ── Respaldo con Workers AI (Cloudflare) para el ODÓMETRO — mismo query si
+// Gemini se corta. Modelo open-source, gratis (10.000 Neurons/día en la misma
+// cuenta CF, sin tarjeta). Probado contra una foto real: lee el odómetro
+// perfecto (confianza 95%, valor exacto). NO se usa para el ticket — probado
+// también, y la extracción de los ~15 campos fiscales salía mal en varios
+// (CUIT con dígitos cambiados, año mal leído, litros confundidos con el neto,
+// total con un cero de más) y encima con confianza autorreportada de 100% —
+// un dato fiscal mal leído pero "seguro" es peor que dejarlo en blanco para
+// revisar, así que ahí se sigue dependiendo solo de Gemini.
+const WORKERS_AI_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct';
+function extraerJSON(respuesta) {
+  // Workers AI a veces ya devuelve un objeto parseado en .response (no un string) —
+  // depende del modelo/prompt. Contemplar los dos casos.
+  if (respuesta && typeof respuesta === 'object') return respuesta;
+  const limpio = String(respuesta).replace(/```json|```/g, '').trim();
+  const m = limpio.match(/\{[\s\S]*\}/);
+  return JSON.parse(m ? m[0] : limpio);
+}
+async function workersAiOdometro(b64, env) {
+  if (!env.AI) throw new Error('Workers AI no disponible');
+  const res = await env.AI.run(WORKERS_AI_MODEL, {
+    messages: [
+      { role: 'system', content: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido, sin texto alrededor.' },
+      { role: 'user', content: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Respondé SOLO: {"km":123456,"confianza":95}. Si no es legible: {"km":null,"confianza":0}.' },
+    ],
+    image: [...b64ToBytes(b64)],
+    max_tokens: 128,
+  });
+  if (!res?.response) throw new Error('Workers AI odómetro: sin respuesta');
+  return extraerJSON(res.response);
+}
+async function ocrOdometroConRespaldo(b64, env) {
+  try { return await geminiOdometro(b64, env); }
+  catch (eGemini) {
+    try { return await workersAiOdometro(b64, env); }
+    catch (eRespaldo) { return null; } // el odómetro es best-effort — si fallan los 2, se pide de nuevo, no bloquea
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // VALIDACIÓN — compartida entre carga nueva, reprocesar y retake de una sola foto
 // ══════════════════════════════════════════════════════════════════════════════
@@ -401,11 +440,12 @@ async function handleNuevaCarga(request, env, ctx) {
   await fotoPut(env, fotoTicketKey, b64ToBytes(tB64));
   if (fotoTableroKey) await fotoPut(env, fotoTableroKey, b64ToBytes(kB64));
 
-  // 2. OCR en paralelo
+  // 2. OCR en paralelo (el odómetro tiene respaldo automático a Workers AI si
+  // Gemini falla — el ticket no, ver comentario en ocrOdometroConRespaldo)
   let t = null, kmData = null, ocrErr = null;
   const [tRes, kRes] = await Promise.allSettled([
     geminiTicket(tB64, env),
-    kB64 ? geminiOdometro(kB64, env) : Promise.resolve(null),
+    kB64 ? ocrOdometroConRespaldo(kB64, env) : Promise.resolve(null),
   ]);
   if (tRes.status === 'fulfilled') t = tRes.value; else ocrErr = tRes.reason?.message;
   if (kRes.status === 'fulfilled') kmData = kRes.value;
@@ -1023,7 +1063,7 @@ async function handleAdminReprocesar(request, env, ctx) {
   let t = null, kmData = null, ocrErr = null;
   const [tRes, kRes] = await Promise.allSettled([
     geminiTicket(tB64, env),
-    kB64 ? geminiOdometro(kB64, env) : Promise.resolve(null),
+    kB64 ? ocrOdometroConRespaldo(kB64, env) : Promise.resolve(null),
   ]);
   if (tRes.status === 'fulfilled') t = tRes.value; else ocrErr = tRes.reason?.message;
   if (kRes.status === 'fulfilled' && kRes.value) kmData = kRes.value;
@@ -1121,7 +1161,7 @@ async function handleSubirFotoFaltante(request, env, ctx, id) {
   try { const d = JSON.parse(carga.validacion_detalle || '{}'); warningsPrevios = d.warnings || []; notas = d.notas || []; } catch (e) { }
 
   if (tipo === 'tablero') {
-    const kmData = await geminiOdometro(b64, env).catch(err => { console.warn('retake km:', err.message); return null; });
+    const kmData = await ocrOdometroConRespaldo(b64, env);
     const km = kmData?.km > 0 ? Math.round(kmData.km) : null;
     const kmWarns = calcularWarningsKm(km, kmData, true, veh);
     const warnings = warningsPrevios.filter(w => !KM_WARN_KEYS.includes(w)).concat(kmWarns);

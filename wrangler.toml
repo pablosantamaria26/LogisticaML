@@ -23,6 +23,11 @@ binding = "DB"
 database_name = "flota-ml"
 database_id = "d7fb5ae3-f035-4de6-9ea0-3f7bfed3993f"
 
+# Respaldo gratuito de OCR si Gemini se corta (mismo tope de gasto que ya
+# pasó 2 veces) — 10.000 Neurons/día gratis, sin tarjeta, misma cuenta CF.
+[ai]
+binding = "AI"
+
 # Cuando actives R2 en el dashboard, descomentá esto y las fotos nuevas van a R2:
 # [[r2_buckets]]
 # binding = "FOTOS"
