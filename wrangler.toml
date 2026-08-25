@@ -1,7 +1,7 @@
 # Flota ML 2.0 — Worker Cloudflare
 # Deploy: npx wrangler deploy
 # Secrets (persisten entre deploys): GEMINI_API_KEY, SENDGRID_API_KEY (Brevo),
-#   VAPID_PRIVATE_KEY, OWNER_EMAIL, FLEET_EMAIL, AUTH_PEPPER
+#   VAPID_PRIVATE_KEY, OWNER_EMAIL, FLEET_EMAIL, CONTADOR_EMAIL, AUTH_PEPPER
 
 name = "logisticaml"
 main = "worker/worker.js"
@@ -9,8 +9,8 @@ compatibility_date = "2026-03-05"
 compatibility_flags = ["nodejs_compat"]
 
 # ── CRON (límite 5 por CUENTA free — usamos 2, ramifica por fecha AR adentro) ─
-#  "0 11 * * *" → 08:00 AR: revisión diaria (lun-vie) + limpieza (vie) + día 1: reporte dueño y papeles
-#  "0 12 * * *" → 09:00 AR: día 15 neumáticos, día 20 auxilio, día 25 contador, sábado reporte semanal
+#  "0 11 * * *" → 08:00 AR: revisión diaria (lun-vie) + limpieza (vie) + día 1: reporte dueño, reporte contador (mes anterior completo) y papeles
+#  "0 12 * * *" → 09:00 AR: día 15 neumáticos, día 20 auxilio, sábado reporte semanal
 [triggers]
 crons = ["0 11 * * *", "0 12 * * *"]
 
@@ -34,7 +34,6 @@ binding = "AI"
 # bucket_name = "flota-ml-fotos"
 
 [vars]
-CONTADOR_EMAIL = "santamariapablodaniel@gmail.com"
 FROM_EMAIL = "santamariapablodaniel@gmail.com"
 VAPID_PUBLIC_KEY = "BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY"
 

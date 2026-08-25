@@ -8,8 +8,8 @@
  *
  * SECRETS (wrangler secret put):
  *   GEMINI_API_KEY, SENDGRID_API_KEY (Brevo), VAPID_PRIVATE_KEY,
- *   OWNER_EMAIL, FLEET_EMAIL, AUTH_PEPPER
- * VARS (wrangler.toml): CONTADOR_EMAIL, FROM_EMAIL, VAPID_PUBLIC_KEY
+ *   OWNER_EMAIL, FLEET_EMAIL, CONTADOR_EMAIL, AUTH_PEPPER
+ * VARS (wrangler.toml): FROM_EMAIL, VAPID_PUBLIC_KEY
  * BINDINGS: DB (D1), FLOTA_KV (KV; fotos con prefijo foto:), FOTOS (R2 opcional futuro)
  */
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
@@ -113,12 +113,15 @@ export default {
       case '0 11 * * *': // 08:00 AR
         if (diaSem >= 1 && diaSem <= 5) ctx.waitUntil(pushDailyCheck(env));
         if (diaSem === 5) ctx.waitUntil(pushFridayClean(env));
-        if (dia === 1) { ctx.waitUntil(sendOwnerReport(env)); ctx.waitUntil(pushDocs(env)); }
+        if (dia === 1) {
+          ctx.waitUntil(sendOwnerReport(env));
+          ctx.waitUntil(sendContadorReport(env, mesAnterior(hoyAR().slice(0, 7))));
+          ctx.waitUntil(pushDocs(env));
+        }
         break;
       case '0 12 * * *': // 09:00 AR
         if (dia === 15) ctx.waitUntil(pushTires(env));
         if (dia === 20) ctx.waitUntil(pushSpare(env));
-        if (dia === 25) ctx.waitUntil(sendContadorReport(env));
         if (diaSem === 6) ctx.waitUntil(sendWeeklyReport(env)); // sábado: semana completa
         break;
     }
@@ -1522,7 +1525,7 @@ function buildMaintEmail(veh, st, urgente) {
   return emailShell('Alerta de servicio', header, body);
 }
 
-// ── Reporte contador (día 25) — tabla fiscal completa + Excel adjunto ───────
+// ── Reporte contador (día 1, mes anterior completo) — tabla fiscal + Excel ──
 async function sendContadorReport(env, month) {
   const to = env.CONTADOR_EMAIL;
   if (!to || !env.SENDGRID_API_KEY) return;
@@ -1534,36 +1537,42 @@ async function sendContadorReport(env, month) {
   const tot = k => rows.reduce((s, r) => s + (r[k] || 0), 0);
   const [yMes, mMes] = month.split('-').map(Number);
   const mes = `${MESES_ES[mMes - 1]} de ${yMes}`;
-  const trs = rows.map(c => `<tr>
-    <td>${c.fecha}</td><td style="font-family:monospace;font-size:.72rem">${c.tipo_comprobante ? 'FA' : '—'} ${c.punto_venta || ''}-${c.numero_comprobante || '—'}</td>
-    <td style="font-family:monospace;font-size:.72rem">${c.emisor_cuit || '—'}</td>
-    <td>${(c.emisor_razon_social || c.emisor_localidad || '—').slice(0, 22)}</td>
-    <td style="text-align:right">${csvNumHtml(c.neto_gravado)}</td>
-    <td style="text-align:right;color:#15803d;font-weight:700">${csvNumHtml(c.iva)}</td>
-    <td style="text-align:right">${csvNumHtml(c.otros_tributos)}</td>
-    <td style="text-align:right;font-weight:700">${csvNumHtml(c.total)}</td>
-    <td>${c.validacion === 'ok' ? '✅' : c.validacion === 'revisar' ? '🔍' : '·'}</td></tr>`).join('');
-  const header = `<h1 class="h-title">🧾 Crédito Fiscal — Combustibles</h1><p class="h-sub">Período <strong>${mes}</strong> · Excel completo adjunto para importar</p>`;
+  const vehs = (await env.DB.prepare('SELECT * FROM vehiculos').all()).results;
+  const byV = {};
+  rows.forEach(c => { (byV[c.vehiculo_id] = byV[c.vehiculo_id] || []).push(c); });
+  const cards = Object.entries(byV).map(([vid, cs]) => {
+    const v = vehs.find(x => x.id === vid) || { nombre: vid, emoji: '🚛' };
+    const revisar = cs.filter(c => c.validacion === 'revisar').length;
+    return `<div class="vc"><div class="vc-h"><div class="vc-n"><span class="vc-e">${v.emoji}</span><div>
+      <div class="vc-t">${v.nombre}</div><div class="vc-s">${cs.length} comprobante${cs.length === 1 ? '' : 's'}${revisar ? ` · ${revisar} a revisar` : ''}</div></div></div>
+      <div style="text-align:right"><div class="vc-a">${fmt$(cs.reduce((s, c) => s + (c.total || 0), 0))}</div></div></div>
+      <div class="vc-stats"><div><div class="vc-sv">${cs.reduce((s, c) => s + (c.litros || 0), 0).toFixed(1)} L</div><div class="vc-sl">Litros</div></div>
+      <div><div class="vc-sv">${fmt$(cs.reduce((s, c) => s + (c.neto_gravado || 0), 0))}</div><div class="vc-sl">Neto</div></div>
+      <div><div class="vc-sv" style="color:#15803d">${fmt$(cs.reduce((s, c) => s + (c.iva || 0), 0))}</div><div class="vc-sl">IVA créd.</div></div></div></div>`;
+  }).join('');
+  const revisarTotal = rows.filter(c => c.validacion === 'revisar').length;
+  const cuitFiscal = rows.find(r => r.receptor_cuit)?.receptor_cuit || '';
+  const nombreFiscal = rows.find(r => r.receptor_nombre)?.receptor_nombre || '';
+  const identif = [nombreFiscal, cuitFiscal ? `CUIT ${cuitFiscal}` : ''].filter(Boolean).join(' · ');
+  const header = `<h1 class="h-title">Crédito Fiscal — Combustibles</h1><p class="h-sub">Período <strong>${mes}</strong>${identif ? ` · ${identif}` : ''}</p>`;
   const body = `
+    <p style="font-size:.92rem;color:#334155;line-height:1.7;margin-bottom:28px">Estimado Jorge,<br>Adjunto el detalle de comprobantes de combustible correspondientes al período <strong>${mes}</strong>, para su carga en el Libro IVA Compras. Abajo un resumen ejecutivo; el detalle completo por comprobante está en el Excel adjunto.</p>
     <div class="sgrid">
       <div class="sc"><span class="sv">${rows.length}</span><span class="sl">Comprobantes</span></div>
       <div class="sc"><span class="sv">${tot('litros').toFixed(1)} L</span><span class="sl">Litros</span></div>
       <div class="sc g"><span class="sv">${fmt$(tot('iva'))}</span><span class="sl">IVA crédito</span></div>
       <div class="sc"><span class="sv">${fmt$(tot('total'))}</span><span class="sl">Total</span></div>
     </div>
-    <div class="tbl-wrap"><table>
-      <thead><tr><th>Fecha</th><th>Comprobante</th><th>CUIT</th><th>Emisor</th><th style="text-align:right">Neto</th><th style="text-align:right">IVA</th><th style="text-align:right">Otros trib.</th><th style="text-align:right">Total</th><th></th></tr></thead>
-      <tbody>${trs}</tbody>
-      <tfoot><tr><td colspan="4"><strong>TOTALES</strong></td><td style="text-align:right">${fmt$(tot('neto_gravado'))}</td><td style="text-align:right">${fmt$(tot('iva'))}</td><td style="text-align:right">${fmt$(tot('otros_tributos'))}</td><td style="text-align:right">${fmt$(tot('total'))}</td><td></td></tr></tfoot>
-    </table></div>
-    <div class="alert" style="margin-top:16px"><p>📎 El Excel adjunto tiene <strong>todos los campos por comprobante</strong> (tipo, PV, número, CUIT y razón social del emisor, neto, IVA, ITC/IDC, percepciones, total) más el link a la foto de cada ticket, y una segunda hoja con el resumen por vehículo. Las filas resaltadas en amarillo están sin verificar o con datos incompletos: revisar contra la foto antes de imputar.<br><br>💡 La mayoría de estos tickets (controlador fiscal de estación de servicio) <strong>no siempre aparecen en el portal de Comprobantes Recibidos de ARCA</strong> — depende de si la estación los emite con CAE electrónico. Por eso este Excel incluye el listado completo para imputar directo en el Libro IVA Compras, sin depender de lo que muestre ARCA.</p></div>`;
+    <p class="sec-title">Detalle por vehículo</p>
+    ${cards}
+    <div class="alert" style="margin-top:20px"><p>${revisarTotal ? `<strong>${revisarTotal} comprobante${revisarTotal === 1 ? '' : 's'} del período está${revisarTotal === 1 ? '' : 'n'} marcado${revisarTotal === 1 ? '' : 's'} para revisar</strong> (dato incompleto o sin verificar) — están resaltados en amarillo en el Excel adjunto; se recomienda cotejarlos contra la foto del ticket antes de imputar.<br><br>` : ''}El Excel adjunto incluye todos los campos por comprobante (tipo, punto de venta, número, CUIT y razón social del emisor, neto gravado, IVA, otros tributos, percepciones y total) y el enlace a la foto de cada ticket. La mayoría de estos tickets (controlador fiscal de estación de servicio) no siempre figuran en el portal de Comprobantes Recibidos de ARCA, ya que depende de si la estación emite con CAE electrónico — por eso este Excel incluye el listado completo para imputar directamente en el Libro IVA Compras, sin depender de lo que muestre ARCA.</p></div>
+    <p style="font-size:.86rem;color:#64748b;line-height:1.8;margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9">Quedo a disposición por cualquier consulta.<br>Saludos cordiales,<br><strong style="color:#0f172a">Pablo Santamaria</strong><br>${env.FROM_EMAIL || 'santamariapablodaniel@gmail.com'}</p>`;
   await sendViaBrevo({
-    to: [to], subject: `🧾 Flota ML — Crédito Fiscal ${mes} (${rows.length} comprobantes)`,
-    html: emailShell('Crédito fiscal', header, body),
+    to: [to], subject: `Comprobantes de combustible — ${mes} (${rows.length})`,
+    html: emailShell('Crédito fiscal', header, body, 'Ante cualquier consulta, puede responder directamente a este correo.'),
     attachment: [{ name: `flota-ml-${month}.xlsx`, content: xlsxB64 }],
   }, env);
 }
-const csvNumHtml = n => n ? fmt$(n) : '—';
 
 // ── Reporte dueño (día 1, mes anterior) ──────────────────────────────────────
 async function sendOwnerReport(env) {
@@ -1781,5 +1790,5 @@ async function legacyMaintAlert(request, env) {
 // ══════════════════════════════════════════════════════════════════════════════
 // EMAIL SHELL (estilos compartidos)
 // ══════════════════════════════════════════════════════════════════════════════
-const CSS = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e}.wrap{max-width:680px;margin:0 auto;padding:28px 16px}.card{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.09)}.header{padding:36px 44px 0;background:#fff}.logo-row{display:flex;align-items:center;gap:14px;margin-bottom:28px}.logo-box{width:50px;height:50px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}.logo-name{font-size:1.2rem;font-weight:800;color:#0f172a}.logo-sub{font-size:.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;margin-top:2px}.h-title{font-size:1.9rem;font-weight:900;color:#0f172a;letter-spacing:-.03em;line-height:1.15}.h-sub{font-size:.9rem;color:#64748b;margin-top:8px;padding-bottom:32px}.accent-bar{height:3px;background:linear-gradient(90deg,#1e40af,#3b82f6,#93c5fd)}.body{padding:36px 44px}.v-hero{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:16px;padding:28px 24px;text-align:center;margin-bottom:32px;border:1px solid #bfdbfe}.v-emoji{font-size:4rem;display:block;margin-bottom:10px}.v-name{font-size:1.25rem;font-weight:800;color:#1e3a8a;margin-bottom:4px}.v-greet{font-size:.88rem;color:#3b82f6}.sec-title{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #f1f5f9}.row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f8fafc}.row-l{font-size:.88rem;color:#64748b;font-weight:500}.row-v{font-size:.88rem;color:#0f172a;font-weight:700;text-align:right}.total-box{background:linear-gradient(135deg,#eff6ff,#e0f2fe);border-radius:14px;padding:20px 24px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;border:1px solid #bfdbfe}.total-l{font-size:.95rem;font-weight:700;color:#374151}.total-v{font-size:2rem;font-weight:900;color:#1e40af}.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.badge{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:20px;font-size:.72rem;font-weight:700}.bg{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}.bb{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px}.sc{background:#f8faff;border-radius:14px;padding:20px;text-align:center;border:1px solid #e0e7ff}.sc.g{background:#f0fdf4;border-color:#bbf7d0}.sv{font-size:1.35rem;font-weight:900;color:#1e40af;display:block;line-height:1;margin-bottom:6px}.sc.g .sv{color:#15803d}.sl{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8}.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid #e2e8f0}table{width:100%;border-collapse:collapse;min-width:520px}th{background:#f8fafc;padding:10px 10px;text-align:left;font-size:.58rem;font-weight:800;text-transform:uppercase;color:#94a3b8;border-bottom:2px solid #e2e8f0}td{padding:9px 10px;border-bottom:1px solid #f1f5f9;color:#374151;font-size:.78rem}tfoot td{background:#f0fdf4;font-weight:800;color:#15803d;border-top:2px solid #bbf7d0}.vc{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin-bottom:12px;position:relative}.vc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#1e40af,#60a5fa)}.vc-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.vc-n{display:flex;align-items:center;gap:12px}.vc-e{font-size:2.2rem}.vc-t{font-weight:800;font-size:1rem;color:#0f172a}.vc-s{font-size:.75rem;color:#64748b;margin-top:3px}.vc-a{font-size:1.3rem;font-weight:900;color:#1e40af}.vc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}.vc-sv{font-size:.9rem;font-weight:800;color:#1e40af}.vc-sl{font-size:.58rem;color:#94a3b8;text-transform:uppercase;margin-top:2px}.ai-box{background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1px solid #bfdbfe;border-radius:16px;padding:24px;margin-top:8px}.alert{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px 20px}.alert p{color:#92400e;font-size:.84rem;line-height:1.75}.alert.red{background:#fef2f2;border-color:#fecaca}.alert.red p{color:#991b1b}.footer{padding:24px 44px 28px;background:#f8fafc;border-top:1px solid #f1f5f9;text-align:center}.footer p{color:#94a3b8;font-size:.72rem;line-height:2}`;
-const emailShell = (title, headerContent, bodyContent) => `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${CSS}</style></head><body><div class="wrap"><div class="card"><div class="header"><div class="logo-row"><div class="logo-box">🚛</div><div><div class="logo-name">Flota ML</div><div class="logo-sub">Control de Flota</div></div></div>${headerContent}</div><div class="accent-bar"></div><div class="body">${bodyContent}</div><div class="footer"><p>🚛 <strong>Flota ML</strong> · Sistema de Control de Flota<br>Generado automáticamente · ${new Date().toLocaleDateString('es-AR', { timeZone: TZ, day: '2-digit', month: 'long', year: 'numeric' })}<br>No responder a este mensaje.</p></div></div></div></body></html>`;
+const CSS = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Helvetica Neue',Arial,sans-serif;background:#f0f4f8;color:#1a1a2e}.wrap{max-width:680px;margin:0 auto;padding:28px 16px}.card{background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 32px rgba(0,0,0,.09)}.header{padding:36px 44px 0;background:#fff}.logo-row{display:flex;align-items:center;gap:14px;margin-bottom:28px}.logo-box{width:50px;height:50px;background:linear-gradient(135deg,#1e40af,#3b82f6);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.5rem;flex-shrink:0}.logo-name{font-size:1.2rem;font-weight:800;color:#0f172a}.logo-sub{font-size:.65rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.12em;margin-top:2px}.h-title{font-size:1.9rem;font-weight:900;color:#0f172a;letter-spacing:-.03em;line-height:1.15}.h-sub{font-size:.9rem;color:#64748b;margin-top:8px;padding-bottom:32px}.accent-bar{height:3px;background:linear-gradient(90deg,#1e40af,#3b82f6,#93c5fd)}.body{padding:36px 44px}.v-hero{background:linear-gradient(135deg,#eff6ff,#dbeafe);border-radius:16px;padding:28px 24px;text-align:center;margin-bottom:32px;border:1px solid #bfdbfe}.v-emoji{font-size:4rem;display:block;margin-bottom:10px}.v-name{font-size:1.25rem;font-weight:800;color:#1e3a8a;margin-bottom:4px}.v-greet{font-size:.88rem;color:#3b82f6}.sec-title{font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.14em;color:#94a3b8;margin-bottom:16px;padding-bottom:10px;border-bottom:2px solid #f1f5f9}.row{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:1px solid #f8fafc}.row-l{font-size:.88rem;color:#64748b;font-weight:500}.row-v{font-size:.88rem;color:#0f172a;font-weight:700;text-align:right}.total-box{background:linear-gradient(135deg,#eff6ff,#e0f2fe);border-radius:14px;padding:20px 24px;margin-top:20px;display:flex;justify-content:space-between;align-items:center;border:1px solid #bfdbfe}.total-l{font-size:.95rem;font-weight:700;color:#374151}.total-v{font-size:2rem;font-weight:900;color:#1e40af}.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.badge{display:inline-flex;align-items:center;gap:5px;padding:6px 16px;border-radius:20px;font-size:.72rem;font-weight:700}.bg{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}.bb{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px}.sc{background:#f8faff;border-radius:14px;padding:20px;text-align:center;border:1px solid #e0e7ff}.sc.g{background:#f0fdf4;border-color:#bbf7d0}.sv{font-size:1.35rem;font-weight:900;color:#1e40af;display:block;line-height:1;margin-bottom:6px}.sc.g .sv{color:#15803d}.sl{font-size:.6rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:#94a3b8}.vc{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:20px;margin-bottom:12px;position:relative}.vc::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#1e40af,#60a5fa)}.vc-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}.vc-n{display:flex;align-items:center;gap:12px}.vc-e{font-size:2.2rem}.vc-t{font-weight:800;font-size:1rem;color:#0f172a}.vc-s{font-size:.75rem;color:#64748b;margin-top:3px}.vc-a{font-size:1.3rem;font-weight:900;color:#1e40af}.vc-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}.vc-sv{font-size:.9rem;font-weight:800;color:#1e40af}.vc-sl{font-size:.58rem;color:#94a3b8;text-transform:uppercase;margin-top:2px}.ai-box{background:linear-gradient(135deg,#eff6ff,#f0fdf4);border:1px solid #bfdbfe;border-radius:16px;padding:24px;margin-top:8px}.alert{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:18px 20px}.alert p{color:#92400e;font-size:.84rem;line-height:1.75}.alert.red{background:#fef2f2;border-color:#fecaca}.alert.red p{color:#991b1b}.footer{padding:24px 44px 28px;background:#f8fafc;border-top:1px solid #f1f5f9;text-align:center}.footer p{color:#94a3b8;font-size:.72rem;line-height:2}`;
+const emailShell = (title, headerContent, bodyContent, footerNote = 'No responder a este mensaje.') => `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><style>${CSS}</style></head><body><div class="wrap"><div class="card"><div class="header"><div class="logo-row"><div class="logo-box">🚛</div><div><div class="logo-name">Flota ML</div><div class="logo-sub">Control de Flota</div></div></div>${headerContent}</div><div class="accent-bar"></div><div class="body">${bodyContent}</div><div class="footer"><p>🚛 <strong>Flota ML</strong> · Sistema de Control de Flota<br>Generado automáticamente · ${new Date().toLocaleDateString('es-AR', { timeZone: TZ, day: '2-digit', month: 'long', year: 'numeric' })}<br>${footerNote}</p></div></div></div></body></html>`;
