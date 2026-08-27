@@ -252,6 +252,26 @@ async function handleMe(request, env) {
 // ══════════════════════════════════════════════════════════════════════════════
 // GEMINI — extracción fiscal completa
 // ══════════════════════════════════════════════════════════════════════════════
+// Reintenta solo errores TRANSITORIOS (503 "high demand", 429, 5xx) — nunca el
+// tope de gasto (400) ni una key inválida (401/403), que no se arreglan reintentando.
+// Encontrado el 27/08/2026: una carga de Nahuel/Fiat quedó en "revisar" porque
+// Gemini devolvió un 503 pasajero una sola vez y el código no reintentaba nada;
+// al reprocesar a mano minutos después funcionó perfecto — este helper hace eso
+// mismo automáticamente, sin depender de que el admin lo note y reprocese.
+async function llamarGemini(body, env, label, { maxReintentos = 2, esperaMs = 1200 } = {}) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+  let ultimoError;
+  for (let intento = 0; intento <= maxReintentos; intento++) {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (res.ok) return res.json();
+    const e = await res.json().catch(() => ({}));
+    ultimoError = new Error(`${label}: ${e.error?.message || res.status}`);
+    const transitorio = res.status === 503 || res.status === 429 || res.status >= 500;
+    if (!transitorio || intento === maxReintentos) throw ultimoError;
+    await new Promise(r => setTimeout(r, esperaMs * (intento + 1)));
+  }
+  throw ultimoError;
+}
 const TICKET_SCHEMA = `{
 "tipo_comprobante":"TIQUE FACTURA A","codigo_comprobante":"081",
 "punto_venta":"00011","numero_comprobante":"00033244",
@@ -286,37 +306,23 @@ REGLAS:
 
 Devolvé SOLO este JSON:
 ${TICKET_SCHEMA}`;
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
-    {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.' }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-      }),
-    });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('Gemini ticket: ' + (e.error?.message || res.status)); }
-  const data = await res.json();
+  const data = await llamarGemini({
+    systemInstruction: { parts: [{ text: 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.' }] },
+    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+  }, env, 'Gemini ticket');
   return JSON.parse(data.candidates[0].content.parts[0].text.trim());
 }
 
 async function geminiOdometro(b64, env) {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
-    {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
-        contents: [{ role: 'user', parts: [
-          { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Devolvé SOLO JSON: {"km":123456,"confianza":95}. Si no es legible: {"km":null,"confianza":0}.' },
-          { inlineData: { mimeType: 'image/jpeg', data: b64 } },
-        ] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-      }),
-    });
-  if (!res.ok) throw new Error('Gemini odómetro: ' + res.status);
-  const data = await res.json();
+  const data = await llamarGemini({
+    systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
+    contents: [{ role: 'user', parts: [
+      { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Devolvé SOLO JSON: {"km":123456,"confianza":95}. Si no es legible: {"km":null,"confianza":0}.' },
+      { inlineData: { mimeType: 'image/jpeg', data: b64 } },
+    ] }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+  }, env, 'Gemini odómetro');
   return JSON.parse(data.candidates[0].content.parts[0].text.trim());
 }
 
@@ -774,18 +780,11 @@ async function geminiServicio(b64, env) {
 
 Devolvé SOLO este JSON:
 {"fecha":"YYYY-MM-DD","km":82295,"proximo_km_absoluto":92295,"proximo_intervalo":null,"taller":"Lube Stop","items":["Aceite Shell 5W40","Filtro de aceite"],"confianza":90}`;
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`,
-    {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos, con diseños muy variables entre talleres. Respondés SOLO JSON válido.' }] },
-        contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-      }),
-    });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error('Gemini servicio: ' + (e.error?.message || res.status)); }
-  const data = await res.json();
+  const data = await llamarGemini({
+    systemInstruction: { parts: [{ text: 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos, con diseños muy variables entre talleres. Respondés SOLO JSON válido.' }] },
+    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+  }, env, 'Gemini servicio');
   return JSON.parse(data.candidates[0].content.parts[0].text.trim());
 }
 
