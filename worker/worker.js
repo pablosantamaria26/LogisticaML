@@ -23,7 +23,9 @@ const SESSION_DAYS = 180;
 // acto. Cada modelo tiene su propia capacidad y su propio cupo del plan
 // gratuito, así que es muy raro que caigan todos a la vez. Con un solo modelo
 // (hasta sep/2026) una saturación pasajera mandaba la carga a "revisar".
-const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest'];
+// Probado 28/09/2026: la familia 3.5/flash-lite se satura en simultáneo, 3.6 y 3.8
+// Flash suelen tener capacidad libre. Gemma 4 NO sirve (falla con imágenes).
+const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 const GEMINI_MODEL = GEMINI_MODELOS[0]; // usado por los textos de análisis (no críticos)
 
 const CORS = {
@@ -264,14 +266,14 @@ async function handleMe(request, env) {
 // porque afecta a todos los modelos por igual. Si falla todo, lanza el error y
 // la carga queda en "procesando" — la cola de reintentos (reintentarPendientes)
 // la vuelve a intentar sola más tarde; nunca se pierde ni la ve nadie fallar.
-async function llamarGemini(body, env, label) {
+async function llamarGemini(body, env, label, modelos = GEMINI_MODELOS) {
   let ultimoError;
-  for (const modelo of GEMINI_MODELOS) {
+  for (const modelo of modelos) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
     let res;
     try {
-      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    } catch (e) { ultimoError = new Error(`${label}: red (${e.message})`); continue; }
+      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(25000) });
+    } catch (e) { ultimoError = new Error(`${label}: sin respuesta de ${modelo} (${e.message})`); continue; }
     if (res.ok) {
       const data = await res.json();
       const texto = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
@@ -298,7 +300,7 @@ const TICKET_SCHEMA = `{
 "advertencias":[]
 }`;
 
-async function geminiTicket(b64, env) {
+async function geminiTicket(b64, env, modelos) {
   const prompt = `Extraé TODOS los datos fiscales de esta foto de un ticket de combustible argentino (tique factura de controlador fiscal).
 
 GUÍA DE LECTURA del ticket:
@@ -323,13 +325,13 @@ ${TICKET_SCHEMA}`;
     systemInstruction: { parts: [{ text: 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, env, 'Gemini ticket');
+  }, env, 'Gemini ticket', modelos);
 }
 
 // Sin respaldo de Workers AI (sacado sep/2026): alucinó km=123456 con 95% de
 // "confianza" y pisó el km real del Hiace. Si Gemini no responde, la carga
 // queda en "procesando" y se reintenta sola — mejor esperar que inventar.
-async function geminiOdometro(b64, env) {
+async function geminiOdometro(b64, env, modelos) {
   return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [
@@ -337,7 +339,7 @@ async function geminiOdometro(b64, env) {
       { inlineData: { mimeType: 'image/jpeg', data: b64 } },
     ] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, env, 'Gemini odómetro');
+  }, env, 'Gemini odómetro', modelos);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -423,9 +425,12 @@ async function procesarCarga(env, id, origen, ctx) {
   const tBytes = await fotoGet(env, carga.foto_ticket);
   if (!tBytes) return { ok: false, error: 'Foto de ticket no encontrada en storage' };
   const kBytes = carga.foto_tablero ? await fotoGet(env, carga.foto_tablero) : null;
+  // El chofer espera la respuesta: en la carga nueva solo 2 modelos (≈40 s como
+  // máximo); la cola, que no tiene a nadie esperando, prueba la cadena completa.
+  const modelos = origen === 'nueva' ? GEMINI_MODELOS.slice(0, 2) : GEMINI_MODELOS;
   const [tRes, kRes] = await Promise.allSettled([
-    geminiTicket(bytesToB64(tBytes), env),
-    kBytes ? geminiOdometro(bytesToB64(kBytes), env) : Promise.resolve(null),
+    geminiTicket(bytesToB64(tBytes), env, modelos),
+    kBytes ? geminiOdometro(bytesToB64(kBytes), env, modelos) : Promise.resolve(null),
   ]);
   const t = tRes.status === 'fulfilled' ? tRes.value : null;
   const kmData = kRes.status === 'fulfilled' ? kRes.value : null;
