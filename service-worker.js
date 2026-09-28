@@ -1,5 +1,6 @@
 // Flota ML 2.0 — Service Worker
-const CACHE = 'fml2-v2';
+const CACHE = 'fml2-v3';
+const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const SHELL = ['/LogisticaML/', '/LogisticaML/index.html', '/LogisticaML/manifest.json', '/LogisticaML/icon-192.png'];
 
 self.addEventListener('install', e => {
@@ -51,18 +52,49 @@ self.addEventListener('fetch', e => {
   );
 });
 
-// Background Sync → avisar a la página que mande la cola
-self.addEventListener('sync', e => {
-  if (e.tag === 'flush-queue') {
-    e.waitUntil(self.clients.matchAll().then(cs => cs.forEach(c => c.postMessage({ type: 'FLUSH_QUEUE' }))));
+// Background Sync: Android lo dispara apenas hay señal, aunque la app esté
+// cerrada o el celular bloqueado. Manda la cola directo desde acá (misma base
+// IndexedDB 'fml2' que usa la página). Si algo falla, se rechaza la promesa y
+// el navegador reintenta solo más tarde. El servidor ignora duplicados.
+function idb() {
+  return new Promise((res, rej) => { const r = indexedDB.open('fml2', 1); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    r.onupgradeneeded = () => { r.result.createObjectStore('pendientes', { keyPath: 'id' }); r.result.createObjectStore('cache'); }; });
+}
+const req = q => new Promise((res, rej) => { q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+async function toDataURL(blob) {
+  const buf = new Uint8Array(await blob.arrayBuffer()); let bin = '';
+  for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  return 'data:image/jpeg;base64,' + btoa(bin);
+}
+async function enviarCola() {
+  const db = await idb();
+  const token = await req(db.transaction('cache').objectStore('cache').get('token'));
+  if (!token) return;
+  const items = await req(db.transaction('pendientes').objectStore('pendientes').getAll());
+  let pendiente = false;
+  for (const it of items || []) {
+    try {
+      const url = it.retake ? `${API}/api/cargas/${it.cargaId}/foto` : `${API}/api/cargas`;
+      const body = it.retake ? { tipo: it.fotoTipo, foto: await toDataURL(it.foto) }
+        : { id: it.id, vehiculoId: it.vehiculoId, fotoTicket: await toDataURL(it.ticket), fotoTablero: it.tablero ? await toDataURL(it.tablero) : null };
+      const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify(body) });
+      if (r.ok || (r.status >= 400 && r.status < 500 && ![401, 408, 429].includes(r.status)))
+        await req(db.transaction('pendientes', 'readwrite').objectStore('pendientes').delete(it.id));
+      else pendiente = true;
+    } catch (e) { pendiente = true; }
   }
+  (await self.clients.matchAll()).forEach(c => c.postMessage({ type: 'FLUSH_QUEUE' }));
+  if (pendiente) throw new Error('quedan pendientes — el navegador reintenta');
+}
+self.addEventListener('sync', e => {
+  if (e.tag === 'flush-queue') e.waitUntil(enviarCola());
 });
 
 // ── WEB PUSH (igual a v1, probado en producción) ─────────────────────────────
 self.addEventListener('push', e => {
-  let title = '🚛 Flota ML', body = 'Nueva notificación', tag = 'fml';
+  let title = '🚛 Flota ML', body = 'Nueva notificación', tag = 'fml', url = '/LogisticaML/';
   try {
-    if (e.data) { const d = e.data.json(); if (d.title) title = d.title; if (d.body) body = d.body; if (d.tag) tag = d.tag; }
+    if (e.data) { const d = e.data.json(); if (d.title) title = d.title; if (d.body) body = d.body; if (d.tag) tag = d.tag; if (d.url) url = d.url; }
   } catch (_) { try { if (e.data) body = e.data.text(); } catch (__) { } }
   const ICON = '/LogisticaML/icon-192.png';
   const isIOS = /iphone|ipad|ipod/i.test(self.navigator?.userAgent || '');
@@ -70,11 +102,11 @@ self.addEventListener('push', e => {
     body, tag,
     ...(isIOS ? {} : { icon: ICON, badge: ICON }),
     vibrate: [200, 100, 200],
-    data: { url: '/LogisticaML/' },
+    data: { url },
   };
   e.waitUntil(
     self.registration.showNotification(title, options).catch(() =>
-      self.registration.showNotification(title, { body, tag, vibrate: [200, 100, 200], data: { url: '/LogisticaML/' } })
+      self.registration.showNotification(title, { body, tag, vibrate: [200, 100, 200], data: { url } })
     )
   );
 });
@@ -84,7 +116,8 @@ self.addEventListener('notificationclick', e => {
   e.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
       const existing = clients.find(c => c.url.includes('/LogisticaML/'));
-      if (existing) return existing.focus();
+      // Si la app ya está abierta, se la lleva a la URL del aviso (ej. ?retake=id)
+      if (existing) return existing.navigate(url).then(c => (c || existing).focus()).catch(() => existing.focus());
       return self.clients.openWindow(url);
     })
   );

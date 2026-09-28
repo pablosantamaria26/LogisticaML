@@ -266,13 +266,13 @@ async function handleMe(request, env) {
 // porque afecta a todos los modelos por igual. Si falla todo, lanza el error y
 // la carga queda en "procesando" — la cola de reintentos (reintentarPendientes)
 // la vuelve a intentar sola más tarde; nunca se pierde ni la ve nadie fallar.
-async function llamarGemini(body, env, label, modelos = GEMINI_MODELOS) {
+async function llamarGemini(body, env, label, modelos = GEMINI_MODELOS, timeoutMs = 25000) {
   let ultimoError;
   for (const modelo of modelos) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
     let res;
     try {
-      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(25000) });
+      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
     } catch (e) { ultimoError = new Error(`${label}: sin respuesta de ${modelo} (${e.message})`); continue; }
     if (res.ok) {
       const data = await res.json();
@@ -297,10 +297,11 @@ const TICKET_SCHEMA = `{
 "montos":{"neto_gravado":0.0,"iva_alicuota":21.0,"iva":0.0,"otros_tributos":0.0,"percepciones":0.0,"exento":0.0,"no_gravado":0.0,"total":0.0},
 "condicion_pago":"CONTADO",
 "confianza":95,
-"advertencias":[]
+"advertencias":[],
+"problema_foto":null
 }`;
 
-async function geminiTicket(b64, env, modelos) {
+async function geminiTicket(b64, env, modelos, timeoutMs) {
   const prompt = `Extraé TODOS los datos fiscales de esta foto de un ticket de combustible argentino (tique factura de controlador fiscal).
 
 GUÍA DE LECTURA del ticket:
@@ -319,6 +320,7 @@ REGLAS:
 - Verificá: neto_gravado + iva + otros_tributos + percepciones ≈ total. Si no cierra, revisá tu lectura y anotalo en advertencias.
 - confianza: 0-100 global según nitidez.
 - advertencias: lista de strings con cualquier duda.
+- problema_foto: si la FOTO impide leer bien algún dato, uno de: "borrosa" (movida/desenfocada), "oscura" (poca luz), "cortada" (falta parte del ticket), "reflejo" (brillo/flash tapa números), "lejos" (ticket muy chico en la imagen), "no_es_ticket" (la foto no muestra un ticket de combustible). Si la foto está bien: null.
 
 Devolvé SOLO este JSON:
 ${TICKET_SCHEMA}`;
@@ -326,21 +328,21 @@ ${TICKET_SCHEMA}`;
     systemInstruction: { parts: [{ text: 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, env, 'Gemini ticket', modelos);
+  }, env, 'Gemini ticket', modelos, timeoutMs);
 }
 
 // Sin respaldo de Workers AI (sacado sep/2026): alucinó km=123456 con 95% de
 // "confianza" y pisó el km real del Hiace. Si Gemini no responde, la carga
 // queda en "procesando" y se reintenta sola — mejor esperar que inventar.
-async function geminiOdometro(b64, env, modelos) {
+async function geminiOdometro(b64, env, modelos, timeoutMs) {
   return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [
-      { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Devolvé SOLO JSON: {"km":123456,"confianza":95}. Si no es legible: {"km":null,"confianza":0}.' },
+      { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Devolvé SOLO JSON: {"km":123456,"confianza":95,"problema_foto":null}. Si no es legible: {"km":null,"confianza":0,"problema_foto":"borrosa"}. problema_foto es uno de: "borrosa", "oscura", "reflejo", "cortada" (no se ve el odómetro entero), "lejos", "no_es_tablero" (la foto no muestra un tablero), o null si la foto está bien.' },
       { inlineData: { mimeType: 'image/jpeg', data: b64 } },
     ] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, env, 'Gemini odómetro', modelos);
+  }, env, 'Gemini odómetro', modelos, timeoutMs);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -426,12 +428,14 @@ async function procesarCarga(env, id, origen, ctx) {
   const tBytes = await fotoGet(env, carga.foto_ticket);
   if (!tBytes) return { ok: false, error: 'Foto de ticket no encontrada en storage' };
   const kBytes = carga.foto_tablero ? await fotoGet(env, carga.foto_tablero) : null;
-  // El chofer espera la respuesta: en la carga nueva solo 2 modelos (≈40 s como
-  // máximo); la cola, que no tiene a nadie esperando, prueba la cadena completa.
-  const modelos = origen === 'nueva' ? GEMINI_MODELOS.slice(0, 2) : GEMINI_MODELOS;
+  // Carga nueva / foto reenviada corren en segundo plano (waitUntil, tope ~30 s):
+  // 2 modelos con 13 s cada uno. Si no alcanza, la cola sigue con la cadena completa.
+  const rapido = origen === 'nueva' || origen === 'retake';
+  const modelos = rapido ? GEMINI_MODELOS.slice(0, 2) : GEMINI_MODELOS;
+  const tmo = rapido ? 13000 : 25000;
   const [tRes, kRes] = await Promise.allSettled([
-    geminiTicket(bytesToB64(tBytes), env, modelos),
-    kBytes ? geminiOdometro(bytesToB64(kBytes), env, modelos) : Promise.resolve(null),
+    geminiTicket(bytesToB64(tBytes), env, modelos, tmo),
+    kBytes ? geminiOdometro(bytesToB64(kBytes), env, modelos, tmo) : Promise.resolve(null),
   ]);
   const t = tRes.status === 'fulfilled' ? tRes.value : null;
   const kmData = kRes.status === 'fulfilled' ? kRes.value : null;
@@ -473,7 +477,22 @@ async function procesarCarga(env, id, origen, ctx) {
   // al contador: si queda fuera de rango, se usa la fecha en que se subió.
   let fecha = t?.fecha || carga.fecha || fechaSubida;
   if (warnings.includes('fecha_fuera_de_rango') || warnings.includes('sin_fecha')) fecha = fechaSubida;
-  const detalle = JSON.stringify({ warnings, notas, ocrErr: t ? null : ocrErr, intentos, ultimoIntento: ahora, emailEnviado: det.emailEnviado });
+  // ¿Hay que pedirle al chofer que repita una foto? Solo si el problema es la FOTO
+  // (no datos que no cierran — eso lo resuelve el admin), la carga es reciente y
+  // no se le pidió ya 2 veces esa misma foto (nunca se lo tiene en loop).
+  const pedidos = { ...(det.pedidos || {}) };
+  const edadCarga = (Date.now() - new Date((carga.creado || '').includes('T') ? carga.creado : (carga.creado || '').replace(' ', 'T') + 'Z')) / 3.6e6;
+  let retake = null;
+  if (origen !== 'admin' && carga.usuario_id && !(edadCarga > 72)) {
+    const tMal = t && (t.problema_foto === 'no_es_ticket' || !t.montos?.total || !t.numero_comprobante || (t.confianza ?? 0) < 50);
+    const kMal = !kBytes ? 'falta'
+      : (kmData && (kmData.problema_foto === 'no_es_tablero' || !(kmData.km > 0) || (kmData.confianza ?? 0) < 50));
+    if (tMal && (pedidos.ticket || 0) < 2) retake = { tipo: 'ticket', motivo: t.problema_foto || 'ilegible' };
+    else if (kMal && (pedidos.tablero || 0) < 2) retake = { tipo: 'tablero', motivo: kMal === 'falta' ? 'falta' : (kmData.problema_foto || 'ilegible') };
+  }
+  if (retake) pedidos[retake.tipo] = (pedidos[retake.tipo] || 0) + 1;
+  const detalle = JSON.stringify({ warnings, notas, ocrErr: t ? null : ocrErr, intentos, ultimoIntento: ahora, emailEnviado: det.emailEnviado,
+    pedidos, fotoMotivo: retake?.motivo || null });
 
   if (t) {
     const m = t.montos || {}, it = (t.items && t.items[0]) || {};
@@ -498,6 +517,8 @@ async function procesarCarga(env, id, origen, ctx) {
       .bind(km, kmConfianza, validacion, detalle, id).run();
   }
 
+  if (retake) await env.DB.prepare('UPDATE cargas SET foto_pendiente=? WHERE id=?').bind(retake.tipo, id).run();
+
   // El km del vehículo solo avanza con una lectura confiable (antes un km
   // alucinado pero marcado para revisar igual pisaba el real).
   if (km && km > (veh.km_actual || 0) && !kmWarns.length) {
@@ -506,18 +527,19 @@ async function procesarCarga(env, id, origen, ctx) {
   }
 
   const final = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  // Orden importa: en segundo plano hay ~30 s de margen — primero el aviso al
+  // chofer (lo más importante), después email y mantenimiento.
   const tareas = (async () => {
-    const user = carga.usuario_id
-      ? await env.DB.prepare('SELECT * FROM usuarios WHERE id=?').bind(carga.usuario_id).first() : null;
-    if (!det.emailEnviado && origen !== 'admin') {
+    if (retake) {
+      // Aviso al chofer: motivo claro + toque directo a la pantalla para repetir
       try {
-        await emailConfirmacion(env, final, veh, user || { nombre: carga.usuario_nombre || '—' });
-        await env.DB.prepare('UPDATE cargas SET validacion_detalle=? WHERE id=?')
-          .bind(JSON.stringify({ ...JSON.parse(detalle), emailEnviado: true }), id).run();
-      } catch (e) { console.error('email conf:', e.message); }
-    }
-    try { await checkMantenimiento(env, veh); } catch (e) { console.error('maint:', e.message); }
-    if (validacion === 'revisar' && origen !== 'admin') {
+        await pushToUsuario(env, carga.usuario_id, {
+          title: retake.tipo === 'ticket' ? '📸 Repetí la foto del ticket' : '📸 Repetí la foto del tablero',
+          body: `Carga del ${fmtFechaCorta(carga.fecha)}: ${motivoFoto(retake.tipo, retake.motivo)}. Tocá acá para sacarla de nuevo.`,
+          tag: 'retake-' + id, url: '/LogisticaML/?retake=' + id,
+        });
+      } catch (e) { }
+    } else if (validacion === 'revisar' && origen !== 'admin') {
       try {
         await pushToAdmins(env, {
           title: t ? '🔍 Carga para revisar' : '❌ No se pudo leer el ticket en 24 hs', tag: 'revision',
@@ -525,9 +547,44 @@ async function procesarCarga(env, id, origen, ctx) {
         });
       } catch (e) { }
     }
+    // El email de confirmación sale una sola vez, cuando la carga quedó completa
+    // (no mientras se espera que el chofer repita una foto)
+    if (!det.emailEnviado && !retake && origen !== 'admin') {
+      try {
+        const user = carga.usuario_id
+          ? await env.DB.prepare('SELECT * FROM usuarios WHERE id=?').bind(carga.usuario_id).first() : null;
+        await emailConfirmacion(env, final, veh, user || { nombre: carga.usuario_nombre || '—' });
+        await env.DB.prepare('UPDATE cargas SET validacion_detalle=? WHERE id=?')
+          .bind(JSON.stringify({ ...JSON.parse(detalle), emailEnviado: true }), id).run();
+      } catch (e) { console.error('email conf:', e.message); }
+    }
+    try { await checkMantenimiento(env, veh); } catch (e) { console.error('maint:', e.message); }
   })();
   if (ctx) ctx.waitUntil(tareas); else await tareas;
   return { ok: true, carga: final };
+}
+
+// Texto claro para el chofer según lo que la IA vio en la foto
+const MOTIVOS_FOTO = {
+  borrosa: 'salió movida o borrosa — apoyá bien el celular y sacala quieto',
+  oscura: 'salió oscura — buscá más luz o prendé el flash',
+  cortada: 'no se ve completa — encuadrala entera',
+  reflejo: 'un reflejo tapa los números — cambiá un poco el ángulo',
+  lejos: 'está muy lejos — acercate un poco más',
+  no_es_ticket: 'la foto no es del ticket',
+  no_es_tablero: 'la foto no es del tablero',
+  falta: 'falta la foto del tablero (los km)',
+  ilegible: 'no se pudieron leer los datos',
+};
+function motivoFoto(tipo, motivo) {
+  const que = tipo === 'ticket' ? 'la foto del ticket ' : 'la foto del tablero ';
+  if (motivo === 'falta' || motivo === 'no_es_ticket' || motivo === 'no_es_tablero') return MOTIVOS_FOTO[motivo];
+  return que + (MOTIVOS_FOTO[motivo] || MOTIVOS_FOTO.ilegible);
+}
+function fmtFechaCorta(f) { return f ? f.slice(8, 10) + '/' + f.slice(5, 7) : 'hoy'; }
+async function pushToUsuario(env, usuarioId, payload) {
+  const rows = await env.DB.prepare('SELECT endpoint, subscription FROM push_subs WHERE usuario_id=?').bind(usuarioId).all();
+  return pushSend(env, rows.results, payload);
 }
 
 // Cola: cargas en 'procesando' se reintentan (máx `max` por pasada, con al
@@ -590,8 +647,10 @@ async function handleNuevaCarga(request, env, ctx) {
       fotoTicketKey, fotoTableroKey).run();
 
   // 3. Leer con IA ahora mismo; si no responde, queda en cola y se reintenta sola
-  const r = await procesarCarga(env, body.id, 'nueva', ctx);
-  const carga = r.carga || await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(body.id).first();
+  // Se contesta YA (fotos guardadas = carga segura); la IA lee en segundo plano.
+  // Si el segundo plano no alcanza, la cola (cron c/15 min) la termina.
+  ctx.waitUntil(procesarCarga(env, body.id, 'nueva').catch(e => console.error('carga nueva:', e.message)));
+  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(body.id).first();
   return json({ ok: true, carga: publicCarga(carga) });
 }
 
@@ -1151,11 +1210,13 @@ async function handleAdminSolicitarFoto(request, env) {
 async function handlePendientesFoto(request, env) {
   const user = await getAuthUser(request, env);
   if (!user) return noAuth();
-  if (user.rol === 'admin') return json({ ok: true, cargas: [] });
   const rows = await env.DB.prepare(
-    `SELECT id,fecha,hora,vehiculo_id,foto_pendiente,total,litros FROM cargas
+    `SELECT id,fecha,hora,vehiculo_id,foto_pendiente,total,litros,validacion_detalle FROM cargas
      WHERE usuario_id=? AND foto_pendiente IS NOT NULL ORDER BY creado DESC`).bind(user.id).all();
-  return json({ ok: true, cargas: rows.results });
+  return json({ ok: true, cargas: rows.results.map(({ validacion_detalle, ...c }) => {
+    let d = {}; try { d = JSON.parse(validacion_detalle || '{}'); } catch (e) { }
+    return { ...c, motivo: d.fotoMotivo ? motivoFoto(c.foto_pendiente, d.fotoMotivo) : 'la administración pidió esta foto de nuevo' };
+  }) });
 }
 
 async function handleSubirFotoFaltante(request, env, ctx, id) {
@@ -1175,21 +1236,15 @@ async function handleSubirFotoFaltante(request, env, ctx, id) {
   // Foto nueva → se relee todo con procesarCarga (la ventana de 24 hs de
   // reintentos arranca de nuevo desde ahora, no desde que se creó la carga)
   let det = {}; try { det = JSON.parse(carga.validacion_detalle || '{}'); } catch (e) { }
+  // ultimoIntento=ahora: la cola no la toma en paralelo mientras corre el segundo plano
+  const ahora = new Date().toISOString();
   await env.DB.prepare(`UPDATE cargas SET ${tipo === 'tablero' ? 'foto_tablero' : 'foto_ticket'}=?, foto_pendiente=NULL,
-    validacion_detalle=?, corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
-    .bind(key, JSON.stringify({ ...det, intentos: 0, desde: new Date().toISOString() }), 'foto-retake:' + user.username, id).run();
-  await procesarCarga(env, id, 'retake', ctx);
-  // Tablero todavía ilegible → se vuelve a pedir
-  const tras = await env.DB.prepare('SELECT km, validacion FROM cargas WHERE id=?').bind(id).first();
-  if (tipo === 'tablero' && !tras.km && tras.validacion !== 'procesando')
-    await env.DB.prepare(`UPDATE cargas SET foto_pendiente='tablero' WHERE id=?`).bind(id).run();
-
+    validacion='procesando', validacion_detalle=?, corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
+    .bind(key, JSON.stringify({ ...det, intentos: 0, desde: ahora, ultimoIntento: ahora }), 'foto-retake:' + user.username, id).run();
+  // Se contesta YA: el chofer puede guardar el celular. Si la foto nueva tampoco
+  // sirve, procesarCarga le vuelve a avisar (tope de 2 pedidos por foto).
+  ctx.waitUntil(procesarCarga(env, id, 'retake').catch(e => console.error('retake:', e.message)));
   const updated = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
-  ctx.waitUntil(pushToAdmins(env, {
-    title: updated.foto_pendiente ? '⚠️ Foto sigue poco clara' : '✅ Foto recibida',
-    body: `${user.nombre} reenvió la foto del ${tipo} — ${updated.foto_pendiente ? 'sigue sin poder leerse' : 'carga actualizada'}.`,
-    tag: 'foto-recibida-' + id,
-  }).catch(() => { }));
   return json({ ok: true, carga: publicCarga(updated) });
 }
 

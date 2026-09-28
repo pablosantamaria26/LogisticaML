@@ -249,7 +249,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
         <button class="mega" onclick="Carga.start()">
           <span class="q hidden" id="cg-q"></span>
           <span class="ic">⛽</span>
-          <span><h2>Registrar carga</h2><p>2 fotos: ticket y tablero.<br>El resto es automático.</p></span>
+          <span><h2>Registrar carga</h2><p>2 fotos: ticket y tablero.<br>Después guardás el celu: el resto es automático.</p></span>
         </button>
         <p class="hint" style="margin-top:.9rem">📸 Te va a pedir 2 fotos, una por vez: elegí "Cámara" en el menú que aparece cada vez.</p>
       </div>
@@ -257,11 +257,13 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
         <div class="steps">
           <div class="step" id="stp-1"><div class="dot">1</div><div style="flex:1"><b>Foto del ticket</b><small id="stp-1-s">—</small></div><span id="stp-1-i">🧾</span></div>
           <div class="step" id="stp-2"><div class="dot">2</div><div style="flex:1"><b>Foto del tablero</b><small id="stp-2-s">—</small></div><span id="stp-2-i">🛣️</span></div>
-          <div class="step" id="stp-3"><div class="dot">3</div><div style="flex:1"><b>Procesando con IA</b><small id="stp-3-s">—</small></div><span id="stp-3-i">🤖</span></div>
+          <div class="step" id="stp-3"><div class="dot">3</div><div style="flex:1"><b>Envío</b><small id="stp-3-s">—</small></div><span id="stp-3-i">📤</span></div>
         </div>
-        <button class="btn btn-acc hidden" id="cg-btn-tablero" style="margin-top:.9rem" onclick="Carga.sacarTablero()">🛣️ Sacar foto del tablero</button>
+        <div id="cg-aviso"></div>
+        <button class="btn btn-acc hidden" id="cg-btn-tablero" style="margin-top:.9rem;padding:1.1rem;font-size:1.05rem" onclick="Carga.sacarTablero()">🛣️ Ahora la foto del tablero</button>
         <button class="btn btn-ghost" style="margin-top:.6rem" onclick="Carga.cancelarFlujo()">✕ Cancelar</button>
       </div>
+      <div id="cg-fotopend" style="margin-bottom:.8rem"></div>
       <div id="cg-result" class="hidden"></div>
       <div id="cg-pend"></div>
     </section>
@@ -401,7 +403,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260928-154858';
+const APP_VERSION = '20260928-211638';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -475,7 +477,7 @@ async function api(path, opts={}){
   });
   if(res.status===401 && S.token){ App.logout(true); throw new Error('Sesión vencida — ingresá de nuevo'); }
   const data = await res.json().catch(()=>({}));
-  if(!res.ok) throw new Error(data.error||('HTTP '+res.status));
+  if(!res.ok){ const err=new Error(data.error||('HTTP '+res.status)); err.status=res.status; throw err; }
   return data;
 }
 
@@ -513,10 +515,22 @@ const App = {
     this.buildTabs();
     this.refreshMe().catch(()=>{});
     Panel.render();
+    IDB.put('cache',S.token,'token').catch(()=>{});
     Queue.updateBadge(); Queue.flush();
+    this.abrirRetakeDesdeLink();
     setTimeout(()=>Push.setup(),4000);
     this.avisarSiFirefoxAndroid();
     if(S.user.rol==='admin'){ Mon.render(); Rev.load(); }
+  },
+  // La notificación de "repetí la foto" abre la app con ?retake=<id>: se va
+  // directo a la pantalla de Cargar, donde está el botón para repetirla.
+  abrirRetakeDesdeLink(){
+    const id=new URLSearchParams(location.search).get('retake');
+    if(!id)return;
+    history.replaceState(null,'',location.pathname);
+    const btn=document.querySelector('.tab[data-t="cargar"]');
+    if(btn)this.tab('cargar',btn);
+    Panel.checkPendientesFoto(id).catch(()=>{});
   },
   // Firefox para Android tiene soporte poco confiable de cámara (getUserMedia y
   // el selector nativo con capture=camera) — mejor avisar de entrada que usar
@@ -554,6 +568,7 @@ const App = {
     $('p-'+({panel:'panel',cargar:'cargar',serv:'serv',mon:'mon',rev:'rev',eq:'eq'})[id]).classList.remove('hidden');
     haptic('light');
     if(id==='panel')Panel.render();
+    if(id==='cargar')Panel.checkPendientesFoto().catch(()=>{});
     if(id==='serv')Serv.load();
     if(id==='mon')Mon.render();
     if(id==='rev')Rev.load();
@@ -571,6 +586,7 @@ const App = {
     if(S.token && !silent) api('/api/logout',{method:'POST'}).catch(()=>{});
     S={token:null,user:null,veh:null,mant:null,vehiculos:[]};
     localStorage.removeItem('fml2_token');localStorage.removeItem('fml2_user');localStorage.removeItem('fml2_veh');
+    IDB.del('cache','token').catch(()=>{});
     $('v-app').classList.remove('on');$('v-login').classList.add('on');
     $('l-user').value='';$('l-pin').value='';
   },
@@ -713,6 +729,27 @@ function comprimir(file,maxPx,q){
   });
 }
 const blobToDataURL=b=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(b);});
+// Chequeo instantáneo de la foto del ticket, en el propio celular. Umbrales
+// calibrados con 110 fotos reales (sep/2026): la más oscura tenía brillo 70 y la
+// menos nítida 49 (y se leía bien) — acá solo se avisa por DEBAJO de todas esas,
+// o sea casos extremos, para no molestar nunca con falsas alarmas. Lo fino
+// (borrosa, lejos, reflejo) lo detecta la IA y avisa por notificación.
+async function calidadFoto(blob){
+  try{
+    if(typeof createImageBitmap!=='function')return null;
+    const bmp=await createImageBitmap(blob,{resizeWidth:360,resizeQuality:'medium'});
+    const w=bmp.width,h=bmp.height,c=document.createElement('canvas');c.width=w;c.height=h;
+    const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(bmp,0,0);bmp.close();
+    const d=x.getImageData(0,0,w,h).data,g=new Float32Array(w*h);let sum=0;
+    for(let i=0,j=0;i<d.length;i+=4,j++){const v=.299*d[i]+.587*d[i+1]+.114*d[i+2];g[j]=v;sum+=v;}
+    c.width=0;c.height=0;
+    if(sum/(w*h)<40)return 'La foto salió muy oscura';
+    const L=[];for(let y=1;y<h-1;y++)for(let k=y*w+1;k<y*w+w-1;k++)L.push(Math.abs(4*g[k]-g[k-1]-g[k+1]-g[k-w]-g[k+w]));
+    L.sort((a,b)=>a-b);
+    if(L[Math.floor(L.length*.99)]<35)return 'La foto salió muy movida';
+    return null;
+  }catch(e){return null;} // ante cualquier duda, no molestar
+}
 
 // ══════════════════════════════════════════════════════════════════════════
 // FLUJO DE CARGA — 2 fotos → cola local → servidor procesa todo
@@ -727,9 +764,14 @@ const Carga = {
     this.activa=true; this._ticket=null; haptic('heavy');
     $('cg-idle').classList.add('hidden');
     $('cg-result').classList.add('hidden');$('cg-result').innerHTML='';
-    $('cg-btn-tablero').classList.add('hidden');
     $('cg-proc').classList.remove('hidden');
-    this.step(1,'act','Sacando foto…');this.step(2,'','—');this.step(3,'','—');
+    this.step(2,'','—');this.step(3,'','—');
+    await this.fotoTicket();
+  },
+  // Toma (o repite) la foto del ticket. Siempre llamada desde un tap directo.
+  async fotoTicket(){
+    $('cg-btn-tablero').classList.add('hidden');$('cg-aviso').innerHTML='';
+    this.step(1,'act','Sacando foto…');
     try{
       const ticket=await Cam.open('🧾 Encuadrá el ticket completo, bien iluminado',1600);
       if(!ticket){
@@ -737,13 +779,34 @@ const Carga = {
         reportarError('sin_foto_ticket','Cam.open devolvió null en la foto del ticket');
         this.reset();return;
       }
-      this.step(1,'ok','Foto lista ✓');
       this._ticket=ticket;
+      // Chequeo instantáneo en el celular: solo casos extremos (calibrado con
+      // 110 fotos reales: ninguna buena lo dispara). Lo fino lo decide la IA.
+      const q=await calidadFoto(ticket);
+      if(q){
+        this.step(1,'err',q);
+        $('cg-aviso').innerHTML=`<div class="aban a-warn" style="margin-top:.9rem"><span>⚠️</span><div><b>${q}</b>Mejor sacala de nuevo ahora que tenés el ticket en la mano.</div></div>
+          <button class="btn btn-acc" onclick="Carga.fotoTicket()">📸 Repetir foto del ticket</button>
+          <button class="btn btn-ghost" style="margin-top:.5rem" onclick="Carga.usarTicketIgual()">Usar esta igual</button>`;
+        return;
+      }
+      this.usarTicketIgual();
+    }catch(e){
+      console.error(e);
+      toast('Error: '+e.message,'err');
+      reportarError('excepcion_carga_ticket',e.message);
+      this.reset(1500);
+    }
+  },
+  usarTicketIgual(){
+    try{
+      $('cg-aviso').innerHTML='';
+      this.step(1,'ok','Foto lista ✓');
       // El paso 2 (tablero) NO se dispara solo: pedimos un toque nuevo y
       // directo del usuario para abrir el selector una segunda vez — así
       // el gesto siempre es genuino, sin depender de que el navegador
       // "recuerde" el permiso después de varios pasos async de por medio.
-      this.step(2,'','Tocá el botón de abajo 👇');
+      this.step(2,'act','Tocá el botón de abajo 👇');
       $('cg-btn-tablero').classList.remove('hidden');
     }catch(e){
       console.error(e);
@@ -774,23 +837,30 @@ const Carga = {
     }
   },
   async _finalizar(ticket,tablero){
-    // Guardar en cola local ANTES de intentar enviar (sobrevive sin señal y cierres)
+    // Guardar en el celular ANTES de enviar: sobrevive sin señal, pantalla
+    // bloqueada o app cerrada. Desde acá el chofer ya no espera nada.
     const item={id:uuid(),vehiculoId:S.veh?.id||null,ticket,tablero:tablero||null,creada:new Date().toISOString()};
     await IDB.put('pendientes',item);
     Queue.updateBadge();
-    this.step(3,'act','Enviando y leyendo con IA…',true);
-    const r=await Queue.enviar(item);
-    if(r==='offline'){
-      this.step(3,'err','Sin señal — queda guardada y se envía sola');
-      toast('📴 Carga guardada. Se envía automáticamente cuando haya señal.','warn',6000);
-      this.reset(4000);
-    }else if(r&&r.ok){
-      this.step(3,'ok','Procesada ✓');
-      this.showResult(r.carga);
-    }else{
-      this.step(3,'err','Error al procesar — se reintenta solo');
-      this.reset(4000);
-    }
+    this.step(3,'ok','Guardada ✓ — se envía sola');
+    this.showListo(!!tablero);
+    Queue.enSegundoPlano();
+  },
+  // Pantalla final inmediata: la IA lee después, en segundo plano. Si alguna
+  // foto no sirve, llega una notificación con el motivo y un botón para repetirla.
+  showListo(conTablero){
+    haptic('heavy');
+    this.activa=false;
+    $('cg-proc').classList.add('hidden');
+    $('cg-result').classList.remove('hidden');
+    $('cg-result').innerHTML=`<div class="result">
+      <div style="font-size:2.6rem">✅</div>
+      <h3 style="margin:.3rem 0 .4rem">¡Listo! Carga guardada</h3>
+      <p style="font-size:.9rem;margin:.2rem 0 .8rem"><b>Ya podés guardar el celular.</b></p>
+      <p class="muted" style="font-size:.8rem;margin-bottom:.9rem">Se envía y se lee sola en segundo plano.${conTablero?'':' (Sin foto del tablero.)'} Si alguna foto no se entiende, te llega un aviso para repetirla.</p>
+      <div class="muted" id="cg-envio" style="font-size:.78rem;margin-bottom:.9rem">📤 Enviando…</div>
+      <button class="btn btn-acc" onclick="Carga.reset()">Listo ✓</button>
+    </div>`;
   },
   step(n,estado,txt,spin){
     const el=$('stp-'+n);
@@ -832,7 +902,7 @@ const Carga = {
   reset(delay){
     const go=()=>{
       this.activa=false; this._ticket=null;
-      $('cg-btn-tablero').classList.add('hidden');
+      $('cg-btn-tablero').classList.add('hidden');$('cg-aviso').innerHTML='';
       $('cg-proc').classList.add('hidden');
       $('cg-result').classList.add('hidden');
       $('cg-idle').classList.remove('hidden');
@@ -849,23 +919,41 @@ const Carga = {
   },
 };
 
-// cola de pendientes
+// Cola de envío — cargas nuevas y fotos repetidas. Todo se guarda primero en el
+// celular (IndexedDB) y se manda en segundo plano: desde la página y, en Android,
+// también desde el Service Worker con Background Sync (aunque la app esté cerrada
+// o el celular bloqueado). El servidor es idempotente: mandar dos veces no duplica.
 const Queue = {
   enviando:false,
+  async enSegundoPlano(){
+    try{ if(swReg&&swReg.sync) await swReg.sync.register('flush-queue'); }catch(e){}
+    this.flush();
+  },
   async enviar(item){
     if(!navigator.onLine)return 'offline';
     try{
-      const body={ id:item.id, vehiculoId:item.vehiculoId,
-        fotoTicket:await blobToDataURL(item.ticket),
-        fotoTablero:item.tablero?await blobToDataURL(item.tablero):null };
-      const r=await api('/api/cargas',{method:'POST',body:JSON.stringify(body)});
+      let r;
+      if(item.retake){
+        r=await api(`/api/cargas/${item.cargaId}/foto`,{method:'POST',body:JSON.stringify({tipo:item.fotoTipo,foto:await blobToDataURL(item.foto)})});
+      }else{
+        const body={ id:item.id, vehiculoId:item.vehiculoId,
+          fotoTicket:await blobToDataURL(item.ticket),
+          fotoTablero:item.tablero?await blobToDataURL(item.tablero):null };
+        r=await api('/api/cargas',{method:'POST',body:JSON.stringify(body)});
+      }
       await IDB.del('pendientes',item.id);
       this.updateBadge();
       return r;
     }catch(e){
       if(!navigator.onLine)return 'offline';
-      // error de servidor: dejar en cola para reintento
-      console.warn('enviar carga:',e.message);
+      // Rechazo definitivo (ej. esa foto ya se había recibido): no reintentar para siempre
+      if(e.status>=400&&e.status<500&&![401,408,429].includes(e.status)){
+        await IDB.del('pendientes',item.id).catch(()=>{});
+        reportarError('envio_descartado',`${e.status} ${e.message}`);
+        this.updateBadge();
+        return null;
+      }
+      console.warn('enviar:',e.message); // error de red/servidor: queda en cola
       return null;
     }
   },
@@ -874,10 +962,14 @@ const Queue = {
     this.enviando=true;
     try{
       const pend=await IDB.all('pendientes');
-      let okN=0;
-      for(const item of pend){ const r=await this.enviar(item); if(r&&r.ok)okN++; }
-      if(okN)toast(`✅ ${okN} carga(s) pendiente(s) enviada(s)`,'ok');
-    }catch(e){}finally{this.enviando=false;this.updateBadge();}
+      for(const item of pend) await this.enviar(item);
+    }catch(e){}finally{
+      this.enviando=false;this.updateBadge();
+      const quedan=(await IDB.all('pendientes').catch(()=>[])).length;
+      const ev=$('cg-envio');
+      if(ev)ev.textContent=quedan?(navigator.onLine?'📤 Enviando… (se reintenta sola)':'📴 Sin señal — se envía sola cuando vuelva'):'✅ Enviada — la IA la lee en segundo plano';
+      if(!quedan)Panel.render();
+    }
   },
   async updateBadge(){
     try{
@@ -943,31 +1035,39 @@ const Panel = {
           <div style="margin-top:.2rem">${c.validacion==='ok'?'<span class="chip c-ok">✓</span>':c.validacion==='revisar'?'<span class="chip c-warn">🔍</span>':c.validacion==='procesando'?'<span class="chip c-acc">⏳</span>':''}</div></div>
       </div></div>`).join('');
   },
-  async checkPendientesFoto(){
-    const el=$('pn-fotopend');if(!el)return;
+  // Avisos de "repetí la foto": en el Panel y en la pestaña Cargar, con el motivo
+  // exacto que vio la IA y un botón grande. Se oculta el aviso de una foto que ya
+  // se sacó y está esperando envío en el celular.
+  async checkPendientesFoto(destacarId){
+    const els=[$('pn-fotopend'),$('cg-fotopend')].filter(Boolean);
+    if(!els.length)return;
     try{
       const d=await api('/api/cargas/pendientes-foto');
-      if(!d.cargas.length){el.innerHTML='';return;}
-      el.innerHTML=d.cargas.map(c=>`
-        <div class="aban a-warn" style="cursor:pointer" onclick="Panel.reintentarFoto('${c.id}','${c.foto_pendiente}',this)">
-          <span>📸</span><div><b>Falta la foto del ${c.foto_pendiente==='tablero'?'tablero':'ticket'}</b>
-          Carga del ${fmtF(c.fecha)} — tocá para sacarla ahora.</div>
-        </div>`).join('');
+      const enCola=new Set((await IDB.all('pendientes').catch(()=>[])).filter(i=>i.retake).map(i=>i.cargaId));
+      const cs=d.cargas.filter(c=>!enCola.has(c.id));
+      const html=cs.map(c=>{
+        const tb=c.foto_pendiente==='tablero';
+        return `<div class="card" style="border:2px solid var(--warn);padding:1rem;margin-bottom:.7rem${c.id===destacarId?';box-shadow:0 0 0 4px var(--warn)':''}">
+          <b style="font-size:.95rem">📸 Repetí la foto del ${tb?'tablero':'ticket'}</b>
+          <p style="font-size:.85rem;margin:.35rem 0 .2rem">${c.motivo?c.motivo.charAt(0).toUpperCase()+c.motivo.slice(1)+'.':''}</p>
+          <p class="muted" style="font-size:.75rem;margin:0 0 .7rem">Carga del ${fmtF(c.fecha)}${c.total?' · '+fmt$0(c.total):''}</p>
+          <button class="btn btn-acc" onclick="Panel.reintentarFoto('${c.id}','${c.foto_pendiente}',this)">📸 Sacar foto del ${tb?'tablero':'ticket'}</button>
+        </div>`;}).join('');
+      els.forEach(el=>el.innerHTML=html);
+      if(destacarId&&cs.some(c=>c.id===destacarId))toast('Tocá el botón para repetir la foto 👇','info',5000);
     }catch(e){}
   },
-  async reintentarFoto(id,tipo,el){
+  async reintentarFoto(id,tipo,btn){
     haptic('med');
     const hint=tipo==='tablero'?'🛣️ Enfocá el odómetro (los KM totales)':'🧾 Encuadrá el ticket completo, bien iluminado';
     const foto=await Cam.open(hint,tipo==='tablero'?1280:1600);
     if(!foto)return;
-    if(el)el.style.opacity='.5';
-    toast('📤 Enviando foto…','info',2500);
-    try{
-      const dataUrl=await blobToDataURL(foto);
-      await api(`/api/cargas/${id}/foto`,{method:'POST',body:JSON.stringify({tipo,foto:dataUrl})});
-      toast('✅ Foto enviada — carga actualizada','ok');
-      this.render();
-    }catch(e){toast(e.message,'err');if(el)el.style.opacity='';}
+    // Igual que una carga nueva: se guarda en el celular y se envía sola
+    await IDB.put('pendientes',{id:uuid(),retake:true,cargaId:id,fotoTipo:tipo,foto,creada:new Date().toISOString()});
+    const card=btn?.closest('.card');
+    if(card)card.innerHTML='<b>✅ Foto guardada</b><p class="muted" style="font-size:.8rem;margin:.3rem 0 0">Ya podés guardar el celular — se envía y se lee sola. Si tampoco se entiende, te avisamos.</p>';
+    haptic('heavy');
+    Queue.enSegundoPlano();
   },
 };
 
@@ -1472,8 +1572,10 @@ window.addEventListener('beforeinstallprompt',e=>{
 });
 window.addEventListener('appinstalled',()=>{localStorage.setItem('fml2_pwa_ok','1');toast('✅ App instalada','ok');});
 
-// flush inicial de pendientes al abrir
+// flush de pendientes: al abrir, al volver la señal y al volver a la app
 setTimeout(()=>Queue.flush(),2500);
+window.addEventListener('online',()=>Queue.flush());
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ Queue.flush(); if(S.token)Panel.checkPendientesFoto().catch(()=>{}); } });
 
 // Restaurar sesión — va al final del script a propósito: App.enter() usa
 // Panel/Mon/Rev/Queue/Push, que están declarados más abajo en el archivo.
