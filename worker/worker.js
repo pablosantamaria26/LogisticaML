@@ -435,12 +435,15 @@ async function procesarCarga(env, id, origen, ctx) {
   // La IA no respondió: se deja en cola sin tocar los datos que ya hubiera.
   const desde = det.desde || carga.creado || '';
   const edadHoras = (Date.now() - new Date(desde.includes('T') ? desde : desde.replace(' ', 'T') + 'Z')) / 3.6e6;
-  const agotado = edadHoras >= REINTENTO_HORAS || intentos >= 40;
-  // Reproceso manual de una carga vieja con la IA caída: no se toca nada
-  if (ocrErr && agotado && origen === 'admin') return { ok: false, error: 'La IA no respondió ahora (' + ocrErr + '). Probá de nuevo en unos minutos.' };
+  // Reproceso manual con la IA caída: se encola con una ventana nueva de 24 hs
+  // (los datos que ya tenía la carga no se tocan hasta que la lectura salga bien)
+  const reinicia = origen === 'admin' && !!ocrErr;
+  const agotado = !reinicia && (edadHoras >= REINTENTO_HORAS || intentos >= 40);
   if (ocrErr && !agotado) {
+    const nuevoDet = { ...det, warnings: [], intentos: reinicia ? 1 : intentos, ocrErr, ultimoIntento: ahora };
+    if (reinicia) nuevoDet.desde = ahora;
     await env.DB.prepare(`UPDATE cargas SET validacion='procesando', validacion_detalle=? WHERE id=?`)
-      .bind(JSON.stringify({ ...det, warnings: [], intentos, ocrErr, ultimoIntento: ahora }), id).run();
+      .bind(JSON.stringify(nuevoDet), id).run();
     return { ok: true, procesando: true, carga: await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first() };
   }
 
