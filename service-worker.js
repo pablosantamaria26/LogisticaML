@@ -1,5 +1,5 @@
 // Flota ML 2.0 — Service Worker
-const CACHE = 'fml2-v3';
+const CACHE = 'fml2-v4';
 const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const SHELL = ['/LogisticaML/', '/LogisticaML/index.html', '/LogisticaML/manifest.json', '/LogisticaML/icon-192.png'];
 
@@ -61,6 +61,14 @@ function idb() {
     r.onupgradeneeded = () => { r.result.createObjectStore('pendientes', { keyPath: 'id' }); r.result.createObjectStore('cache'); }; });
 }
 const req = q => new Promise((res, rej) => { q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+// Mismo candado que la página (IDB.reclamar): solo uno de los dos manda cada item
+function reclamar(db, id) {
+  return new Promise(res => { try {
+    const t = db.transaction('pendientes', 'readwrite'), st = t.objectStore('pendientes'), q = st.get(id);
+    q.onsuccess = () => { const it = q.result; if (!it || (it.enviandoDesde && Date.now() - it.enviandoDesde < 90000)) return res(false);
+      it.enviandoDesde = Date.now(); st.put(it); t.oncomplete = () => res(true); t.onerror = () => res(false); };
+    q.onerror = () => res(false); } catch (e) { res(false); } });
+}
 async function toDataURL(blob) {
   const buf = new Uint8Array(await blob.arrayBuffer()); let bin = '';
   for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
@@ -73,6 +81,7 @@ async function enviarCola() {
   const items = await req(db.transaction('pendientes').objectStore('pendientes').getAll());
   let pendiente = false;
   for (const it of items || []) {
+    if (!(await reclamar(db, it.id))) { pendiente = true; continue; }
     try {
       const url = it.retake ? `${API}/api/cargas/${it.cargaId}/foto` : `${API}/api/cargas`;
       const body = it.retake ? { tipo: it.fotoTipo, foto: await toDataURL(it.foto) }

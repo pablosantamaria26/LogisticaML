@@ -403,7 +403,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260928-211638';
+const APP_VERSION = '20260928-212142';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -464,6 +464,13 @@ const IDB = {
   async put(store,val,key){ const db=await this.open(); return new Promise((res,rej)=>{const t=db.transaction(store,'readwrite');const q=key!==undefined?t.objectStore(store).put(val,key):t.objectStore(store).put(val);q.onsuccess=()=>res();q.onerror=()=>rej(q.error);}); },
   async get(store,key){ const db=await this.open(); return new Promise((res,rej)=>{const q=db.transaction(store).objectStore(store).get(key);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);}); },
   async all(store){ const db=await this.open(); return new Promise((res,rej)=>{const q=db.transaction(store).objectStore(store).getAll();q.onsuccess=()=>res(q.result||[]);q.onerror=()=>rej(q.error);}); },
+  // Candado atómico: la página y el Service Worker comparten la cola; solo uno
+  // manda cada item (el otro lo saltea). Vence a los 90 s por si el envío se cortó.
+  async reclamar(id){ const db=await this.open(); return new Promise(res=>{ try{
+    const t=db.transaction('pendientes','readwrite'),st=t.objectStore('pendientes'),q=st.get(id);
+    q.onsuccess=()=>{ const it=q.result; if(!it||(it.enviandoDesde&&Date.now()-it.enviandoDesde<90000))return res(false);
+      it.enviandoDesde=Date.now(); st.put(it); t.oncomplete=()=>res(true); t.onerror=()=>res(false); };
+    q.onerror=()=>res(false); }catch(e){res(false);} }); },
   async del(store,key){ const db=await this.open(); return new Promise((res,rej)=>{const q=db.transaction(store,'readwrite').objectStore(store).delete(key);q.onsuccess=()=>res();q.onerror=()=>rej(q.error);}); },
 };
 
@@ -931,6 +938,7 @@ const Queue = {
   },
   async enviar(item){
     if(!navigator.onLine)return 'offline';
+    if(!(await IDB.reclamar(item.id)))return null; // lo está mandando el Service Worker
     try{
       let r;
       if(item.retake){

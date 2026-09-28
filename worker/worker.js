@@ -45,62 +45,62 @@ export default {
     try {
       // ── API v2 ──
       if (p === '/api/health') return json({ ok: true, v: 2, ts: new Date().toISOString() });
-      if (p === '/api/login' && request.method === 'POST') return handleLogin(request, env);
-      if (p === '/api/logout' && request.method === 'POST') return handleLogout(request, env);
+      if (p === '/api/login' && request.method === 'POST') return await handleLogin(request, env);
+      if (p === '/api/logout' && request.method === 'POST') return await handleLogout(request, env);
       if (p === '/api/me') {
         // Cada vez que alguien abre la app, de paso se reintentan las cargas en cola
         ctx.waitUntil(dispararCola(env).catch(e => console.error('cola:', e.message)));
-        return handleMe(request, env);
+        return await handleMe(request, env);
       }
-      if (p === '/api/cargas' && request.method === 'POST') return handleNuevaCarga(request, env, ctx);
-      if (p === '/api/cargas' && request.method === 'GET') return handleGetCargas(request, env);
-      if (p === '/api/servicios' && request.method === 'POST') return handleNuevoServicio(request, env);
-      if (p === '/api/servicios' && request.method === 'GET') return handleGetServicios(request, env);
-      if (p === '/api/servicios/foto' && request.method === 'POST') return handleServicioFoto(request, env, ctx);
+      if (p === '/api/cargas' && request.method === 'POST') return await handleNuevaCarga(request, env, ctx);
+      if (p === '/api/cargas' && request.method === 'GET') return await handleGetCargas(request, env);
+      if (p === '/api/servicios' && request.method === 'POST') return await handleNuevoServicio(request, env);
+      if (p === '/api/servicios' && request.method === 'GET') return await handleGetServicios(request, env);
+      if (p === '/api/servicios/foto' && request.method === 'POST') return await handleServicioFoto(request, env, ctx);
       const mServFoto = p.match(/^\/api\/servicios\/([\w.-]+)\/foto$/);
-      if (mServFoto) return handleServicioFotoGet(request, env, mServFoto[1]);
-      if (p === '/api/export.xlsx') return handleExportXLSX(request, env);
-      if (p === '/api/push/register' && request.method === 'POST') return handlePushRegister(request, env);
-      if (p === '/api/push/broadcast' && request.method === 'POST') return handlePushBroadcast(request, env);
-      if (p === '/api/diag' && request.method === 'POST') return handleDiag(request, env, ctx);
-      if (p === '/api/admin/usuarios') return handleAdminUsuarios(request, env);
-      if (p === '/api/admin/asignar' && request.method === 'POST') return handleAdminAsignar(request, env);
-      if (p === '/api/admin/vehiculos' && request.method === 'POST') return handleAdminCrearVehiculo(request, env);
+      if (mServFoto) return await handleServicioFotoGet(request, env, mServFoto[1]);
+      if (p === '/api/export.xlsx') return await handleExportXLSX(request, env);
+      if (p === '/api/push/register' && request.method === 'POST') return await handlePushRegister(request, env);
+      if (p === '/api/push/broadcast' && request.method === 'POST') return await handlePushBroadcast(request, env);
+      if (p === '/api/diag' && request.method === 'POST') return await handleDiag(request, env, ctx);
+      if (p === '/api/admin/usuarios') return await handleAdminUsuarios(request, env);
+      if (p === '/api/admin/asignar' && request.method === 'POST') return await handleAdminAsignar(request, env);
+      if (p === '/api/admin/vehiculos' && request.method === 'POST') return await handleAdminCrearVehiculo(request, env);
       const mSetKm = p.match(/^\/api\/admin\/vehiculos\/([\w.-]+)\/km$/);
-      if (mSetKm && request.method === 'POST') return handleAdminSetKm(request, env, mSetKm[1]);
+      if (mSetKm && request.method === 'POST') return await handleAdminSetKm(request, env, mSetKm[1]);
       const mEditVeh = p.match(/^\/api\/admin\/vehiculos\/([\w.-]+)\/editar$/);
-      if (mEditVeh && request.method === 'POST') return handleAdminEditarVehiculo(request, env, mEditVeh[1]);
-      if (p === '/api/admin/reset-pin' && request.method === 'POST') return handleAdminResetPin(request, env);
-      if (p === '/api/admin/corregir' && request.method === 'POST') return handleAdminCorregir(request, env);
-      if (p === '/api/admin/reprocesar' && request.method === 'POST') return handleAdminReprocesar(request, env, ctx);
-      if (p === '/api/admin/revision') return handleRevision(request, env);
+      if (mEditVeh && request.method === 'POST') return await handleAdminEditarVehiculo(request, env, mEditVeh[1]);
+      if (p === '/api/admin/reset-pin' && request.method === 'POST') return await handleAdminResetPin(request, env);
+      if (p === '/api/admin/corregir' && request.method === 'POST') return await handleAdminCorregir(request, env);
+      if (p === '/api/admin/reprocesar' && request.method === 'POST') return await handleAdminReprocesar(request, env, ctx);
+      if (p === '/api/admin/revision') return await handleRevision(request, env);
       const mDelCarga = p.match(/^\/api\/admin\/cargas\/([\w.-]+)$/);
-      if (mDelCarga && request.method === 'DELETE') return handleAdminEliminarCarga(request, env, mDelCarga[1]);
-      if (p === '/api/admin/contador-ahora' && request.method === 'POST') return handleContadorAhora(request, env);
-      if (p === '/api/admin/weekly-ahora' && request.method === 'POST') return handleWeeklyAhora(request, env);
-      if (p === '/api/admin/analisis-vehiculo' && request.method === 'POST') return handleAnalisisVehiculo(request, env);
-      if (p === '/api/admin/solicitar-foto' && request.method === 'POST') return handleAdminSolicitarFoto(request, env);
-      if (p === '/api/cargas/pendientes-foto') return handlePendientesFoto(request, env);
+      if (mDelCarga && request.method === 'DELETE') return await handleAdminEliminarCarga(request, env, mDelCarga[1]);
+      if (p === '/api/admin/contador-ahora' && request.method === 'POST') return await handleContadorAhora(request, env);
+      if (p === '/api/admin/weekly-ahora' && request.method === 'POST') return await handleWeeklyAhora(request, env);
+      if (p === '/api/admin/analisis-vehiculo' && request.method === 'POST') return await handleAnalisisVehiculo(request, env);
+      if (p === '/api/admin/solicitar-foto' && request.method === 'POST') return await handleAdminSolicitarFoto(request, env);
+      if (p === '/api/cargas/pendientes-foto') return await handlePendientesFoto(request, env);
       // Fotos: /api/cargas/{id}/foto/{ticket|tablero}?t=token  ó  /api/fotolink/{id}/{tipo}?k=firma
       const mFoto = p.match(/^\/api\/cargas\/([\w.-]+)\/foto\/(ticket|tablero)$/);
-      if (mFoto) return handleFoto(request, env, mFoto[1], mFoto[2], false);
+      if (mFoto) return await handleFoto(request, env, mFoto[1], mFoto[2], false);
       const mLink = p.match(/^\/api\/fotolink\/([\w.-]+)\/(ticket|tablero)$/);
-      if (mLink) return handleFoto(request, env, mLink[1], mLink[2], true);
+      if (mLink) return await handleFoto(request, env, mLink[1], mLink[2], true);
       // Subir foto puntual faltante (sin duplicar la carga): /api/cargas/{id}/foto
       const mFotoUp = p.match(/^\/api\/cargas\/([\w.-]+)\/foto$/);
-      if (mFotoUp && request.method === 'POST') return handleSubirFotoFaltante(request, env, ctx, mFotoUp[1]);
+      if (mFotoUp && request.method === 'POST') return await handleSubirFotoFaltante(request, env, ctx, mFotoUp[1]);
 
       // ── LEGACY (apps viejas instaladas, hasta que actualicen) ──
-      if (p === '/api/process-ticket' && request.method === 'POST') return legacyProcessTicket(request, env);
-      if (p === '/api/process-odometer' && request.method === 'POST') return legacyProcessOdometer(request, env);
-      if (p === '/api/sync-record' && request.method === 'POST') return legacySyncRecord(request, env);
-      if (p === '/api/get-records') return legacyGetRecords(request, env);
-      if (p === '/api/assignments') return legacyAssignments(request, env);
-      if (p === '/api/register-push' && request.method === 'POST') return legacyRegisterPush(request, env);
-      if (p === '/api/push-check') return legacyPushCheck(request, env);
-      if (p === '/api/push-notify' && request.method === 'POST') return legacyPushNotify(request, env);
+      if (p === '/api/process-ticket' && request.method === 'POST') return await legacyProcessTicket(request, env);
+      if (p === '/api/process-odometer' && request.method === 'POST') return await legacyProcessOdometer(request, env);
+      if (p === '/api/sync-record' && request.method === 'POST') return await legacySyncRecord(request, env);
+      if (p === '/api/get-records') return await legacyGetRecords(request, env);
+      if (p === '/api/assignments') return await legacyAssignments(request, env);
+      if (p === '/api/register-push' && request.method === 'POST') return await legacyRegisterPush(request, env);
+      if (p === '/api/push-check') return await legacyPushCheck(request, env);
+      if (p === '/api/push-notify' && request.method === 'POST') return await legacyPushNotify(request, env);
       if (p === '/api/send-confirmation' && request.method === 'POST') return json({ success: true, legacy: true });
-      if (p === '/api/maintenance-alert' && request.method === 'POST') return legacyMaintAlert(request, env);
+      if (p === '/api/maintenance-alert' && request.method === 'POST') return await legacyMaintAlert(request, env);
 
       return json({ error: 'Not Found' }, 404);
     } catch (err) {
@@ -639,12 +639,18 @@ async function handleNuevaCarga(request, env, ctx) {
 
   // 2. Registrar la carga YA (queda en 'procesando' hasta que la IA la lea).
   // ultimoIntento=ahora evita que la cola la tome en paralelo con este request.
-  await env.DB.prepare(`INSERT INTO cargas
+  // OR IGNORE: si llegan dos envíos iguales a la vez (página + Service Worker),
+  // el segundo no rompe — se devuelve la carga que ya quedó registrada.
+  const ins = await env.DB.prepare(`INSERT OR IGNORE INTO cargas
     (id,vehiculo_id,usuario_id,usuario_nombre,fecha,validacion,validacion_detalle,foto_ticket,foto_tablero)
     VALUES (?,?,?,?,?,'procesando',?,?,?)`)
     .bind(body.id, vehiculoId, user.id, user.nombre, hoyAR(),
       JSON.stringify({ warnings: [], intentos: 0, ultimoIntento: new Date().toISOString() }),
       fotoTicketKey, fotoTableroKey).run();
+  if (!ins.meta?.changes) {
+    const ya = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(body.id).first();
+    return json({ ok: true, duplicada: true, carga: publicCarga(ya) });
+  }
 
   // 3. Leer con IA ahora mismo; si no responde, queda en cola y se reintenta sola
   // Se contesta YA (fotos guardadas = carga segura); la IA lee en segundo plano.
