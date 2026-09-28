@@ -310,6 +310,7 @@ GUÍA DE LECTURA del ticket:
 - RECEPTOR (cliente): nombre y "C.U.I.T. Nro" del cliente, condición IVA.
 - DETALLE: producto (SUPER, INFINIA DIESEL, ULTRA DIESEL, etc.), litros y precio: puede venir como "21,40 LS A $ 2336,000" o "1,0000 u x 20821,8100 / SUPER / 9 $ 2075 C: 14.457".
 - MONTOS: "SUBTOT. IMP. NETO GRAVADO"=neto_gravado; "ALICUOTA 21,00%" o "IMPORTE TOTAL IVA"=iva (iva_alicuota=21.0); "Impuesto interno a nivel item"/"IMPORTE TOTAL OTROS TRIBUTOS" (ITC/IDC/ICL/TCNG)=otros_tributos; "Percepción" IIBB si existe=percepciones; "TOTAL"=total.
+  OJO: si la percepción IIBB aparece listada DENTRO de "IMPORTE TOTAL OTROS TRIBUTOS", otros_tributos = ese total MENOS la percepción (no la cuentes dos veces). Ej: ITC 6517,20 + Perc.IIBB 2010,11 + IDC 1600,36 = 10127,67 → otros_tributos=8117.56, percepciones=2010.11.
 - PAGO: "CONDICION:CONTADO", "Efectivo", "RECIBI/MOS", tarjeta, etc.
 
 REGLAS:
