@@ -18,15 +18,13 @@ const TZ = 'America/Argentina/Buenos_Aires';
 const FROM_NAME = 'Flota ML';
 const VAPID_SUBJECT = 'mailto:santamariapablodaniel@gmail.com';
 const SESSION_DAYS = 180;
-// gemini-2.5-flash-lite quedó retirado para este proyecto ("no longer available
-// to new users" — la familia 2.5 pasó a legacy). Modelo GA vigente (jul 2026):
-// gemini-3.5-flash-lite — visión + JSON estructurado, documentado por Google
-// específicamente para "high-volume data parsing and document extraction",
-// y bastante más barato por token que gemini-3.6-flash. Si en el futuro la
-// precisión del ticket fiscal empeora notablemente, priorizar volver a un
-// modelo más grande (ej. gemini-3.6-flash) solo para geminiTicket (el
-// odómetro es una lectura mucho más simple y tolera mejor un modelo chico).
-const GEMINI_MODEL = 'gemini-3.5-flash-lite';
+// Cadena de modelos: se prueba en orden y, si uno está saturado (503 "high
+// demand"), sin cupo (429) o no disponible (404), se pasa al siguiente en el
+// acto. Cada modelo tiene su propia capacidad y su propio cupo del plan
+// gratuito, así que es muy raro que caigan todos a la vez. Con un solo modelo
+// (hasta sep/2026) una saturación pasajera mandaba la carga a "revisar".
+const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.5-flash', 'gemini-flash-latest'];
+const GEMINI_MODEL = GEMINI_MODELOS[0]; // usado por los textos de análisis (no críticos)
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -47,7 +45,11 @@ export default {
       if (p === '/api/health') return json({ ok: true, v: 2, ts: new Date().toISOString() });
       if (p === '/api/login' && request.method === 'POST') return handleLogin(request, env);
       if (p === '/api/logout' && request.method === 'POST') return handleLogout(request, env);
-      if (p === '/api/me') return handleMe(request, env);
+      if (p === '/api/me') {
+        // Cada vez que alguien abre la app, de paso se reintentan las cargas en cola
+        ctx.waitUntil(dispararCola(env).catch(e => console.error('cola:', e.message)));
+        return handleMe(request, env);
+      }
       if (p === '/api/cargas' && request.method === 'POST') return handleNuevaCarga(request, env, ctx);
       if (p === '/api/cargas' && request.method === 'GET') return handleGetCargas(request, env);
       if (p === '/api/servicios' && request.method === 'POST') return handleNuevoServicio(request, env);
@@ -110,12 +112,17 @@ export default {
     const ar = arNow();
     const dia = ar.getDate(), diaSem = ar.getDay(); // 0=dom ... 5=vie 6=sab
     switch (event.cron) {
+      case '*/15 * * * *': // cola de lectura IA: cargas que quedaron 'procesando'
+        ctx.waitUntil(reintentarPendientes(env));
+        break;
       case '0 11 * * *': // 08:00 AR
         if (diaSem >= 1 && diaSem <= 5) ctx.waitUntil(pushDailyCheck(env));
         if (diaSem === 5) ctx.waitUntil(pushFridayClean(env));
         if (dia === 1) {
           ctx.waitUntil(sendOwnerReport(env));
-          ctx.waitUntil(sendContadorReport(env, mesAnterior(hoyAR().slice(0, 7))));
+          // antes del reporte al contador, vaciar la cola para que no salga nada sin leer
+          ctx.waitUntil(reintentarPendientes(env, 10).catch(() => { })
+            .then(() => sendContadorReport(env, mesAnterior(hoyAR().slice(0, 7)))));
           ctx.waitUntil(pushDocs(env));
         }
         break;
@@ -252,23 +259,29 @@ async function handleMe(request, env) {
 // ══════════════════════════════════════════════════════════════════════════════
 // GEMINI — extracción fiscal completa
 // ══════════════════════════════════════════════════════════════════════════════
-// Reintenta solo errores TRANSITORIOS (503 "high demand", 429, 5xx) — nunca el
-// tope de gasto (400) ni una key inválida (401/403), que no se arreglan reintentando.
-// Encontrado el 27/08/2026: una carga de Nahuel/Fiat quedó en "revisar" porque
-// Gemini devolvió un 503 pasajero una sola vez y el código no reintentaba nada;
-// al reprocesar a mano minutos después funcionó perfecto — este helper hace eso
-// mismo automáticamente, sin depender de que el admin lo note y reprocese.
-async function llamarGemini(body, env, label, { maxReintentos = 2, esperaMs = 1200 } = {}) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${env.GEMINI_API_KEY}`;
+// Recorre GEMINI_MODELOS: ante saturación/cupo/modelo inexistente pasa al
+// siguiente. Un error de la KEY (400 tope de gasto, 401/403) corta enseguida
+// porque afecta a todos los modelos por igual. Si falla todo, lanza el error y
+// la carga queda en "procesando" — la cola de reintentos (reintentarPendientes)
+// la vuelve a intentar sola más tarde; nunca se pierde ni la ve nadie fallar.
+async function llamarGemini(body, env, label) {
   let ultimoError;
-  for (let intento = 0; intento <= maxReintentos; intento++) {
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (res.ok) return res.json();
+  for (const modelo of GEMINI_MODELOS) {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
+    let res;
+    try {
+      res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    } catch (e) { ultimoError = new Error(`${label}: red (${e.message})`); continue; }
+    if (res.ok) {
+      const data = await res.json();
+      const texto = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
+      if (texto) { try { return JSON.parse(texto.trim()); } catch (e) { } }
+      ultimoError = new Error(`${label}: respuesta vacía o inválida de ${modelo}`);
+      continue;
+    }
     const e = await res.json().catch(() => ({}));
-    ultimoError = new Error(`${label}: ${e.error?.message || res.status}`);
-    const transitorio = res.status === 503 || res.status === 429 || res.status >= 500;
-    if (!transitorio || intento === maxReintentos) throw ultimoError;
-    await new Promise(r => setTimeout(r, esperaMs * (intento + 1)));
+    ultimoError = new Error(`${label}: ${e.error?.message || res.status} (${modelo})`);
+    if ([400, 401, 403].includes(res.status)) throw ultimoError;
   }
   throw ultimoError;
 }
@@ -306,16 +319,18 @@ REGLAS:
 
 Devolvé SOLO este JSON:
 ${TICKET_SCHEMA}`;
-  const data = await llamarGemini({
+  return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }, env, 'Gemini ticket');
-  return JSON.parse(data.candidates[0].content.parts[0].text.trim());
 }
 
+// Sin respaldo de Workers AI (sacado sep/2026): alucinó km=123456 con 95% de
+// "confianza" y pisó el km real del Hiace. Si Gemini no responde, la carga
+// queda en "procesando" y se reintenta sola — mejor esperar que inventar.
 async function geminiOdometro(b64, env) {
-  const data = await llamarGemini({
+  return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [
       { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Devolvé SOLO JSON: {"km":123456,"confianza":95}. Si no es legible: {"km":null,"confianza":0}.' },
@@ -323,54 +338,13 @@ async function geminiOdometro(b64, env) {
     ] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }, env, 'Gemini odómetro');
-  return JSON.parse(data.candidates[0].content.parts[0].text.trim());
-}
-
-// ── Respaldo con Workers AI (Cloudflare) para el ODÓMETRO — mismo query si
-// Gemini se corta. Modelo open-source, gratis (10.000 Neurons/día en la misma
-// cuenta CF, sin tarjeta). Probado contra una foto real: lee el odómetro
-// perfecto (confianza 95%, valor exacto). NO se usa para el ticket — probado
-// también, y la extracción de los ~15 campos fiscales salía mal en varios
-// (CUIT con dígitos cambiados, año mal leído, litros confundidos con el neto,
-// total con un cero de más) y encima con confianza autorreportada de 100% —
-// un dato fiscal mal leído pero "seguro" es peor que dejarlo en blanco para
-// revisar, así que ahí se sigue dependiendo solo de Gemini.
-const WORKERS_AI_MODEL = '@cf/meta/llama-3.2-11b-vision-instruct';
-function extraerJSON(respuesta) {
-  // Workers AI a veces ya devuelve un objeto parseado en .response (no un string) —
-  // depende del modelo/prompt. Contemplar los dos casos.
-  if (respuesta && typeof respuesta === 'object') return respuesta;
-  const limpio = String(respuesta).replace(/```json|```/g, '').trim();
-  const m = limpio.match(/\{[\s\S]*\}/);
-  return JSON.parse(m ? m[0] : limpio);
-}
-async function workersAiOdometro(b64, env) {
-  if (!env.AI) throw new Error('Workers AI no disponible');
-  const res = await env.AI.run(WORKERS_AI_MODEL, {
-    messages: [
-      { role: 'system', content: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido, sin texto alrededor.' },
-      { role: 'user', content: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Respondé SOLO: {"km":123456,"confianza":95}. Si no es legible: {"km":null,"confianza":0}.' },
-    ],
-    image: [...b64ToBytes(b64)],
-    max_tokens: 128,
-  });
-  if (!res?.response) throw new Error('Workers AI odómetro: sin respuesta');
-  return extraerJSON(res.response);
-}
-async function ocrOdometroConRespaldo(b64, env) {
-  try { return await geminiOdometro(b64, env); }
-  catch (eGemini) {
-    try { return await workersAiOdometro(b64, env); }
-    catch (eRespaldo) { return null; } // el odómetro es best-effort — si fallan los 2, se pide de nuevo, no bloquea
-  }
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
 // VALIDACIÓN — compartida entre carga nueva, reprocesar y retake de una sola foto
 // ══════════════════════════════════════════════════════════════════════════════
-const KM_WARN_KEYS = ['ocr_km_fallo', 'km_confianza_baja', 'km_menor_al_anterior', 'salto_km_grande'];
 
-function calcularWarningsTicket(t, veh) {
+function calcularWarningsTicket(t, veh, fechaRef = hoyAR()) {
   const w = [];
   if (!t) { w.push('ocr_ticket_fallo'); return w; }
   const m = t.montos || {};
@@ -398,7 +372,7 @@ function calcularWarningsTicket(t, veh) {
   if ((t.confianza ?? 0) < 70) w.push('confianza_baja');
   if (it.litros > veh.tanque_litros) w.push('litros_superan_tanque');
   if (t.fecha) {
-    const dif = (new Date(hoyAR()) - new Date(t.fecha)) / 86400000;
+    const dif = (new Date(fechaRef) - new Date(t.fecha)) / 86400000;
     if (dif > 7 || dif < -1) w.push('fecha_fuera_de_rango');
   } else w.push('sin_fecha');
   return w;
@@ -410,15 +384,163 @@ async function comprobanteDuplicado(env, t, idExcluir) {
   ).bind(t.numero_comprobante, t.emisor.cuit, t.punto_venta ?? null, idExcluir || '').first();
   return !!ya;
 }
-function calcularWarningsKm(km, kmData, seFotografio, veh) {
+function calcularWarningsKm(km, kmData, seFotografio, kmAnterior) {
   const w = [];
   if (seFotografio && !km) w.push('ocr_km_fallo');
   if (km) {
-    if ((kmData.confianza ?? 0) < 70) w.push('km_confianza_baja');
-    if (veh.km_actual > 0 && km < veh.km_actual) w.push('km_menor_al_anterior');
-    if (veh.km_actual > 0 && km - veh.km_actual > 3000) w.push('salto_km_grande');
+    if ((kmData?.confianza ?? 0) < 70) w.push('km_confianza_baja');
+    if (kmAnterior > 0 && km < kmAnterior) w.push('km_menor_al_anterior');
+    if (kmAnterior > 0 && km - kmAnterior > 3000) w.push('salto_km_grande');
   }
   return w;
+}
+function fechaAR(s) {
+  // `creado` viene de datetime('now') (UTC, sin zona) → fecha argentina
+  if (!s) return hoyAR();
+  const iso = s.includes('T') ? s : s.replace(' ', 'T') + 'Z';
+  const d = new Date(iso);
+  return isNaN(d) ? hoyAR() : d.toLocaleDateString('en-CA', { timeZone: TZ });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PROCESAMIENTO — la ÚNICA función que lee las fotos con IA y completa la carga.
+// La usan la carga nueva, el botón "Reprocesar", la foto reenviada y la cola
+// automática. Si la IA no responde, la carga queda en 'procesando' (la foto ya
+// está guardada) y reintentarPendientes() la vuelve a intentar sola; recién a
+// las REINTENTO_HORAS sin éxito pasa a 'revisar'. Nadie ve "falló la IA".
+// ══════════════════════════════════════════════════════════════════════════════
+const REINTENTO_HORAS = 24;
+
+async function procesarCarga(env, id, origen, ctx) {
+  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  if (!carga) return { ok: false, error: 'Carga no encontrada' };
+  if (!carga.foto_ticket) return { ok: false, error: 'Carga sin foto de ticket' };
+  const veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(carga.vehiculo_id).first();
+  let det = {}; try { det = JSON.parse(carga.validacion_detalle || '{}'); } catch (e) { }
+  const intentos = (det.intentos || 0) + 1;
+  const ahora = new Date().toISOString();
+
+  const tBytes = await fotoGet(env, carga.foto_ticket);
+  if (!tBytes) return { ok: false, error: 'Foto de ticket no encontrada en storage' };
+  const kBytes = carga.foto_tablero ? await fotoGet(env, carga.foto_tablero) : null;
+  const [tRes, kRes] = await Promise.allSettled([
+    geminiTicket(bytesToB64(tBytes), env),
+    kBytes ? geminiOdometro(bytesToB64(kBytes), env) : Promise.resolve(null),
+  ]);
+  const t = tRes.status === 'fulfilled' ? tRes.value : null;
+  const kmData = kRes.status === 'fulfilled' ? kRes.value : null;
+  const ocrErr = tRes.status === 'rejected' ? tRes.reason?.message
+    : kRes.status === 'rejected' ? kRes.reason?.message : null;
+
+  // La IA no respondió: se deja en cola sin tocar los datos que ya hubiera.
+  const desde = det.desde || carga.creado || '';
+  const edadHoras = (Date.now() - new Date(desde.includes('T') ? desde : desde.replace(' ', 'T') + 'Z')) / 3.6e6;
+  const agotado = edadHoras >= REINTENTO_HORAS || intentos >= 40;
+  // Reproceso manual de una carga vieja con la IA caída: no se toca nada
+  if (ocrErr && agotado && origen === 'admin') return { ok: false, error: 'La IA no respondió ahora (' + ocrErr + '). Probá de nuevo en unos minutos.' };
+  if (ocrErr && !agotado) {
+    await env.DB.prepare(`UPDATE cargas SET validacion='procesando', validacion_detalle=? WHERE id=?`)
+      .bind(JSON.stringify({ ...det, warnings: [], intentos, ocrErr, ultimoIntento: ahora }), id).run();
+    return { ok: true, procesando: true, carga: await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first() };
+  }
+
+  // Referencias: fecha en que se subió la carga y km de la carga anterior del vehículo
+  const fechaSubida = fechaAR(carga.creado);
+  const prev = await env.DB.prepare(
+    `SELECT MAX(km) AS km FROM cargas WHERE vehiculo_id=? AND id!=? AND km>0 AND creado < ?`
+  ).bind(carga.vehiculo_id, id, carga.creado || ahora).first();
+  const kmAnterior = prev?.km || 0;
+
+  const km = kmData?.km > 0 ? Math.round(kmData.km) : (carga.km ?? null);
+  const kmConfianza = kmData?.km > 0 ? (kmData.confianza ?? null) : (carga.km_confianza ?? null);
+  const ticketWarns = calcularWarningsTicket(t, veh, fechaSubida);
+  if (t && await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
+  const kmWarns = calcularWarningsKm(km, { confianza: kmConfianza }, !!carga.foto_tablero, kmAnterior);
+  const warnings = [...ticketWarns, ...kmWarns];
+  const notas = [];
+  if (t && Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
+  const validacion = warnings.length ? 'revisar' : 'ok';
+  // Una fecha mal leída (ej. año 2028) sacaba la carga de su mes en el reporte
+  // al contador: si queda fuera de rango, se usa la fecha en que se subió.
+  let fecha = t?.fecha || carga.fecha || fechaSubida;
+  if (warnings.includes('fecha_fuera_de_rango') || warnings.includes('sin_fecha')) fecha = fechaSubida;
+  const detalle = JSON.stringify({ warnings, notas, ocrErr: t ? null : ocrErr, intentos, ultimoIntento: ahora, emailEnviado: det.emailEnviado });
+
+  if (t) {
+    const m = t.montos || {}, it = (t.items && t.items[0]) || {};
+    await env.DB.prepare(`UPDATE cargas SET
+      fecha=?,hora=?,tipo_comprobante=?,codigo_comprobante=?,punto_venta=?,numero_comprobante=?,
+      emisor_razon_social=?,emisor_cuit=?,emisor_domicilio=?,emisor_localidad=?,emisor_iibb=?,emisor_condicion_iva=?,
+      receptor_nombre=?,receptor_cuit=?,producto=?,litros=?,precio_unitario=?,neto_gravado=?,iva_alicuota=?,iva=?,
+      otros_tributos=?,percepciones=?,exento=?,no_gravado=?,total=?,condicion_pago=?,confianza=?,
+      km=?,km_confianza=?,validacion=?,validacion_detalle=?,original_json=? WHERE id=?`).bind(
+      fecha, t.hora?.slice(0, 8) ?? null, t.tipo_comprobante ?? null, t.codigo_comprobante ?? null,
+      t.punto_venta ?? null, t.numero_comprobante ?? null,
+      t.emisor?.razon_social ?? null, t.emisor?.cuit ?? null, t.emisor?.domicilio ?? null, t.emisor?.localidad ?? null,
+      t.emisor?.iibb ?? null, t.emisor?.condicion_iva ?? null, t.receptor?.nombre ?? null, t.receptor?.cuit ?? null,
+      it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null, m.neto_gravado ?? null,
+      m.iva_alicuota ?? null, m.iva ?? null, m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null,
+      m.no_gravado ?? null, m.total ?? null, t.condicion_pago ?? null, t.confianza ?? null,
+      km, kmConfianza, validacion, detalle, JSON.stringify(t), id,
+    ).run();
+  } else {
+    // 24 hs sin poder leer el ticket: se manda a revisión humana con lo que haya
+    await env.DB.prepare(`UPDATE cargas SET km=?,km_confianza=?,validacion=?,validacion_detalle=? WHERE id=?`)
+      .bind(km, kmConfianza, validacion, detalle, id).run();
+  }
+
+  // El km del vehículo solo avanza con una lectura confiable (antes un km
+  // alucinado pero marcado para revisar igual pisaba el real).
+  if (km && km > (veh.km_actual || 0) && !kmWarns.length) {
+    await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, veh.id).run();
+    veh.km_actual = km;
+  }
+
+  const final = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
+  const tareas = (async () => {
+    const user = carga.usuario_id
+      ? await env.DB.prepare('SELECT * FROM usuarios WHERE id=?').bind(carga.usuario_id).first() : null;
+    if (!det.emailEnviado && origen !== 'admin') {
+      try {
+        await emailConfirmacion(env, final, veh, user || { nombre: carga.usuario_nombre || '—' });
+        await env.DB.prepare('UPDATE cargas SET validacion_detalle=? WHERE id=?')
+          .bind(JSON.stringify({ ...JSON.parse(detalle), emailEnviado: true }), id).run();
+      } catch (e) { console.error('email conf:', e.message); }
+    }
+    try { await checkMantenimiento(env, veh); } catch (e) { console.error('maint:', e.message); }
+    if (validacion === 'revisar' && origen !== 'admin') {
+      try {
+        await pushToAdmins(env, {
+          title: t ? '🔍 Carga para revisar' : '❌ No se pudo leer el ticket en 24 hs', tag: 'revision',
+          body: `${veh.emoji} ${veh.nombre} — ${carga.usuario_nombre || ''}. ${t ? 'Motivos: ' + warnings.slice(0, 3).join(', ') : 'Revisalo a mano con la foto.'}`,
+        });
+      } catch (e) { }
+    }
+  })();
+  if (ctx) ctx.waitUntil(tareas); else await tareas;
+  return { ok: true, carga: final };
+}
+
+// Cola: cargas en 'procesando' se reintentan (máx `max` por pasada, con al
+// menos 5 min entre intentos de una misma carga para no martillar a Gemini).
+async function reintentarPendientes(env, max = 3) {
+  const rows = (await env.DB.prepare(
+    `SELECT id, validacion_detalle FROM cargas WHERE validacion='procesando' ORDER BY creado LIMIT 30`).all()).results;
+  let n = 0;
+  for (const r of rows) {
+    if (n >= max) break;
+    let d = {}; try { d = JSON.parse(r.validacion_detalle || '{}'); } catch (e) { }
+    if (d.ultimoIntento && Date.now() - Date.parse(d.ultimoIntento) < 5 * 60e3) continue;
+    n++;
+    try { await procesarCarga(env, r.id, 'cola'); } catch (e) { console.error('cola', r.id, e.message); }
+  }
+  return n;
+}
+// Disparada al abrir la app (cualquier /api/me) — como mucho una vez cada 5 min
+async function dispararCola(env) {
+  if (await env.FLOTA_KV.get('cola:lock')) return;
+  await env.FLOTA_KV.put('cola:lock', '1', { expirationTtl: 300 });
+  await reintentarPendientes(env);
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -449,77 +571,18 @@ async function handleNuevaCarga(request, env, ctx) {
   await fotoPut(env, fotoTicketKey, b64ToBytes(tB64));
   if (fotoTableroKey) await fotoPut(env, fotoTableroKey, b64ToBytes(kB64));
 
-  // 2. OCR en paralelo (el odómetro tiene respaldo automático a Workers AI si
-  // Gemini falla — el ticket no, ver comentario en ocrOdometroConRespaldo)
-  let t = null, kmData = null, ocrErr = null;
-  const [tRes, kRes] = await Promise.allSettled([
-    geminiTicket(tB64, env),
-    kB64 ? ocrOdometroConRespaldo(kB64, env) : Promise.resolve(null),
-  ]);
-  if (tRes.status === 'fulfilled') t = tRes.value; else ocrErr = tRes.reason?.message;
-  if (kRes.status === 'fulfilled') kmData = kRes.value;
-
-  // 3. Validaciones (server-side, el chofer no toca nada)
-  const m = t?.montos || {};
-  const it = (t?.items && t.items[0]) || {};
-  const km = kmData?.km > 0 ? Math.round(kmData.km) : null;
-
-  const w = calcularWarningsTicket(t, veh);
-  if (t && await comprobanteDuplicado(env, t, body.id)) w.push('comprobante_duplicado');
-  w.push(...calcularWarningsKm(km, kmData, !!kB64, veh));
-  // Notas informativas de la IA: se guardan pero NO fuerzan revisión
-  const notas = [];
-  if (t && Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
-  const validacion = w.length ? 'revisar' : 'ok';
-  const fecha = t?.fecha || hoyAR();
-
-  // 4. Insertar
+  // 2. Registrar la carga YA (queda en 'procesando' hasta que la IA la lea).
+  // ultimoIntento=ahora evita que la cola la tome en paralelo con este request.
   await env.DB.prepare(`INSERT INTO cargas
-    (id,vehiculo_id,usuario_id,usuario_nombre,fecha,hora,tipo_comprobante,codigo_comprobante,punto_venta,numero_comprobante,
-     emisor_razon_social,emisor_cuit,emisor_domicilio,emisor_localidad,emisor_iibb,emisor_condicion_iva,
-     receptor_nombre,receptor_cuit,producto,litros,precio_unitario,neto_gravado,iva_alicuota,iva,
-     otros_tributos,percepciones,exento,no_gravado,total,condicion_pago,km,km_confianza,confianza,
-     validacion,validacion_detalle,foto_ticket,foto_tablero,original_json)
-    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
-    .bind(
-      body.id, vehiculoId, user.id, user.nombre, fecha, t?.hora?.slice(0, 8) ?? null,
-      t?.tipo_comprobante ?? null, t?.codigo_comprobante ?? null, t?.punto_venta ?? null, t?.numero_comprobante ?? null,
-      t?.emisor?.razon_social ?? null, t?.emisor?.cuit ?? null, t?.emisor?.domicilio ?? null,
-      t?.emisor?.localidad ?? null, t?.emisor?.iibb ?? null, t?.emisor?.condicion_iva ?? null,
-      t?.receptor?.nombre ?? null, t?.receptor?.cuit ?? null,
-      it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null,
-      m.neto_gravado ?? null, m.iva_alicuota ?? null, m.iva ?? null,
-      m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null, m.no_gravado ?? null,
-      m.total ?? null, t?.condicion_pago ?? null, km, kmData?.confianza ?? null, t?.confianza ?? null,
-      validacion, JSON.stringify({ warnings: w, notas, ocrErr }), fotoTicketKey, fotoTableroKey,
-      t ? JSON.stringify(t) : null,
-    ).run();
+    (id,vehiculo_id,usuario_id,usuario_nombre,fecha,validacion,validacion_detalle,foto_ticket,foto_tablero)
+    VALUES (?,?,?,?,?,'procesando',?,?,?)`)
+    .bind(body.id, vehiculoId, user.id, user.nombre, hoyAR(),
+      JSON.stringify({ warnings: [], intentos: 0, ultimoIntento: new Date().toISOString() }),
+      fotoTicketKey, fotoTableroKey).run();
 
-  // 5. Actualizar KM del vehículo (solo si avanza)
-  if (km && km > (veh.km_actual || 0)) {
-    await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, vehiculoId).run();
-    veh.km_actual = km;
-  }
-
-  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(body.id).first();
-
-  // 6. Notificaciones en background
-  ctx.waitUntil((async () => {
-    try { await emailConfirmacion(env, carga, veh, user); } catch (e) { console.error('email conf:', e.message); }
-    try { await checkMantenimiento(env, veh); } catch (e) { console.error('maint:', e.message); }
-    if (validacion === 'revisar') {
-      try {
-        await pushToAdmins(env, ocrErr ? {
-          title: '❌ Falló la IA — revisar ya', tag: 'revision',
-          body: `${veh.emoji} ${veh.nombre} — ${user.nombre}. ${ocrErr}`,
-        } : {
-          title: '🔍 Carga para revisar', tag: 'revision',
-          body: `${veh.emoji} ${veh.nombre} — ${user.nombre}. Motivos: ${w.slice(0, 3).join(', ')}`,
-        });
-      } catch (e) { }
-    }
-  })());
-
+  // 3. Leer con IA ahora mismo; si no responde, queda en cola y se reintenta sola
+  const r = await procesarCarga(env, body.id, 'nueva', ctx);
+  const carga = r.carga || await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(body.id).first();
   return json({ ok: true, carga: publicCarga(carga) });
 }
 
@@ -780,12 +843,11 @@ async function geminiServicio(b64, env) {
 
 Devolvé SOLO este JSON:
 {"fecha":"YYYY-MM-DD","km":82295,"proximo_km_absoluto":92295,"proximo_intervalo":null,"taller":"Lube Stop","items":["Aceite Shell 5W40","Filtro de aceite"],"confianza":90}`;
-  const data = await llamarGemini({
+  return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos, con diseños muy variables entre talleres. Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }, env, 'Gemini servicio');
-  return JSON.parse(data.candidates[0].content.parts[0].text.trim());
 }
 
 async function handleServicioFoto(request, env, ctx) {
@@ -1049,68 +1111,11 @@ async function handleAdminReprocesar(request, env, ctx) {
   const admin = await reqAdmin(request, env);
   if (!admin) return noAuth();
   const { id } = await request.json().catch(() => ({}));
-  const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
-  if (!carga?.foto_ticket) return json({ error: 'Carga sin foto para reprocesar' }, 404);
-  const veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(carga.vehiculo_id).first();
-  const ticketBytes = await fotoGet(env, carga.foto_ticket);
-  if (!ticketBytes) return json({ error: 'Foto de ticket no encontrada en storage' }, 404);
-  const tB64 = bytesToB64(ticketBytes);
-  // Reprocesa TAMBIÉN el tablero (si hay foto guardada) — antes esto solo
-  // rehacía el ticket y dejaba el KM tal cual, aunque hubiera fallado antes
-  // por el mismo motivo (ej. corte de la API de Gemini). Un solo botón para
-  // resolver los dos, sin pedirle nada de nuevo al chofer.
-  const kBytes = carga.foto_tablero ? await fotoGet(env, carga.foto_tablero) : null;
-  const kB64 = kBytes ? bytesToB64(kBytes) : null;
-
-  let t = null, kmData = null, ocrErr = null;
-  const [tRes, kRes] = await Promise.allSettled([
-    geminiTicket(tB64, env),
-    kB64 ? ocrOdometroConRespaldo(kB64, env) : Promise.resolve(null),
-  ]);
-  if (tRes.status === 'fulfilled') t = tRes.value; else ocrErr = tRes.reason?.message;
-  if (kRes.status === 'fulfilled' && kRes.value) kmData = kRes.value;
-  else if (kRes.status === 'rejected' && !ocrErr) ocrErr = kRes.reason?.message;
-  if (!t) return json({ error: ocrErr || 'Gemini no devolvió datos del ticket' }, 502);
-
-  const m = t.montos || {}, it = (t.items && t.items[0]) || {};
-  // Si la relectura del odómetro vuelve a fallar, no perder un KM que ya
-  // estaba bien leído de antes — solo se pisa si esta vez sí vino un valor.
-  const km = kmData?.km > 0 ? Math.round(kmData.km) : (carga.km ?? null);
-  const kmConfianza = kmData?.km > 0 ? (kmData.confianza ?? null) : (carga.km_confianza ?? null);
-
-  const notas = [];
-  if (Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
-  const ticketWarns = calcularWarningsTicket(t, veh);
-  if (await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
-  const kmWarns = calcularWarningsKm(km, { confianza: kmConfianza }, !!carga.foto_tablero, veh);
-  const nuevosWarnings = [...ticketWarns, ...kmWarns];
-  const validacion = nuevosWarnings.length ? 'revisar' : 'ok';
-
-  await env.DB.prepare(`UPDATE cargas SET
-    fecha=COALESCE(?,fecha),hora=?,tipo_comprobante=?,codigo_comprobante=?,punto_venta=?,numero_comprobante=?,
-    emisor_razon_social=?,emisor_cuit=?,emisor_domicilio=?,emisor_localidad=?,emisor_iibb=?,emisor_condicion_iva=?,
-    receptor_nombre=?,receptor_cuit=?,producto=?,litros=?,precio_unitario=?,neto_gravado=?,iva_alicuota=?,iva=?,
-    otros_tributos=?,percepciones=?,exento=?,no_gravado=?,total=?,condicion_pago=?,confianza=?,
-    km=?,km_confianza=?,
-    validacion=?,validacion_detalle=?,original_json=?,corregido_por=?,corregido_en=datetime('now')
-    WHERE id=?`).bind(
-    t.fecha ?? null, t.hora?.slice(0, 8) ?? null, t.tipo_comprobante ?? null, t.codigo_comprobante ?? null,
-    t.punto_venta ?? null, t.numero_comprobante ?? null,
-    t.emisor?.razon_social ?? null, t.emisor?.cuit ?? null, t.emisor?.domicilio ?? null, t.emisor?.localidad ?? null,
-    t.emisor?.iibb ?? null, t.emisor?.condicion_iva ?? null, t.receptor?.nombre ?? null, t.receptor?.cuit ?? null,
-    it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null, m.neto_gravado ?? null,
-    m.iva_alicuota ?? null, m.iva ?? null, m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null,
-    m.no_gravado ?? null, m.total ?? null, t.condicion_pago ?? null, t.confianza ?? null,
-    km, kmConfianza,
-    validacion, JSON.stringify({ warnings: nuevosWarnings, notas, ocrErr }), JSON.stringify(t), 'reproceso:' + admin.username, id,
-  ).run();
-
-  if (km && km > (veh.km_actual || 0)) {
-    await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, carga.vehiculo_id).run();
-  }
-
-  const updated = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
-  return json({ ok: true, carga: publicCarga(updated) });
+  const r = await procesarCarga(env, id, 'admin', ctx);
+  if (!r.ok) return json({ error: r.error }, 502);
+  await env.DB.prepare(`UPDATE cargas SET corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
+    .bind('reproceso:' + admin.username, id).run();
+  return json({ ok: true, procesando: !!r.procesando, carga: publicCarga(r.carga) });
 }
 
 // ── Pedir/recibir una foto puntual sin duplicar la carga ─────────────────────
@@ -1153,62 +1158,22 @@ async function handleSubirFotoFaltante(request, env, ctx, id) {
   if (!carga) return json({ error: 'Carga no encontrada' }, 404);
   if (user.rol !== 'admin' && carga.usuario_id !== user.id) return json({ error: 'No autorizado' }, 403);
   if (carga.foto_pendiente !== tipo) return json({ error: 'No se pidió esta foto para esta carga' }, 400);
-  let veh = await env.DB.prepare('SELECT * FROM vehiculos WHERE id=?').bind(carga.vehiculo_id).first();
 
   const b64 = foto.includes(',') ? foto.split(',')[1] : foto;
   const key = `${id}/${tipo}.jpg`;
   await fotoPut(env, key, b64ToBytes(b64));
 
-  let warningsPrevios = [], notas = [];
-  try { const d = JSON.parse(carga.validacion_detalle || '{}'); warningsPrevios = d.warnings || []; notas = d.notas || []; } catch (e) { }
-
-  if (tipo === 'tablero') {
-    const kmData = await ocrOdometroConRespaldo(b64, env);
-    const km = kmData?.km > 0 ? Math.round(kmData.km) : null;
-    const kmWarns = calcularWarningsKm(km, kmData, true, veh);
-    const warnings = warningsPrevios.filter(w => !KM_WARN_KEYS.includes(w)).concat(kmWarns);
-    const pendiente = km ? null : 'tablero'; // si sigue ilegible, queda pendiente para volver a pedir
-    await env.DB.prepare(`UPDATE cargas SET km=?, km_confianza=?, foto_tablero=?, foto_pendiente=?,
-      validacion=?, validacion_detalle=?, corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
-      .bind(km, kmData?.confianza ?? null, key, pendiente, warnings.length ? 'revisar' : 'ok',
-        JSON.stringify({ warnings, notas }), 'foto-retake:' + user.username, id).run();
-    if (km && km > (veh.km_actual || 0)) {
-      await env.DB.prepare('UPDATE vehiculos SET km_actual=? WHERE id=?').bind(km, veh.id).run();
-      veh = { ...veh, km_actual: km };
-      ctx.waitUntil(checkMantenimiento(env, veh).catch(() => { }));
-    }
-  } else {
-    const t = await geminiTicket(b64, env).catch(err => { console.warn('retake ticket:', err.message); return null; });
-    if (!t) {
-      const warnings = warningsPrevios.filter(w => KM_WARN_KEYS.includes(w)).concat(['ocr_ticket_fallo']);
-      await env.DB.prepare(`UPDATE cargas SET foto_ticket=?, validacion='revisar', validacion_detalle=?,
-        corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
-        .bind(key, JSON.stringify({ warnings, notas }), 'foto-retake:' + user.username, id).run();
-    } else {
-      const m = t.montos || {}, it = (t.items && t.items[0]) || {};
-      const ticketWarns = calcularWarningsTicket(t, veh);
-      if (await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
-      notas = []; if (Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
-      const warnings = warningsPrevios.filter(w => KM_WARN_KEYS.includes(w)).concat(ticketWarns);
-      await env.DB.prepare(`UPDATE cargas SET
-        fecha=COALESCE(?,fecha),hora=?,tipo_comprobante=?,codigo_comprobante=?,punto_venta=?,numero_comprobante=?,
-        emisor_razon_social=?,emisor_cuit=?,emisor_domicilio=?,emisor_localidad=?,emisor_iibb=?,emisor_condicion_iva=?,
-        receptor_nombre=?,receptor_cuit=?,producto=?,litros=?,precio_unitario=?,neto_gravado=?,iva_alicuota=?,iva=?,
-        otros_tributos=?,percepciones=?,exento=?,no_gravado=?,total=?,condicion_pago=?,confianza=?,
-        foto_ticket=?,foto_pendiente=NULL,validacion=?,validacion_detalle=?,original_json=?,
-        corregido_por=?,corregido_en=datetime('now') WHERE id=?`).bind(
-        t.fecha ?? null, t.hora?.slice(0, 8) ?? null, t.tipo_comprobante ?? null, t.codigo_comprobante ?? null,
-        t.punto_venta ?? null, t.numero_comprobante ?? null,
-        t.emisor?.razon_social ?? null, t.emisor?.cuit ?? null, t.emisor?.domicilio ?? null, t.emisor?.localidad ?? null,
-        t.emisor?.iibb ?? null, t.emisor?.condicion_iva ?? null, t.receptor?.nombre ?? null, t.receptor?.cuit ?? null,
-        it.descripcion ?? null, it.litros ?? null, it.precio_unitario ?? null, m.neto_gravado ?? null,
-        m.iva_alicuota ?? null, m.iva ?? null, m.otros_tributos ?? null, m.percepciones ?? null, m.exento ?? null,
-        m.no_gravado ?? null, m.total ?? null, t.condicion_pago ?? null, t.confianza ?? null,
-        key, warnings.length ? 'revisar' : 'ok', JSON.stringify({ warnings, notas }),
-        JSON.stringify(t), 'foto-retake:' + user.username, id,
-      ).run();
-    }
-  }
+  // Foto nueva → se relee todo con procesarCarga (la ventana de 24 hs de
+  // reintentos arranca de nuevo desde ahora, no desde que se creó la carga)
+  let det = {}; try { det = JSON.parse(carga.validacion_detalle || '{}'); } catch (e) { }
+  await env.DB.prepare(`UPDATE cargas SET ${tipo === 'tablero' ? 'foto_tablero' : 'foto_ticket'}=?, foto_pendiente=NULL,
+    validacion_detalle=?, corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
+    .bind(key, JSON.stringify({ ...det, intentos: 0, desde: new Date().toISOString() }), 'foto-retake:' + user.username, id).run();
+  await procesarCarga(env, id, 'retake', ctx);
+  // Tablero todavía ilegible → se vuelve a pedir
+  const tras = await env.DB.prepare('SELECT km, validacion FROM cargas WHERE id=?').bind(id).first();
+  if (tipo === 'tablero' && !tras.km && tras.validacion !== 'procesando')
+    await env.DB.prepare(`UPDATE cargas SET foto_pendiente='tablero' WHERE id=?`).bind(id).run();
 
   const updated = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
   ctx.waitUntil(pushToAdmins(env, {

@@ -401,7 +401,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260814-183607';
+const APP_VERSION = '20260928-154858';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -804,8 +804,9 @@ const Carga = {
   },
   showResult(c){
     haptic('heavy');
-    const rev=c.validacion!=='ok';
-    const est=rev?'<span class="chip c-warn">🔍 Registrada — en revisión</span>':'<span class="chip c-ok">✅ Verificada</span>';
+    const proc=c.validacion==='procesando';
+    const rev=!proc&&c.validacion!=='ok';
+    const est=proc?'<span class="chip c-acc">⏳ Guardada — leyendo el ticket</span><p class="muted" style="font-size:.8rem;margin:.5rem 0 0">Las fotos quedaron guardadas. El sistema lee el ticket solo en unos minutos — no tenés que hacer nada más.</p>':rev?'<span class="chip c-warn">🔍 Registrada — en revisión</span>':'<span class="chip c-ok">✅ Verificada</span>';
     const comp=(c.punto_venta&&c.numero_comprobante)?`${c.punto_venta}-${c.numero_comprobante}`:(c.numero_comprobante||'—');
     $('cg-proc').classList.add('hidden');
     $('cg-result').classList.remove('hidden');
@@ -939,7 +940,7 @@ const Panel = {
         <div><b style="font-size:.88rem">${fmtF(c.fecha)}${c.hora?' · '+c.hora.slice(0,5):''}</b>
           <div class="muted" style="font-size:.73rem;margin-top:.15rem">${c.emisor_razon_social||c.emisor_localidad||'—'} · ${(c.litros||0).toFixed(1)}L${c.km?' · '+fmtN(c.km)+' km':''}</div></div>
         <div style="text-align:right"><b style="color:var(--acc)">${fmt$0(c.total)}</b>
-          <div style="margin-top:.2rem">${c.validacion==='ok'?'<span class="chip c-ok">✓</span>':c.validacion==='revisar'?'<span class="chip c-warn">🔍</span>':''}</div></div>
+          <div style="margin-top:.2rem">${c.validacion==='ok'?'<span class="chip c-ok">✓</span>':c.validacion==='revisar'?'<span class="chip c-warn">🔍</span>':c.validacion==='procesando'?'<span class="chip c-acc">⏳</span>':''}</div></div>
       </div></div>`).join('');
   },
   async checkPendientesFoto(){
@@ -1149,7 +1150,7 @@ const Mon = {
           N° ${c.punto_venta||''}${c.punto_venta?'-':''}${c.numero_comprobante||'—'} · 👤 ${c.usuario_nombre||'—'}</div></div>
         <div style="text-align:right;flex-shrink:0"><b style="color:var(--acc)">${fmt$0(c.total)}</b>
           <div class="muted" style="font-size:.68rem">${(c.litros||0).toFixed(1)}L${c.km?' · '+fmtN(c.km)+'km':''}</div>
-          <div style="margin-top:.25rem">${c.validacion==='ok'?'<span class="chip c-ok">✓ ok</span>':c.validacion==='revisar'?'<span class="chip c-warn">🔍 revisar</span>':`<span class="chip c-acc">${c.validacion}</span>`}
+          <div style="margin-top:.25rem">${c.validacion==='ok'?'<span class="chip c-ok">✓ ok</span>':c.validacion==='revisar'?'<span class="chip c-warn">🔍 revisar</span>':c.validacion==='procesando'?'<span class="chip c-acc">⏳ leyendo</span>':`<span class="chip c-acc">${c.validacion}</span>`}
           ${c.foto_ticket?`<button class="chip c-acc" style="border:none;cursor:pointer;font-family:inherit" onclick="Rev.foto('${c.id}','ticket')">📷</button>`:''}</div></div>
       </div></div>`;
     }).join('');
@@ -1270,8 +1271,8 @@ const Rev = {
   async reproc(id,btn){
     btn.disabled=true;btn.innerHTML='<span class="spin"></span> IA…';
     try{
-      await api('/api/admin/reprocesar',{method:'POST',body:JSON.stringify({id})});
-      toast('🤖 Reprocesada — revisá los datos nuevos','ok');this.load();
+      const r=await api('/api/admin/reprocesar',{method:'POST',body:JSON.stringify({id})});
+      toast(r.procesando?'⏳ La IA está ocupada — quedó en cola y se lee sola en unos minutos':'🤖 Reprocesada — revisá los datos nuevos',r.procesando?'info':'ok');this.load();
     }catch(e){toast(e.message,'err');btn.disabled=false;btn.textContent='🤖 Reprocesar IA';}
   },
   async aprobar(id,btn){
