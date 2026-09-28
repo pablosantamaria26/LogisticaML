@@ -245,6 +245,7 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
 
     <!-- CARGAR -->
     <section id="p-cargar" class="hidden">
+      <div id="cg-fotopend"></div>
       <div id="cg-idle">
         <button class="mega" onclick="Carga.start()">
           <span class="q hidden" id="cg-q"></span>
@@ -263,7 +264,6 @@ td{padding:.6rem .7rem;border-top:1px solid var(--bd);white-space:nowrap;font-va
         <button class="btn btn-acc hidden" id="cg-btn-tablero" style="margin-top:.9rem;padding:1.1rem;font-size:1.05rem" onclick="Carga.sacarTablero()">🛣️ Ahora la foto del tablero</button>
         <button class="btn btn-ghost" style="margin-top:.6rem" onclick="Carga.cancelarFlujo()">✕ Cancelar</button>
       </div>
-      <div id="cg-fotopend" style="margin-bottom:.8rem"></div>
       <div id="cg-result" class="hidden"></div>
       <div id="cg-pend"></div>
     </section>
@@ -403,7 +403,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20260928-212142';
+const APP_VERSION = '20260928-212723';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -1055,14 +1055,17 @@ const Panel = {
       const cs=d.cargas.filter(c=>!enCola.has(c.id));
       const html=cs.map(c=>{
         const tb=c.foto_pendiente==='tablero';
-        return `<div class="card" style="border:2px solid var(--warn);padding:1rem;margin-bottom:.7rem${c.id===destacarId?';box-shadow:0 0 0 4px var(--warn)':''}">
+        return `<div class="card" data-id="${c.id}" style="border:2px solid var(--warn);padding:1rem;margin-bottom:.7rem${c.id===destacarId?';box-shadow:0 0 0 4px var(--warn)':''}">
           <b style="font-size:.95rem">📸 Repetí la foto del ${tb?'tablero':'ticket'}</b>
           <p style="font-size:.85rem;margin:.35rem 0 .2rem">${c.motivo?c.motivo.charAt(0).toUpperCase()+c.motivo.slice(1)+'.':''}</p>
           <p class="muted" style="font-size:.75rem;margin:0 0 .7rem">Carga del ${fmtF(c.fecha)}${c.total?' · '+fmt$0(c.total):''}</p>
           <button class="btn btn-acc" onclick="Panel.reintentarFoto('${c.id}','${c.foto_pendiente}',this)">📸 Sacar foto del ${tb?'tablero':'ticket'}</button>
         </div>`;}).join('');
       els.forEach(el=>el.innerHTML=html);
-      if(destacarId&&cs.some(c=>c.id===destacarId))toast('Tocá el botón para repetir la foto 👇','info',5000);
+      if(destacarId&&cs.some(c=>c.id===destacarId)){
+        document.querySelector('#cg-fotopend [data-id="'+destacarId+'"]')?.scrollIntoView({behavior:'smooth',block:'center'});
+        toast('Tocá el botón para repetir la foto 👇','info',5000);
+      }
     }catch(e){}
   },
   async reintentarFoto(id,tipo,btn){
