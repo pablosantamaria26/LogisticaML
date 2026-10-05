@@ -25,11 +25,15 @@ const SESSION_DAYS = 180;
 // (hasta sep/2026) una saturación pasajera mandaba la carga a "revisar".
 // Probado 28/09/2026: la familia 3.5/flash-lite se satura en simultáneo, 3.6 y 3.8
 // Flash suelen tener capacidad libre. Gemma 4 NO sirve (falla con imágenes).
-const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
+// Orden = del más rápido al más lento (medido 05/10/2026 con un ticket real, key
+// gratuita: 3.5-flash-lite 3,5 s · 3.1-flash-lite 3,8 s · 3.6-flash 10 s · 3.8-flash
+// 15,6 s; los 4 leyeron bien). El segundo plano de una carga nueva usa los 2
+// primeros (13 s c/u); la cola recorre todos.
+const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.5-flash'];
 const GEMINI_MODEL = GEMINI_MODELOS[0]; // usado por los textos de análisis (no críticos)
 // Versión mínima de la app instalada (ver handleMe). Se sube junto con cada
 // cambio del cliente que tenga que llegar sí o sí a todos los celulares.
-const APP_MIN_VERSION = '20261005-133306';
+const APP_MIN_VERSION = '20261005-140456';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -274,22 +278,22 @@ async function handleMe(request, env) {
 // la carga queda en "procesando" — la cola de reintentos (reintentarPendientes)
 // la vuelve a intentar sola más tarde; nunca se pierde ni la ve nadie fallar.
 async function llamarGemini(body, env, label, modelos = GEMINI_MODELOS, timeoutMs = 25000) {
-  let ultimoError;
+  let ultimoError; const errores = []; // qué le pasó a CADA modelo (para diagnosticar)
   for (const modelo of modelos) {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${env.GEMINI_API_KEY}`;
     let res;
     try {
       res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(timeoutMs) });
-    } catch (e) { ultimoError = new Error(`${label}: sin respuesta de ${modelo} (${e.message})`); continue; }
+    } catch (e) { errores.push(`${modelo}: sin respuesta (${e.name === 'TimeoutError' ? 'timeout' : e.message})`); ultimoError = new Error(`${label}: ${errores.join(' | ')}`); continue; }
     if (res.ok) {
       const data = await res.json();
       const texto = data.candidates?.[0]?.content?.parts?.find(p => p.text)?.text;
       if (texto) { try { return JSON.parse(texto.trim()); } catch (e) { } }
-      ultimoError = new Error(`${label}: respuesta vacía o inválida de ${modelo}`);
+      errores.push(`${modelo}: respuesta vacía o inválida`); ultimoError = new Error(`${label}: ${errores.join(' | ')}`);
       continue;
     }
     const e = await res.json().catch(() => ({}));
-    ultimoError = new Error(`${label}: ${e.error?.message || res.status} (${modelo})`);
+    errores.push(`${modelo}: ${res.status} ${(e.error?.message || '').slice(0, 80)}`); ultimoError = new Error(`${label}: ${errores.join(' | ')}`);
     if ([400, 401, 403].includes(res.status)) throw ultimoError;
   }
   throw ultimoError;
