@@ -27,6 +27,9 @@ const SESSION_DAYS = 180;
 // Flash suelen tener capacidad libre. Gemma 4 NO sirve (falla con imágenes).
 const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.1-flash-lite'];
 const GEMINI_MODEL = GEMINI_MODELOS[0]; // usado por los textos de análisis (no críticos)
+// Versión mínima de la app instalada (ver handleMe). Se sube junto con cada
+// cambio del cliente que tenga que llegar sí o sí a todos los celulares.
+const APP_MIN_VERSION = '20261005-133306';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -63,6 +66,7 @@ export default {
       if (p === '/api/push/register' && request.method === 'POST') return await handlePushRegister(request, env);
       if (p === '/api/push/broadcast' && request.method === 'POST') return await handlePushBroadcast(request, env);
       if (p === '/api/diag' && request.method === 'POST') return await handleDiag(request, env, ctx);
+      if (p === '/api/admin/diag') return await handleAdminDiag(request, env);
       if (p === '/api/admin/usuarios') return await handleAdminUsuarios(request, env);
       if (p === '/api/admin/asignar' && request.method === 'POST') return await handleAdminAsignar(request, env);
       if (p === '/api/admin/vehiculos' && request.method === 'POST') return await handleAdminCrearVehiculo(request, env);
@@ -255,6 +259,9 @@ async function handleMe(request, env) {
     user: { username: user.username, nombre: user.nombre, rol: user.rol, email: user.email },
     vehiculo: veh, mantenimiento: maint,
     vehiculos: user.rol === 'admin' ? vehiculos.results : undefined,
+    // Versión mínima de la app: si el celular tiene una más vieja, se fuerza la
+    // actualización (además del chequeo de version.json que hace la propia app)
+    appMin: APP_MIN_VERSION,
   });
 }
 
@@ -457,6 +464,28 @@ async function procesarCarga(env, id, origen, ctx) {
     return { ok: true, procesando: true, carga: await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first() };
   }
 
+  // Foto de ticket REENVIADA: tiene que ser del mismo ticket. Si es de otra fecha
+  // (>3 días) o es un comprobante que ya está en otra carga, se descarta la foto
+  // nueva y la carga queda exactamente como estaba — nunca se pisan datos buenos.
+  if (det.retake?.tipo === 'ticket' && t) {
+    const fRef = det.retake.fechaCarga;
+    const difDias = t.fecha && fRef ? Math.abs(new Date(t.fecha) - new Date(fRef)) / 864e5 : 0;
+    const dup = await comprobanteDuplicado(env, t, id);
+    if (difDias > 3 || dup) {
+      const warnsPrev = [...new Set([...(det.retake.warnings || []), 'foto_reenviada_no_corresponde'])];
+      await env.DB.prepare(`UPDATE cargas SET foto_ticket=?, foto_pendiente=NULL, validacion='revisar', validacion_detalle=? WHERE id=?`)
+        .bind(det.retake.anterior, JSON.stringify({ ...det, retake: undefined, warnings: warnsPrev, intentos, ultimoIntento: ahora,
+          notas: [...(det.notas || []), `Se descartó una foto reenviada que era de otro ticket (${t.fecha || 's/fecha'} N° ${t.punto_venta || ''}-${t.numero_comprobante || ''})`] }), id).run();
+      await fotoDelete(env, carga.foto_ticket); // la foto equivocada
+      const aviso = pushToAdmins(env, {
+        title: '⚠️ Foto reenviada de otro ticket', tag: 'retake-mal-' + id,
+        body: `${veh.emoji} ${carga.usuario_nombre || ''} reenvió para la carga del ${fmtFechaCorta(fRef)} un ticket ${dup ? 'que ya está cargado en otra carga' : 'del ' + fmtFechaCorta(t.fecha)}. Se descartó: la carga quedó como estaba.`,
+      }).catch(() => { });
+      if (ctx) ctx.waitUntil(aviso); else await aviso;
+      return { ok: true, carga: await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first() };
+    }
+  }
+
   // Referencias: fecha en que se subió la carga y km de la carga anterior del vehículo
   const fechaSubida = fechaAR(carga.creado);
   const prev = await env.DB.prepare(
@@ -518,6 +547,11 @@ async function procesarCarga(env, id, origen, ctx) {
   }
 
   if (retake) await env.DB.prepare('UPDATE cargas SET foto_pendiente=? WHERE id=?').bind(retake.tipo, id).run();
+  // Foto reenviada aceptada: recién ahora se borra la anterior
+  if (det.retake?.anterior) {
+    const actual = det.retake.tipo === 'tablero' ? carga.foto_tablero : carga.foto_ticket;
+    if (det.retake.anterior !== actual) await fotoDelete(env, det.retake.anterior).catch(() => { });
+  }
 
   // El km del vehículo solo avanza con una lectura confiable (antes un km
   // alucinado pero marcado para revisar igual pisaba el real).
@@ -1235,8 +1269,12 @@ async function handleSubirFotoFaltante(request, env, ctx, id) {
   if (user.rol !== 'admin' && carga.usuario_id !== user.id) return json({ error: 'No autorizado' }, 403);
   if (carga.foto_pendiente !== tipo) return json({ error: 'No se pidió esta foto para esta carga' }, 400);
 
+  // La foto nueva va a una clave NUEVA: la anterior no se pisa hasta confirmar
+  // que la reenviada corresponde a esta carga (caso real 05/10/2026: a una carga
+  // del 26/08 le pidieron repetir el ticket, el chofer ya no lo tenía y fotografió
+  // el ticket del día — eso pisó datos y foto originales). Ver procesarCarga.
   const b64 = foto.includes(',') ? foto.split(',')[1] : foto;
-  const key = `${id}/${tipo}.jpg`;
+  const key = `${id}/${tipo}-${Date.now()}.jpg`;
   await fotoPut(env, key, b64ToBytes(b64));
 
   // Foto nueva → se relee todo con procesarCarga (la ventana de 24 hs de
@@ -1244,9 +1282,11 @@ async function handleSubirFotoFaltante(request, env, ctx, id) {
   let det = {}; try { det = JSON.parse(carga.validacion_detalle || '{}'); } catch (e) { }
   // ultimoIntento=ahora: la cola no la toma en paralelo mientras corre el segundo plano
   const ahora = new Date().toISOString();
+  const retake = { tipo, anterior: tipo === 'tablero' ? carga.foto_tablero : carga.foto_ticket,
+    fechaCarga: carga.fecha, warnings: det.warnings || [], validacion: carga.validacion };
   await env.DB.prepare(`UPDATE cargas SET ${tipo === 'tablero' ? 'foto_tablero' : 'foto_ticket'}=?, foto_pendiente=NULL,
     validacion='procesando', validacion_detalle=?, corregido_por=?, corregido_en=datetime('now') WHERE id=?`)
-    .bind(key, JSON.stringify({ ...det, intentos: 0, desde: ahora, ultimoIntento: ahora }), 'foto-retake:' + user.username, id).run();
+    .bind(key, JSON.stringify({ ...det, intentos: 0, desde: ahora, ultimoIntento: ahora, retake }), 'foto-retake:' + user.username, id).run();
   // Se contesta YA: el chofer puede guardar el celular. Si la foto nueva tampoco
   // sirve, procesarCarga le vuelve a avisar (tope de 2 pedidos por foto).
   ctx.waitUntil(procesarCarga(env, id, 'retake').catch(e => console.error('retake:', e.message)));
@@ -1447,12 +1487,35 @@ async function handleDiag(request, env, ctx) {
   const detalle = String(b.detalle || '').slice(0, 300);
   const dispositivo = resumirUA(b.userAgent || '');
   console.log('DIAG', user.username, evento, detalle, dispositivo);
-  ctx.waitUntil(pushToAdmins(env, {
-    title: `⚠️ ${user.nombre} — ${evento}`,
-    body: `${detalle}${dispositivo ? ' · ' + dispositivo : ''}`,
-    tag: 'diag-' + evento,
-  }).catch(() => { }));
+  ctx.waitUntil((async () => {
+    // Todo queda guardado (para analizar fallas reales con datos, no a ciegas)
+    try {
+      await env.DB.prepare(`CREATE TABLE IF NOT EXISTS diag (id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ts TEXT DEFAULT (datetime('now')), usuario TEXT, evento TEXT, detalle TEXT, dispositivo TEXT, version TEXT)`).run();
+      await env.DB.prepare('INSERT INTO diag (usuario,evento,detalle,dispositivo,version) VALUES (?,?,?,?,?)')
+        .bind(user.username, evento, detalle, dispositivo, String(b.version || '').slice(0, 20)).run();
+    } catch (e) { console.error('diag db:', e.message); }
+    // …pero al admin solo le llega lo que es una falla de verdad. Que el chofer
+    // vuelva atrás desde la cámara no es un error (apps viejas lo reportaban).
+    if (!DIAG_SILENCIOSOS.includes(evento)) {
+      await pushToAdmins(env, {
+        title: `⚠️ ${user.nombre} — ${evento}`,
+        body: `${detalle}${dispositivo ? ' · ' + dispositivo : ''}`,
+        tag: 'diag-' + evento,
+      }).catch(() => { });
+    }
+  })());
   return json({ ok: true });
+}
+const DIAG_SILENCIOSOS = ['cancelado_por_usuario', 'cancelado_por_usuario_servicio', 'sin_foto_ticket', 'sin_foto_tablero',
+  'sin_foto_servicio', 'camara_sin_respuesta'];
+async function handleAdminDiag(request, env) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  try {
+    const r = await env.DB.prepare('SELECT * FROM diag ORDER BY id DESC LIMIT 200').all();
+    return json({ ok: true, eventos: r.results });
+  } catch (e) { return json({ ok: true, eventos: [] }); }
 }
 
 // ── Web Push RFC 8291 aes128gcm (probado en producción v1) ──────────────────

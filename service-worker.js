@@ -1,5 +1,5 @@
 // Flota ML 2.0 — Service Worker
-const CACHE = 'fml2-v5';
+const CACHE = 'fml2-v6';
 const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const SHELL = ['/LogisticaML/', '/LogisticaML/index.html', '/LogisticaML/manifest.json', '/LogisticaML/icon-192.png'];
 
