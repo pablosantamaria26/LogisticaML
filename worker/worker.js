@@ -33,7 +33,7 @@ const GEMINI_MODELOS = ['gemini-3.5-flash-lite', 'gemini-3.1-flash-lite', 'gemin
 const GEMINI_MODEL = GEMINI_MODELOS[0]; // usado por los textos de análisis (no críticos)
 // Versión mínima de la app instalada (ver handleMe). Se sube junto con cada
 // cambio del cliente que tenga que llegar sí o sí a todos los celulares.
-const APP_MIN_VERSION = '20261005-140456';
+const APP_MIN_VERSION = '20261005-140827';
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
