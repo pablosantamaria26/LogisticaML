@@ -1,16 +1,28 @@
 // Flota ML 2.0 — Service Worker
-const CACHE = 'fml2-v7';
+const CACHE = 'fml2-v8';
 const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const SHELL = ['/LogisticaML/', '/LogisticaML/index.html', '/LogisticaML/manifest.json', '/LogisticaML/icon-192.png'];
 
+// Actualización garantizada: el SW nuevo toma el control APENAS se instala.
+// Antes skipWaiting() dependía de que terminara la precarga de archivos: si eso
+// se cortaba (ej. caché borrado en el medio), el SW nuevo quedaba "en espera"
+// y el celular seguía con el viejo hasta cerrar todas las pestañas (visto en
+// prueba real 05/10/2026). La precarga es solo para uso sin señal: si falla,
+// no importa (el HTML siempre se pide a la red primero).
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  self.skipWaiting();
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).catch(() => { }));
 });
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k))))
+      .catch(() => { })
       .then(() => self.clients.claim())
   );
+});
+// La página puede ordenarle a un SW en espera que se active ya
+self.addEventListener('message', e => {
+  if (e.data?.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('fetch', e => {
