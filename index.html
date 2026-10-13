@@ -406,7 +406,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20261013-131602';
+const APP_VERSION = '20261013-132230';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -907,7 +907,10 @@ const Queue = {
   // servidor en el 1°, 3° y 8° intento — así una carga trabada en un celular
   // se ve con datos y avisa al admin, en vez de enterarse por WhatsApp.
   async anotarFallo(item,e,ms){
-    const motivo=String((e.status?e.status+' ':'')+(e.message||e)).slice(0,140);
+    const tecnico=String((e.status?e.status+' ':'')+(e.message||e)).slice(0,140);
+    // Lo que ve el chofer: en criollo. El detalle técnico va solo al reporte.
+    const motivo=e.red?(/tiempo/.test(e.message)?'la conexión está muy lenta':'no hay conexión con el servidor')
+      :e.status>=500?'el servidor tuvo un problema momentáneo':'error '+(e.status||'desconocido');
     let n=1;
     try{
       const db=await IDB.open();
@@ -917,7 +920,7 @@ const Queue = {
     }catch(_){}
     if([1,3,8].includes(n)){
       const kb=Math.round(((item.ticket?.size||0)+(item.tablero?.size||0)+(item.foto?.size||0))/1024);
-      reportarError('envio_fallo',`${item.retake?'foto reenviada':'carga'} intento ${n}: ${motivo} · ${kb}KB · ${Math.round(ms/1000)}s · red ${navigator.connection?.effectiveType||'?'}`);
+      reportarError('envio_fallo',`${item.retake?'foto reenviada':'carga'} intento ${n}: ${tecnico} · ${kb}KB · ${Math.round(ms/1000)}s · red ${navigator.connection?.effectiveType||'?'}`);
     }
   },
   _timer:null,
@@ -936,7 +939,7 @@ const Queue = {
       const vieja=resto.find(i=>Date.now()-Date.parse(i.creada||0)>15*60e3);
       if(vieja&&!sessionStorage.getItem('fml2_trabada_'+vieja.id)){ sessionStorage.setItem('fml2_trabada_'+vieja.id,'1');
         reportarError('cola_trabada',`${resto.length} en cola · la más vieja de hace ${Math.round((Date.now()-Date.parse(vieja.creada))/60e3)} min · intentos ${vieja.intentos||0} · último error: ${vieja.ultimoError||'ninguno'}`); }
-      Carga.estadoEnvio(quedan?(!navigator.onLine?'📴 Sin señal — se envía sola cuando vuelva':err?'⏳ Reintentando… ('+err.ultimoError+')':'📤 Enviando…'):'✅ Enviada — la IA la lee en segundo plano');
+      Carga.estadoEnvio(quedan?(!navigator.onLine?'📴 Sin señal — se envía sola cuando vuelva':err?'⏳ Todavía no salió ('+err.ultimoError+') — se reintenta sola':'📤 Enviando…'):'✅ Enviada — la IA la lee en segundo plano');
       if(!quedan)Panel.render();
       // Reintento automático mientras la app esté abierta: 20 s, 40 s… hasta 2 min
       if(quedan){ const n=Math.max(1,...resto.map(i=>i.intentos||0)); this._timer=setTimeout(()=>this.flush(),Math.min(120000,20000*n)); }
