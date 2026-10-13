@@ -406,7 +406,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20261005-140827';
+const APP_VERSION = '20261013-131602';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -481,10 +481,20 @@ const IDB = {
 // API
 // ══════════════════════════════════════════════════════════════════════════
 async function api(path, opts={}){
-  const res = await fetch(API+path, {
-    ...opts,
-    headers:{ 'Content-Type':'application/json', ...(S.token?{Authorization:'Bearer '+S.token}:{}) , ...(opts.headers||{}) },
-  });
+  // Tiempo límite SIEMPRE: con 4G un pedido puede quedar colgado para siempre
+  // (cambio de antena, señal que va y viene) y sin esto la cola quedaba
+  // "Enviando…" eternamente sin reintentar (caso Martín, oct/2026).
+  const ctl=new AbortController(), tmo=setTimeout(()=>ctl.abort(),opts.timeout||(opts.method==='POST'?90000:30000));
+  let res;
+  try{
+    res = await fetch(API+path, {
+      ...opts, signal:ctl.signal,
+      headers:{ 'Content-Type':'application/json', ...(S.token?{Authorization:'Bearer '+S.token}:{}) , ...(opts.headers||{}) },
+    });
+  }catch(e){
+    const err=new Error(e.name==='AbortError'?'sin respuesta (tiempo agotado)':'sin conexión con el servidor ('+e.message+')');
+    err.red=true; throw err;
+  }finally{ clearTimeout(tmo); }
   if(res.status===401 && S.token){ App.logout(true); throw new Error('Sesión vencida — ingresá de nuevo'); }
   const data = await res.json().catch(()=>({}));
   if(!res.ok){ const err=new Error(data.error||('HTTP '+res.status)); err.status=res.status; throw err; }
@@ -709,10 +719,13 @@ function comprimir(file,maxPx,q){
       createImageBitmap(file,{resizeWidth:maxPx,resizeQuality:'medium'})
         .then(bitmap=>{
           try{
-            const c=document.createElement('canvas');c.width=bitmap.width;c.height=bitmap.height;
+            // Si el navegador ignoró resizeWidth (algunos lo hacen), se achica acá
+            let w=bitmap.width,h=bitmap.height;
+            if(w>maxPx*1.05){ h=Math.round(h*maxPx/w); w=maxPx; }
+            const c=document.createElement('canvas');c.width=w;c.height=h;
             const ctx=c.getContext('2d',{alpha:false});
             if(!ctx){ bitmap.close(); viaCanvasClasico(); return; }
-            ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.drawImage(bitmap,0,0);
+            ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(bitmap,0,0,w,h);
             bitmap.close();
             c.toBlob(b=>{
               c.width=0;c.height=0;
@@ -861,6 +874,7 @@ const Queue = {
   async enviar(item){
     if(!navigator.onLine)return 'offline';
     if(!(await IDB.reclamar(item.id)))return null; // lo está mandando el Service Worker
+    const t0=Date.now();
     try{
       let r;
       if(item.retake){
@@ -883,32 +897,75 @@ const Queue = {
         this.updateBadge();
         return null;
       }
-      console.warn('enviar:',e.message); // error de red/servidor: queda en cola
+      // Error de red/servidor: queda en cola, se anota el motivo y se libera
+      // el candado para reintentar enseguida en la próxima pasada.
+      await this.anotarFallo(item, e, Date.now()-t0);
       return null;
     }
   },
+  // Cada falla queda anotada en el item (intentos + motivo) y se reporta al
+  // servidor en el 1°, 3° y 8° intento — así una carga trabada en un celular
+  // se ve con datos y avisa al admin, en vez de enterarse por WhatsApp.
+  async anotarFallo(item,e,ms){
+    const motivo=String((e.status?e.status+' ':'')+(e.message||e)).slice(0,140);
+    let n=1;
+    try{
+      const db=await IDB.open();
+      await new Promise(res=>{ const t=db.transaction('pendientes','readwrite'),st=t.objectStore('pendientes'),q=st.get(item.id);
+        q.onsuccess=()=>{ const it=q.result; if(it){ it.intentos=(it.intentos||0)+1; n=it.intentos; it.ultimoError=motivo; it.enviandoDesde=0; st.put(it); } };
+        t.oncomplete=res; t.onerror=res; });
+    }catch(_){}
+    if([1,3,8].includes(n)){
+      const kb=Math.round(((item.ticket?.size||0)+(item.tablero?.size||0)+(item.foto?.size||0))/1024);
+      reportarError('envio_fallo',`${item.retake?'foto reenviada':'carga'} intento ${n}: ${motivo} · ${kb}KB · ${Math.round(ms/1000)}s · red ${navigator.connection?.effectiveType||'?'}`);
+    }
+  },
+  _timer:null,
   async flush(){
     if(this.enviando||!navigator.onLine||!S.token)return;
-    this.enviando=true;
+    this.enviando=true; clearTimeout(this._timer);
+    let quedan=0;
     try{
       const pend=await IDB.all('pendientes');
       for(const item of pend) await this.enviar(item);
     }catch(e){}finally{
       this.enviando=false;this.updateBadge();
-      const quedan=(await IDB.all('pendientes').catch(()=>[])).length;
-      Carga.estadoEnvio(quedan?(navigator.onLine?'📤 Enviando… (se reintenta sola)':'📴 Sin señal — se envía sola cuando vuelva'):'✅ Enviada — la IA la lee en segundo plano');
+      const resto=await IDB.all('pendientes').catch(()=>[]); quedan=resto.length;
+      const err=resto.find(i=>i.ultimoError);
+      // Carga trabada hace más de 15 min: se avisa (una vez por sesión)
+      const vieja=resto.find(i=>Date.now()-Date.parse(i.creada||0)>15*60e3);
+      if(vieja&&!sessionStorage.getItem('fml2_trabada_'+vieja.id)){ sessionStorage.setItem('fml2_trabada_'+vieja.id,'1');
+        reportarError('cola_trabada',`${resto.length} en cola · la más vieja de hace ${Math.round((Date.now()-Date.parse(vieja.creada))/60e3)} min · intentos ${vieja.intentos||0} · último error: ${vieja.ultimoError||'ninguno'}`); }
+      Carga.estadoEnvio(quedan?(!navigator.onLine?'📴 Sin señal — se envía sola cuando vuelva':err?'⏳ Reintentando… ('+err.ultimoError+')':'📤 Enviando…'):'✅ Enviada — la IA la lee en segundo plano');
       if(!quedan)Panel.render();
+      // Reintento automático mientras la app esté abierta: 20 s, 40 s… hasta 2 min
+      if(quedan){ const n=Math.max(1,...resto.map(i=>i.intentos||0)); this._timer=setTimeout(()=>this.flush(),Math.min(120000,20000*n)); }
     }
+  },
+  // Botón "Reintentar ahora": libera candados y manda ya
+  async reintentarYa(){
+    try{
+      const db=await IDB.open();
+      await new Promise(res=>{ const t=db.transaction('pendientes','readwrite'),st=t.objectStore('pendientes'),q=st.getAll();
+        q.onsuccess=()=>{ (q.result||[]).forEach(it=>{ it.enviandoDesde=0; st.put(it); }); }; t.oncomplete=res; t.onerror=res; });
+    }catch(_){}
+    toast('📤 Reintentando…','info',2500);
+    this.enviando=false; this.flush();
   },
   async updateBadge(){
     try{
-      const n=(await IDB.all('pendientes')).length;
+      const items=await IDB.all('pendientes'); const n=items.length;
       const q=$('cg-q');
       if(q){q.classList.toggle('hidden',!n);q.textContent='📤 '+n+' por enviar';}
       const pd=$('cg-pend');
-      if(pd)pd.innerHTML=n?(navigator.onLine
-        ?`<div class="aban" style="margin-top:1rem"><span>📤</span><div><b>Enviando ${n===1?'1 carga':n+' cargas'}…</b>Se envía${n===1?'':'n'} sola${n===1?'':'s'}, podés guardar el celular.</div></div>`
-        :`<div class="aban a-warn" style="margin-top:1rem"><span>📴</span><div><b>${n===1?'1 carga guardada':n+' cargas guardadas'} sin señal</b>Se envía${n===1?'':'n'} sola${n===1?'':'s'} cuando vuelva la señal. No borres la app.</div></div>`):'';
+      const trabada=items.find(i=>(i.intentos||0)>=2);
+      const que=n===1?'1 carga':n+' cargas';
+      if(pd)pd.innerHTML=!n?'':!navigator.onLine
+        ?`<div class="aban a-warn" style="margin-top:1rem"><span>📴</span><div><b>${n===1?'1 carga guardada':n+' cargas guardadas'} sin señal</b>Se envía${n===1?'':'n'} sola${n===1?'':'s'} cuando vuelva la señal. No borres la app.</div></div>`
+        :trabada
+        ?`<div class="aban a-warn" style="margin-top:1rem"><span>⚠️</span><div><b>Todavía no se pudo enviar ${que}</b>Motivo: ${trabada.ultimoError}. Las fotos están guardadas y la app sigue intentando sola. Si en un rato sigue igual, avisale a la oficina.
+            <button class="btn btn-acc btn-sm" style="margin-top:.6rem" onclick="Queue.reintentarYa()">🔄 Reintentar ahora</button></div></div>`
+        :`<div class="aban" style="margin-top:1rem"><span>📤</span><div><b>Enviando ${que}…</b>Se envía${n===1?'':'n'} sola${n===1?'':'s'}, podés guardar el celular.</div></div>`;
     }catch(e){}
   },
 };

@@ -349,7 +349,7 @@ async function geminiOdometro(b64, env, modelos, timeoutMs) {
   return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
     contents: [{ role: 'user', parts: [
-      { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Es el número más grande de dígitos (5-6 cifras), NO el trip parcial (que tiene decimales), NO el reloj, NO las RPM. Devolvé SOLO JSON: {"km":123456,"confianza":95,"problema_foto":null}. Si no es legible: {"km":null,"confianza":0,"problema_foto":"borrosa"}. problema_foto es uno de: "borrosa", "oscura", "reflejo", "cortada" (no se ve el odómetro entero), "lejos", "no_es_tablero" (la foto no muestra un tablero), o null si la foto está bien.' },
+      { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Puede haber varios números en pantalla: el TOTAL es el MÁS GRANDE (normalmente 5-6 cifras, ej. 163367); el parcial/trip es más chico (ej. 1663.9). Que tenga o no "km" al lado NO importa. Algunos autos muestran el total con un decimal (ej. "83664.6km" = 83664): devolvé la parte entera. Ignorá velocidad, reloj, RPM y temperatura. Devolvé SOLO JSON: {"km":123456,"confianza":95,"problema_foto":null}. Si no es legible: {"km":null,"confianza":0,"problema_foto":"borrosa"}. problema_foto es uno de: "borrosa", "oscura", "reflejo", "cortada" (no se ve el odómetro entero), "lejos", "no_es_tablero" (la foto no muestra un tablero), o null si la foto está bien.' },
       { inlineData: { mimeType: 'image/jpeg', data: b64 } },
     ] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
@@ -426,6 +426,9 @@ function fechaAR(s) {
 // las REINTENTO_HORAS sin éxito pasa a 'revisar'. Nadie ve "falló la IA".
 // ══════════════════════════════════════════════════════════════════════════════
 const REINTENTO_HORAS = 24;
+// Una lectura "mala" = la foto en sí parece no servir (no un dato que no cierra)
+const lecturaTicketMala = x => !!x && (x.problema_foto === 'no_es_ticket' || !x.montos?.total || !x.numero_comprobante || (x.confianza ?? 0) < 50);
+const lecturaKmMala = x => !!x && (x.problema_foto === 'no_es_tablero' || !(x.km > 0) || (x.confianza ?? 0) < 50);
 
 async function procesarCarga(env, id, origen, ctx) {
   const carga = await env.DB.prepare('SELECT * FROM cargas WHERE id=?').bind(id).first();
@@ -444,14 +447,26 @@ async function procesarCarga(env, id, origen, ctx) {
   const rapido = origen === 'nueva' || origen === 'retake';
   const modelos = rapido ? GEMINI_MODELOS.slice(0, 2) : GEMINI_MODELOS;
   const tmo = rapido ? 13000 : 25000;
+  const tB64 = bytesToB64(tBytes), kB64 = kBytes ? bytesToB64(kBytes) : null;
   const [tRes, kRes] = await Promise.allSettled([
-    geminiTicket(bytesToB64(tBytes), env, modelos, tmo),
-    kBytes ? geminiOdometro(bytesToB64(kBytes), env, modelos, tmo) : Promise.resolve(null),
+    geminiTicket(tB64, env, modelos, tmo),
+    kB64 ? geminiOdometro(kB64, env, modelos, tmo) : Promise.resolve(null),
   ]);
-  const t = tRes.status === 'fulfilled' ? tRes.value : null;
-  const kmData = kRes.status === 'fulfilled' ? kRes.value : null;
+  let t = tRes.status === 'fulfilled' ? tRes.value : null;
+  let kmData = kRes.status === 'fulfilled' ? kRes.value : null;
   const ocrErr = tRes.status === 'rejected' ? tRes.reason?.message
     : kRes.status === 'rejected' ? kRes.reason?.message : null;
+
+  // SEGUNDA OPINIÓN: la IA no siempre responde igual con la misma foto (medido
+  // 13/10/2026: un tablero perfecto del Ford se leyó bien 2 de 3 veces; la otra
+  // dijo "cortada" y al chofer se le pidió repetir la foto 2 veces sin motivo).
+  // Si una lectura sale "mala", se relee con OTRO modelo; solo si el segundo
+  // también la ve mal se concluye que la foto no sirve.
+  const otros = [...modelos.slice(1), modelos[0]];
+  await Promise.all([
+    lecturaTicketMala(t) ? geminiTicket(tB64, env, otros, tmo).then(r => { if (!lecturaTicketMala(r)) t = r; }).catch(() => { }) : null,
+    lecturaKmMala(kmData) ? geminiOdometro(kB64, env, otros, tmo).then(r => { if (!lecturaKmMala(r)) kmData = r; }).catch(() => { }) : null,
+  ]);
 
   // La IA no respondió: se deja en cola sin tocar los datos que ya hubiera.
   const desde = det.desde || carga.creado || '';
@@ -517,9 +532,8 @@ async function procesarCarga(env, id, origen, ctx) {
   const edadCarga = (Date.now() - new Date((carga.creado || '').includes('T') ? carga.creado : (carga.creado || '').replace(' ', 'T') + 'Z')) / 3.6e6;
   let retake = null;
   if (origen !== 'admin' && carga.usuario_id && !(edadCarga > 72)) {
-    const tMal = t && (t.problema_foto === 'no_es_ticket' || !t.montos?.total || !t.numero_comprobante || (t.confianza ?? 0) < 50);
-    const kMal = !kBytes ? 'falta'
-      : (kmData && (kmData.problema_foto === 'no_es_tablero' || !(kmData.km > 0) || (kmData.confianza ?? 0) < 50));
+    const tMal = lecturaTicketMala(t);
+    const kMal = !kBytes ? 'falta' : lecturaKmMala(kmData);
     if (tMal && (pedidos.ticket || 0) < 2) retake = { tipo: 'ticket', motivo: t.problema_foto || 'ilegible' };
     else if (kMal && (pedidos.tablero || 0) < 2) retake = { tipo: 'tablero', motivo: kMal === 'falta' ? 'falta' : (kmData.problema_foto || 'ilegible') };
   }
