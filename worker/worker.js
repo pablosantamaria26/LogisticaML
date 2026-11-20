@@ -16,7 +16,8 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 
 const TZ = 'America/Argentina/Buenos_Aires';
 const FROM_NAME = 'Flota ML';
-const VAPID_SUBJECT = 'mailto:santamariapablodaniel@gmail.com';
+// El email de contacto NO va en el código (el repo es público): se lee de la
+// variable FROM_EMAIL configurada en Cloudflare (keep_vars en wrangler.toml).
 const SESSION_DAYS = 180;
 // Cadena de modelos: se prueba en orden y, si uno está saturado (503 "high
 // demand"), sin cupo (429) o no disponible (404), se pasa al siguiente en el
@@ -71,6 +72,7 @@ export default {
       if (p === '/api/push/broadcast' && request.method === 'POST') return await handlePushBroadcast(request, env);
       if (p === '/api/diag' && request.method === 'POST') return await handleDiag(request, env, ctx);
       if (p === '/api/admin/diag') return await handleAdminDiag(request, env);
+      if (p === '/api/admin/envios') return await handleAdminEnvios(request, env);
       if (p === '/api/admin/usuarios') return await handleAdminUsuarios(request, env);
       if (p === '/api/admin/asignar' && request.method === 'POST') return await handleAdminAsignar(request, env);
       if (p === '/api/admin/vehiculos' && request.method === 'POST') return await handleAdminCrearVehiculo(request, env);
@@ -131,10 +133,11 @@ export default {
         if (dia === 1) {
           ctx.waitUntil(sendOwnerReport(env));
           // antes del reporte al contador, vaciar la cola para que no salga nada sin leer
-          ctx.waitUntil(reintentarPendientes(env, 10).catch(() => { })
-            .then(() => sendContadorReport(env, mesAnterior(hoyAR().slice(0, 7)))));
           ctx.waitUntil(pushDocs(env));
         }
+        // Reporte al contador: días 1 a 10 se intenta cada mañana hasta que sale
+        // (espera a que el mes esté revisado; el día 3 sale igual). Ver intentarReporteContador.
+        if (dia >= 1 && dia <= 10) ctx.waitUntil(intentarReporteContador(env).catch(e => console.error('contador:', e.message)));
         break;
       case '0 12 * * *': // 09:00 AR
         if (dia === 15) ctx.waitUntil(pushTires(env));
@@ -313,10 +316,17 @@ const TICKET_SCHEMA = `{
 }`;
 
 async function geminiTicket(b64, env, modelos, timeoutMs) {
-  const prompt = `Extraé TODOS los datos fiscales de esta foto de un ticket de combustible argentino (tique factura de controlador fiscal).
+  return llamarGemini({
+    systemInstruction: { parts: [{ text: SISTEMA_TICKET }] },
+    contents: [{ role: 'user', parts: [{ text: PROMPT_TICKET }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
+    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+  }, env, 'Gemini ticket', modelos, timeoutMs);
+}
+const SISTEMA_TICKET = 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.';
+const PROMPT_TICKET = `Extraé TODOS los datos fiscales de esta foto de un ticket de combustible argentino (tique factura de controlador fiscal).
 
 GUÍA DE LECTURA del ticket:
-- ENCABEZADO: razón social del emisor (estación de servicio), "C.U.I.T. Nro", "Ing. Brutos" (IIBB), domicilio/localidad, "Inicio de Actividades", condición IVA del emisor.
+- ENCABEZADO: razón social del emisor = el nombre de la empresa (suele terminar en S.A., S.R.L., S.A.S.) en la línea JUSTO ARRIBA del "C.U.I.T. Nro" — ignorá leyendas como "LINEA 148 / INFORMACION Y ASESORAMIENTO AL CONSUMIDOR" o "YPF"/"AXION" que van arriba; "C.U.I.T. Nro", "Ing. Brutos" (IIBB), domicilio/localidad, "Inicio de Actividades", condición IVA del emisor.
 - TIPO: línea tipo 'TIQUE FACTURA "A" (Cód.081)' → tipo_comprobante="TIQUE FACTURA A", codigo_comprobante="081".
 - NÚMERO: formato "N° 00011-00033244" → punto_venta="00011", numero_comprobante="00033244". A veces aparece como "Nº PPPPP-NNNNNNNN" cerca de Fecha/Hora.
 - RECEPTOR (cliente): nombre y "C.U.I.T. Nro" del cliente, condición IVA.
@@ -335,25 +345,182 @@ REGLAS:
 
 Devolvé SOLO este JSON:
 ${TICKET_SCHEMA}`;
-  return llamarGemini({
-    systemInstruction: { parts: [{ text: 'Sos un contador argentino experto en comprobantes fiscales de estaciones de servicio. Extraés datos con máxima precisión para el Libro IVA Compras (ARCA). Respondés SOLO JSON válido.' }] },
-    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
-    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, env, 'Gemini ticket', modelos, timeoutMs);
-}
 
-// Sin respaldo de Workers AI (sacado sep/2026): alucinó km=123456 con 95% de
-// "confianza" y pisó el km real del Hiace. Si Gemini no responde, la carga
-// queda en "procesando" y se reintenta sola — mejor esperar que inventar.
+const PROMPT_KM = 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Puede haber varios números en pantalla: el TOTAL es el MÁS GRANDE (normalmente 5-6 cifras, ej. 163367); el parcial/trip es más chico (ej. 1663.9). Que tenga o no "km" al lado NO importa. Algunos autos muestran el total con un decimal (ej. "83664.6km" = 83664): devolvé la parte entera. Ignorá velocidad, reloj, RPM y temperatura. Devolvé SOLO JSON: {"km":123456,"confianza":95,"problema_foto":null}. Si no es legible: {"km":null,"confianza":0,"problema_foto":"borrosa"}. problema_foto es uno de: "borrosa", "oscura", "reflejo", "cortada" (no se ve el odómetro entero), "lejos", "no_es_tablero" (la foto no muestra un tablero), o null si la foto está bien.';
 async function geminiOdometro(b64, env, modelos, timeoutMs) {
   return llamarGemini({
     systemInstruction: { parts: [{ text: 'Sos experto en lectura de tableros de vehículos. Respondés SOLO JSON válido.' }] },
-    contents: [{ role: 'user', parts: [
-      { text: 'Leé el ODÓMETRO (kilometraje total del vehículo) en esta foto de tablero. Puede haber varios números en pantalla: el TOTAL es el MÁS GRANDE (normalmente 5-6 cifras, ej. 163367); el parcial/trip es más chico (ej. 1663.9). Que tenga o no "km" al lado NO importa. Algunos autos muestran el total con un decimal (ej. "83664.6km" = 83664): devolvé la parte entera. Ignorá velocidad, reloj, RPM y temperatura. Devolvé SOLO JSON: {"km":123456,"confianza":95,"problema_foto":null}. Si no es legible: {"km":null,"confianza":0,"problema_foto":"borrosa"}. problema_foto es uno de: "borrosa", "oscura", "reflejo", "cortada" (no se ve el odómetro entero), "lejos", "no_es_tablero" (la foto no muestra un tablero), o null si la foto está bien.' },
-      { inlineData: { mimeType: 'image/jpeg', data: b64 } },
-    ] }],
+    contents: [{ role: 'user', parts: [{ text: PROMPT_KM }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }, env, 'Gemini odómetro', modelos, timeoutMs);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MOTOR DE LECTURA MULTI-PROVEEDOR (nov/2026)
+// Gemini se cortó 4 veces (tope de gasto, "alta demanda" y, desde el 10/11/2026,
+// "402 prepayment credits depleted": Google pasó el proyecto a prepago). Ya no se
+// depende de un solo proveedor:
+//  · Cloudflare Workers AI (gratis en esta misma cuenta, sin tarjeta): Llama 4
+//    Scout y Mistral Small 3.1 leen EN PARALELO. Medido con 10 tickets reales
+//    verificados: Scout 75/80 campos, Mistral 71/80.
+//  · Gemini sigue como tercer motor si vuelve a tener saldo; si responde con un
+//    error de cuenta (402/403/tope), se lo saltea 6 h sin demorar nada.
+//  · No se confía en lo que el modelo dice de sí mismo: cada lectura se puntúa
+//    con validaciones (montos que cierran, CUIT con dígito verificador, IVA 21%,
+//    litros×precio, fecha razonable, coincidencia entre motores) y gana la mejor.
+//  · El CUIT de estaciones conocidas se corrige con el diccionario que sale de
+//    las cargas ya verificadas. El km solo se acepta si es plausible respecto de
+//    la carga anterior (los modelos a veces leen el parcial o pierden un dígito).
+// ══════════════════════════════════════════════════════════════════════════════
+const WAI_MODELOS = ['@cf/meta/llama-4-scout-17b-16e-instruct', '@cf/mistralai/mistral-small-3.1-24b-instruct'];
+
+function extraerJSON(x) {
+  if (x && typeof x === 'object') return x;
+  const s = String(x || '').replace(/```json|```/g, '');
+  const m = s.match(/\{[\s\S]*\}/);
+  return JSON.parse(m ? m[0] : s);
+}
+async function waiLeer(modelo, prompt, b64, env, timeoutMs) {
+  if (!env.AI) throw new Error('Workers AI no disponible');
+  const run = env.AI.run(modelo, {
+    messages: [{ role: 'user', content: [
+      { type: 'text', text: prompt },
+      { type: 'image_url', image_url: { url: 'data:image/jpeg;base64,' + b64 } },
+    ] }],
+    max_tokens: 1500, temperature: 0.1,
+  });
+  const r = await Promise.race([run, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), timeoutMs))]);
+  return extraerJSON(r?.response ?? r?.choices?.[0]?.message?.content ?? r);
+}
+async function geminiDisponible(env) { return !(await env.FLOTA_KV.get('gemini:caido')); }
+async function anotarFalloGemini(env, msg) {
+  if (/402|403|prepayment|billing|spending cap|exceeded/i.test(msg || ''))
+    await env.FLOTA_KV.put('gemini:caido', String(msg).slice(0, 200), { expirationTtl: 6 * 3600 }).catch(() => { });
+}
+// Números que algunos modelos devuelven como texto argentino ("20.443,01")
+const aNum = v => {
+  if (v == null || v === '') return null;
+  if (typeof v === 'number') return v;
+  const s = String(v).replace(/[^\d.,-]/g, '');
+  const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s);
+  return isNaN(n) ? null : n;
+};
+function normalizarTicket(t) {
+  if (!t || typeof t !== 'object') return null;
+  t.montos = t.montos || {};
+  for (const k of ['neto_gravado', 'iva_alicuota', 'iva', 'otros_tributos', 'percepciones', 'exento', 'no_gravado', 'total']) t.montos[k] = aNum(t.montos[k]);
+  t.items = Array.isArray(t.items) && t.items.length ? t.items : [{}];
+  for (const k of ['litros', 'precio_unitario', 'importe']) t.items[0][k] = aNum(t.items[0][k]);
+  t.emisor = t.emisor || {}; t.receptor = t.receptor || {};
+  for (const o of [t.emisor, t.receptor]) if (o.cuit) o.cuit = formatoCuit(o.cuit);
+  if (t.punto_venta) t.punto_venta = String(t.punto_venta).replace(/\D/g, '').padStart(5, '0');
+  if (t.numero_comprobante) t.numero_comprobante = String(t.numero_comprobante).replace(/\D/g, '').padStart(8, '0');
+  return t;
+}
+function formatoCuit(c) {
+  const d = String(c).replace(/\D/g, '');
+  return d.length === 11 ? `${d.slice(0, 2)}-${d.slice(2, 10)}-${d.slice(10)}` : String(c);
+}
+function puntajeTicket(t, fechaRef) {
+  let s = 0; const m = t.montos || {}, it = (t.items || [])[0] || {};
+  if (m.total > 0) s += 3;
+  const partes = (m.neto_gravado || 0) + (m.iva || 0) + (m.otros_tributos || 0) + (m.percepciones || 0) + (m.exento || 0) + (m.no_gravado || 0);
+  if (m.total > 0 && Math.abs(partes - m.total) <= 1) s += 3;
+  if (t.emisor?.cuit && cuitValido(t.emisor.cuit)) s += 2;
+  if (t.numero_comprobante && t.punto_venta) s += 1;
+  if (m.neto_gravado > 0 && m.iva > 0 && Math.abs(m.iva / m.neto_gravado - 0.21) < 0.01) s += 1;
+  if (it.litros > 0 && it.precio_unitario > 0 && m.total > 0) {
+    const p = it.litros * it.precio_unitario;
+    if (Math.abs(p - m.total) / m.total <= 0.03 || (m.neto_gravado > 0 && Math.abs(p - m.neto_gravado) / m.neto_gravado <= 0.03)) s += 1;
+  }
+  if (t.fecha && fechaRef) { const d = (new Date(fechaRef) - new Date(t.fecha)) / 864e5; if (d >= -1 && d <= 10) s += 1; }
+  return s; // máx 12 (+3 si otro motor coincide)
+}
+// Estaciones y receptor ya verificados → su CUIT (para corregir dígitos mal leídos)
+let _dicc = null, _diccTs = 0;
+const normEst = s => String(s || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/(SOCIEDADANONIMA|SRL|SA)$/, '').slice(0, 16);
+async function diccionarioCuits(env) {
+  if (_dicc && Date.now() - _diccTs < 3600e3) return _dicc;
+  const est = {}, rec = {};
+  const r1 = await env.DB.prepare(`SELECT emisor_razon_social n, emisor_cuit c, COUNT(*) k FROM cargas
+    WHERE validacion='ok' AND emisor_cuit IS NOT NULL AND emisor_razon_social IS NOT NULL GROUP BY n, c ORDER BY k DESC`).all();
+  const nombres = {}; // CUIT verificado → razón social limpia
+  for (const x of r1.results) { const key = normEst(x.n); if (key && !est[key] && cuitValido(x.c)) est[key] = x.c; if (cuitValido(x.c) && !nombres[x.c] && x.n.length <= 40) nombres[x.c] = x.n; }
+  const r2 = await env.DB.prepare(`SELECT receptor_cuit c, COUNT(*) k FROM cargas WHERE validacion='ok' AND receptor_cuit IS NOT NULL
+    GROUP BY c ORDER BY k DESC LIMIT 1`).first();
+  _dicc = { est, nombres, receptor: r2?.c && cuitValido(r2.c) ? r2.c : null }; _diccTs = Date.now();
+  return _dicc;
+}
+function corregirCuits(t, d) {
+  const key = normEst(t.emisor?.razon_social);
+  let conocido = key && d.est[key];
+  if (!conocido && key && !cuitValido(t.emisor?.cuit || '')) {
+    const parecida = Object.keys(d.est).find(k => k.slice(0, 9) === key.slice(0, 9));
+    if (parecida) conocido = d.est[parecida];
+  }
+  if (conocido && t.emisor.cuit !== conocido) { t.emisor.cuit = conocido; (t.advertencias = t.advertencias || []).push('CUIT del emisor completado con el de la estación ya conocida'); }
+  if (d.receptor && !cuitValido(t.receptor?.cuit || '')) t.receptor.cuit = d.receptor;
+  // CUIT de una estación conocida → su razón social limpia (los modelos a veces
+  // le pegan leyendas del encabezado, ej. "LINEA 148 … AMERICA 210 S.A.")
+  if (t.emisor?.cuit && d.nombres?.[t.emisor.cuit] && t.emisor.razon_social !== d.nombres[t.emisor.cuit]) t.emisor.razon_social = d.nombres[t.emisor.cuit];
+}
+async function leerTicket(b64, env, { rapido, fechaRef }) {
+  // Scout tarda entre 20 y 80 s. En el segundo plano de una carga nueva (tope
+  // ~30 s) se espera 25 s; si no llegan 2 lecturas, la cola termina con 100 s.
+  const tmo = rapido ? 25000 : 100000;
+  const prompt = SISTEMA_TICKET + '\n\n' + PROMPT_TICKET;
+  const intentos = WAI_MODELOS.map(m => waiLeer(m, prompt, b64, env, tmo).then(r => ({ motor: m.split('/').pop(), t: normalizarTicket(r) })));
+  if (await geminiDisponible(env)) intentos.push(
+    geminiTicket(b64, env, GEMINI_MODELOS.slice(0, 2), rapido ? 13000 : 20000).then(r => ({ motor: 'gemini', t: normalizarTicket(r) }))
+      .catch(async e => { await anotarFalloGemini(env, e.message); throw e; }));
+  const res = await Promise.allSettled(intentos);
+  const cands = res.filter(r => r.status === 'fulfilled' && r.value.t).map(r => r.value);
+  if (!cands.length) throw new Error('Ningún motor leyó el ticket: ' + res.map(r => r.reason?.message).filter(Boolean).join(' | ').slice(0, 300));
+  const d = await diccionarioCuits(env);
+  for (const c of cands) { corregirCuits(c.t, d); c.score = puntajeTicket(c.t, fechaRef); }
+  // Con UN solo motor no alcanza (medido: Mistral leyó mal número y total de un
+  // ticket con los montos cerrando igual — ninguna validación lo caza). Hacen
+  // falta 2 lecturas; si falta una, la carga sigue "leyendo" y la cola reintenta.
+  if (cands.length < 2) throw new Error(`Falta la segunda lectura (respondió ${cands.map(c => c.motor).join(', ')}; ` +
+    res.filter(r => r.status === 'rejected').map(r => r.reason?.message).join(' | ').slice(0, 200) + ')');
+  // Acuerdo = mismo total, número, neto e IVA (lo que el contador imputa)
+  const igual = (x, y) => x > 0 && Math.abs(x - (y || 0)) < 0.05;
+  const mismo = (a, b) => igual(a.t.montos.total, b.t.montos.total) && igual(a.t.montos.neto_gravado, b.t.montos.neto_gravado)
+    && igual(a.t.montos.iva, b.t.montos.iva) && a.t.numero_comprobante && a.t.numero_comprobante === b.t.numero_comprobante;
+  for (const a of cands) a.coincide = cands.some(b => b !== a && mismo(a, b));
+  for (const a of cands) if (a.coincide) a.score += 3;
+  cands.sort((x, y) => y.score - x.score);
+  const mejor = cands[0].t;
+  // Litros/precio: de los motores, el que hace cerrar litros × precio con el total
+  const cierra = x => { const it = x.t.items[0], m = x.t.montos; const p = (it.litros || 0) * (it.precio_unitario || 0);
+    return m.total > 0 && p > 0 && (Math.abs(p - m.total) / m.total <= 0.03 || (m.neto_gravado > 0 && Math.abs(p - m.neto_gravado) / m.neto_gravado <= 0.03)); };
+  if (!cierra(cands[0])) { const otro = cands.find(c => cierra(c) && Math.abs((c.t.montos.total || 0) - (mejor.montos.total || 0)) < 0.05); if (otro) mejor.items[0] = { ...mejor.items[0], litros: otro.t.items[0].litros, precio_unitario: otro.t.items[0].precio_unitario }; }
+  // La "confianza" sale de validaciones + acuerdo entre motores, no del modelo.
+  // Sin acuerdo → 65 (dispara confianza_baja → revisión del admin).
+  mejor.confianza = !cands[0].coincide ? 65 : cands[0].score >= 11 ? 97 : 85;
+  mejor.motor = cands[0].motor; mejor.puntaje = cands[0].score;
+  mejor.lecturas = cands.map(c => `${c.motor}:${c.score}${c.coincide ? '✓' : ''}`).join(' ');
+  return mejor;
+}
+async function leerKm(b64, env, { rapido, kmAnterior }) {
+  const tmo = rapido ? 25000 : 60000;
+  const intentos = WAI_MODELOS.map(m => waiLeer(m, PROMPT_KM, b64, env, tmo).then(r => ({ motor: m.split('/').pop(), ...r })));
+  if (await geminiDisponible(env)) intentos.push(
+    geminiOdometro(b64, env, GEMINI_MODELOS.slice(0, 2), rapido ? 13000 : 20000).then(r => ({ motor: 'gemini', ...r }))
+      .catch(async e => { await anotarFalloGemini(env, e.message); throw e; }));
+  const res = await Promise.allSettled(intentos);
+  const ok = res.filter(r => r.status === 'fulfilled').map(r => r.value);
+  if (!ok.length) throw new Error('Ningún motor leyó el tablero: ' + res.map(r => r.reason?.message).filter(Boolean).join(' | ').slice(0, 300));
+  const plausible = k => k > 0 && (kmAnterior > 0 ? k >= kmAnterior - 500 && k <= kmAnterior + 3000 : k >= 1000 && k <= 999999);
+  const buenos = ok.map(r => ({ ...r, km: Math.round(aNum(r.km) || 0) })).filter(r => plausible(r.km));
+  if (buenos.length) {
+    const votos = b => buenos.filter(x => Math.abs(x.km - b.km) <= 2).length;
+    const elegido = [...buenos].sort((a, b) => votos(b) - votos(a))[0];
+    return { km: elegido.km, confianza: votos(elegido) >= 2 ? 99 : 85, motor: elegido.motor, problema_foto: null };
+  }
+  // Nadie dio un valor creíble: se informa lo leído (para el admin) y si algún
+  // motor vio un problema real en la foto
+  return { km: null, confianza: 0, problema_foto: ok.map(r => r.problema_foto).find(Boolean) || null, leidos: ok.map(r => `${r.motor}:${r.km}`).join(' ') };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -393,11 +560,16 @@ function calcularWarningsTicket(t, veh, fechaRef = hoyAR()) {
   } else w.push('sin_fecha');
   return w;
 }
+// Mismo comprobante ya registrado. Antes exigía coincidir el CUIT, y 2 envíos
+// dobles de Martín (14/09 y 12/10) se colaron porque una copia quedó sin CUIT:
+// ahora también alcanza con mismo punto de venta + número + total.
 async function comprobanteDuplicado(env, t, idExcluir) {
-  if (!t?.numero_comprobante || !t.emisor?.cuit) return false;
+  if (!t?.numero_comprobante) return false;
+  const num = String(t.numero_comprobante).replace(/^0+/, ''), pv = String(t.punto_venta || '').replace(/^0+/, '');
   const ya = await env.DB.prepare(
-    'SELECT id FROM cargas WHERE numero_comprobante=? AND emisor_cuit=? AND punto_venta IS ? AND id!=?'
-  ).bind(t.numero_comprobante, t.emisor.cuit, t.punto_venta ?? null, idExcluir || '').first();
+    `SELECT id FROM cargas WHERE id!=? AND ltrim(numero_comprobante,'0')=? AND ltrim(COALESCE(punto_venta,''),'0')=?
+       AND (emisor_cuit=? OR ABS(COALESCE(total,0)-?)<0.05)`
+  ).bind(idExcluir || '', num, pv, t.emisor?.cuit || '', t.montos?.total || -1).first();
   return !!ya;
 }
 function calcularWarningsKm(km, kmData, seFotografio, kmAnterior) {
@@ -442,31 +614,26 @@ async function procesarCarga(env, id, origen, ctx) {
   const tBytes = await fotoGet(env, carga.foto_ticket);
   if (!tBytes) return { ok: false, error: 'Foto de ticket no encontrada en storage' };
   const kBytes = carga.foto_tablero ? await fotoGet(env, carga.foto_tablero) : null;
-  // Carga nueva / foto reenviada corren en segundo plano (waitUntil, tope ~30 s):
-  // 2 modelos con 13 s cada uno. Si no alcanza, la cola sigue con la cadena completa.
+  // Referencias para validar lo leído: fecha de subida y km de la carga anterior
+  const fechaSubida = fechaAR(carga.creado);
+  const prev = await env.DB.prepare(
+    `SELECT MAX(km) AS km FROM cargas WHERE vehiculo_id=? AND id!=? AND km>0 AND creado < ?`
+  ).bind(carga.vehiculo_id, id, carga.creado || ahora).first();
+  const kmAnterior = prev?.km || 0;
+
+  // Varios motores en paralelo (ver MOTOR DE LECTURA MULTI-PROVEEDOR). Carga nueva
+  // y foto reenviada corren en segundo plano (tope ~30 s); si no alcanza, la cola
+  // las termina.
   const rapido = origen === 'nueva' || origen === 'retake';
-  const modelos = rapido ? GEMINI_MODELOS.slice(0, 2) : GEMINI_MODELOS;
-  const tmo = rapido ? 13000 : 25000;
   const tB64 = bytesToB64(tBytes), kB64 = kBytes ? bytesToB64(kBytes) : null;
   const [tRes, kRes] = await Promise.allSettled([
-    geminiTicket(tB64, env, modelos, tmo),
-    kB64 ? geminiOdometro(kB64, env, modelos, tmo) : Promise.resolve(null),
+    leerTicket(tB64, env, { rapido, fechaRef: fechaSubida }),
+    kB64 ? leerKm(kB64, env, { rapido, kmAnterior }) : Promise.resolve(null),
   ]);
   let t = tRes.status === 'fulfilled' ? tRes.value : null;
   let kmData = kRes.status === 'fulfilled' ? kRes.value : null;
   const ocrErr = tRes.status === 'rejected' ? tRes.reason?.message
     : kRes.status === 'rejected' ? kRes.reason?.message : null;
-
-  // SEGUNDA OPINIÓN: la IA no siempre responde igual con la misma foto (medido
-  // 13/10/2026: un tablero perfecto del Ford se leyó bien 2 de 3 veces; la otra
-  // dijo "cortada" y al chofer se le pidió repetir la foto 2 veces sin motivo).
-  // Si una lectura sale "mala", se relee con OTRO modelo; solo si el segundo
-  // también la ve mal se concluye que la foto no sirve.
-  const otros = [...modelos.slice(1), modelos[0]];
-  await Promise.all([
-    lecturaTicketMala(t) ? geminiTicket(tB64, env, otros, tmo).then(r => { if (!lecturaTicketMala(r)) t = r; }).catch(() => { }) : null,
-    lecturaKmMala(kmData) ? geminiOdometro(kB64, env, otros, tmo).then(r => { if (!lecturaKmMala(r)) kmData = r; }).catch(() => { }) : null,
-  ]);
 
   // La IA no respondió: se deja en cola sin tocar los datos que ya hubiera.
   const desde = det.desde || carga.creado || '';
@@ -505,14 +672,7 @@ async function procesarCarga(env, id, origen, ctx) {
     }
   }
 
-  // Referencias: fecha en que se subió la carga y km de la carga anterior del vehículo
-  const fechaSubida = fechaAR(carga.creado);
-  const prev = await env.DB.prepare(
-    `SELECT MAX(km) AS km FROM cargas WHERE vehiculo_id=? AND id!=? AND km>0 AND creado < ?`
-  ).bind(carga.vehiculo_id, id, carga.creado || ahora).first();
-  const kmAnterior = prev?.km || 0;
-
-  const km = kmData?.km > 0 ? Math.round(kmData.km) : (carga.km ?? null);
+  const km =kmData?.km > 0 ? Math.round(kmData.km) : (carga.km ?? null);
   const kmConfianza = kmData?.km > 0 ? (kmData.confianza ?? null) : (carga.km_confianza ?? null);
   const ticketWarns = calcularWarningsTicket(t, veh, fechaSubida);
   if (t && await comprobanteDuplicado(env, t, id)) ticketWarns.push('comprobante_duplicado');
@@ -520,6 +680,8 @@ async function procesarCarga(env, id, origen, ctx) {
   const warnings = [...ticketWarns, ...kmWarns];
   const notas = [];
   if (t && Array.isArray(t.advertencias)) t.advertencias.forEach(a => a && notas.push(String(a).slice(0, 120)));
+  if (t?.lecturas) notas.push(`Ticket leído por ${t.motor} (puntajes: ${t.lecturas})`);
+  if (kmData && !kmData.km && kmData.leidos) notas.push(`KM no creíble (anterior ${kmAnterior}): ${kmData.leidos}`);
   const validacion = warnings.length ? 'revisar' : 'ok';
   // Una fecha mal leída (ej. año 2028) sacaba la carga de su mes en el reporte
   // al contador: si queda fuera de rango, se usa la fecha en que se subió.
@@ -533,7 +695,10 @@ async function procesarCarga(env, id, origen, ctx) {
   let retake = null;
   if (origen !== 'admin' && carga.usuario_id && !(edadCarga > 72)) {
     const tMal = lecturaTicketMala(t);
-    const kMal = !kBytes ? 'falta' : lecturaKmMala(kmData);
+    // Tablero: se le pide al chofer SOLO si algún motor vio un problema real en
+    // la foto. Si los modelos leyeron mal una foto buena (pasa con displays LED),
+    // no se molesta al chofer: va a revisión con lo que leyó cada motor.
+    const kMal = !kBytes ? 'falta' : (lecturaKmMala(kmData) && !!kmData?.problema_foto);
     if (tMal && (pedidos.ticket || 0) < 2) retake = { tipo: 'ticket', motivo: t.problema_foto || 'ilegible' };
     else if (kMal && (pedidos.tablero || 0) < 2) retake = { tipo: 'tablero', motivo: kMal === 'falta' ? 'falta' : (kmData.problema_foto || 'ilegible') };
   }
@@ -969,11 +1134,22 @@ async function geminiServicio(b64, env) {
 
 Devolvé SOLO este JSON:
 {"fecha":"YYYY-MM-DD","km":82295,"proximo_km_absoluto":92295,"proximo_intervalo":null,"taller":"Lube Stop","items":["Aceite Shell 5W40","Filtro de aceite"],"confianza":90}`;
-  return llamarGemini({
-    systemInstruction: { parts: [{ text: 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos, con diseños muy variables entre talleres. Respondés SOLO JSON válido.' }] },
-    contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
-    generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
-  }, env, 'Gemini servicio');
+  // Workers AI primero (gratis); Gemini solo si está disponible
+  const errores = [];
+  for (const m of WAI_MODELOS) {
+    try { return await waiLeer(m, 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos. Respondés SOLO JSON válido.\n\n' + prompt, b64, env, 30000); }
+    catch (e) { errores.push(m.split('/').pop() + ': ' + e.message); }
+  }
+  if (await geminiDisponible(env)) {
+    try {
+      return await llamarGemini({
+        systemInstruction: { parts: [{ text: 'Sos experto en leer tarjetas de service de talleres mecánicos argentinos, con diseños muy variables entre talleres. Respondés SOLO JSON válido.' }] },
+        contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType: 'image/jpeg', data: b64 } }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
+      }, env, 'Gemini servicio');
+    } catch (e) { await anotarFalloGemini(env, e.message); errores.push(e.message); }
+  }
+  throw new Error('Servicio: ' + errores.join(' | ').slice(0, 300));
 }
 
 async function handleServicioFoto(request, env, ctx) {
@@ -1222,7 +1398,13 @@ async function handleAdminCorregir(request, env) {
     if (!CAMPOS_CORREGIBLES.includes(k)) continue;
     sets.push(`${k}=?`); binds.push(v === '' ? null : v);
   }
-  if (marcarOk) { sets.push("validacion='ok'"); }
+  if (marcarOk) {
+    // Nunca aprobar sin importe: así quedaron 7 cargas en $0 en nov/2026 y el
+    // reporte al contador habría salido con comprobantes vacíos.
+    const total = campos && 'total' in campos ? Number(campos.total) : carga.total;
+    if (!(total > 0)) return json({ error: 'No se puede aprobar sin el TOTAL del ticket: cargalo mirando la foto (o reprocesá la carga).' }, 400);
+    sets.push("validacion='ok'", 'foto_pendiente=NULL');
+  }
   if (!sets.length) return json({ error: 'Nada para corregir' }, 400);
   sets.push('corregido_por=?', "corregido_en=datetime('now')");
   binds.push(admin.username, id);
@@ -1549,7 +1731,7 @@ async function sendWebPush(subscription, payload, env) {
   };
   const privKey = await crypto.subtle.importKey('jwk', privJwk, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
   const header = b64url(te('{"typ":"JWT","alg":"ES256"}'));
-  const claims = b64url(te(JSON.stringify({ aud: audience, exp: now + 43200, sub: VAPID_SUBJECT })));
+  const claims = b64url(te(JSON.stringify({ aud: audience, exp: now + 43200, sub: 'mailto:' + (env.FROM_EMAIL || env.OWNER_EMAIL || '') })));
   const sig = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, privKey, te(`${header}.${claims}`));
   const jwt = `${header}.${claims}.${b64url(sig)}`;
 
@@ -1589,11 +1771,12 @@ async function sendWebPush(subscription, payload, env) {
 // ══════════════════════════════════════════════════════════════════════════════
 async function sendViaBrevo(payload, env) {
   const body = {
-    sender: { name: FROM_NAME, email: env.FROM_EMAIL || 'santamariapablodaniel@gmail.com' },
+    sender: { name: FROM_NAME, email: env.FROM_EMAIL || env.OWNER_EMAIL },
     to: payload.to.map(e => ({ email: e })),
     subject: payload.subject, htmlContent: payload.html,
   };
   if (payload.attachment) body.attachment = payload.attachment;
+  if (payload.bcc?.length) body.bcc = payload.bcc.filter(Boolean).map(e => ({ email: e }));
   return fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST', headers: { 'api-key': env.SENDGRID_API_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -1665,7 +1848,7 @@ async function sendContadorReport(env, month) {
       <div><div class="vc-sv">${fmt$(cs.reduce((s, c) => s + (c.neto_gravado || 0), 0))}</div><div class="vc-sl">Neto</div></div>
       <div><div class="vc-sv" style="color:#15803d">${fmt$(cs.reduce((s, c) => s + (c.iva || 0), 0))}</div><div class="vc-sl">IVA créd.</div></div></div></div>`;
   }).join('');
-  const revisarTotal = rows.filter(c => c.validacion === 'revisar').length;
+  const revisarTotal = rows.filter(c => c.validacion !== 'ok' || !(c.total > 0)).length;
   const cuitFiscal = rows.find(r => r.receptor_cuit)?.receptor_cuit || '';
   const nombreFiscal = rows.find(r => r.receptor_nombre)?.receptor_nombre || '';
   const identif = [nombreFiscal, cuitFiscal ? `CUIT ${cuitFiscal}` : ''].filter(Boolean).join(' · ');
@@ -1681,12 +1864,58 @@ async function sendContadorReport(env, month) {
     <p class="sec-title">Detalle por vehículo</p>
     ${cards}
     <div class="alert" style="margin-top:20px"><p>${revisarTotal ? `<strong>${revisarTotal} comprobante${revisarTotal === 1 ? '' : 's'} del período está${revisarTotal === 1 ? '' : 'n'} marcado${revisarTotal === 1 ? '' : 's'} para revisar</strong> (dato incompleto o sin verificar) — están resaltados en amarillo en el Excel adjunto; se recomienda cotejarlos contra la foto del ticket antes de imputar.<br><br>` : ''}El Excel adjunto incluye todos los campos por comprobante (tipo, punto de venta, número, CUIT y razón social del emisor, neto gravado, IVA, otros tributos, percepciones y total) y el enlace a la foto de cada ticket. La mayoría de estos tickets (controlador fiscal de estación de servicio) no siempre figuran en el portal de Comprobantes Recibidos de ARCA, ya que depende de si la estación emite con CAE electrónico — por eso este Excel incluye el listado completo para imputar directamente en el Libro IVA Compras, sin depender de lo que muestre ARCA.</p></div>
-    <p style="font-size:.86rem;color:#64748b;line-height:1.8;margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9">Quedo a disposición por cualquier consulta.<br>Saludos cordiales,<br><strong style="color:#0f172a">Pablo Santamaria</strong><br>${env.FROM_EMAIL || 'santamariapablodaniel@gmail.com'}</p>`;
-  await sendViaBrevo({
-    to: [to], subject: `Comprobantes de combustible — ${mes} (${rows.length})`,
+    <p style="font-size:.86rem;color:#64748b;line-height:1.8;margin-top:28px;padding-top:20px;border-top:1px solid #f1f5f9">Quedo a disposición por cualquier consulta.<br>Saludos cordiales,<br><strong style="color:#0f172a">Pablo Santamaria</strong><br>${env.FROM_EMAIL || env.OWNER_EMAIL || ''}</p>`;
+  const res = await sendViaBrevo({
+    to: [to], bcc: env.OWNER_EMAIL && env.OWNER_EMAIL !== to ? [env.OWNER_EMAIL] : [], // copia oculta al dueño
+    subject: `Comprobantes de combustible — ${mes} (${rows.length})`,
     html: emailShell('Crédito fiscal', header, body, 'Ante cualquier consulta, puede responder directamente a este correo.'),
     attachment: [{ name: `flota-ml-${month}.xlsx`, content: xlsxB64 }],
   }, env);
+  const detalle = res.ok ? 'ok' : `HTTP ${res.status} ${(await res.text().catch(() => '')).slice(0, 200)}`;
+  await registrarEnvio(env, 'contador', month, rows.length, tot('total'), revisarTotal, res.ok, detalle);
+  return { ok: res.ok, detalle, comprobantes: rows.length };
+}
+
+// Registro de cada envío del reporte (para saber SIEMPRE si salió y qué mandó)
+async function registrarEnvio(env, tipo, mes, cantidad, total, pendientes, ok, detalle) {
+  try {
+    await env.DB.prepare(`CREATE TABLE IF NOT EXISTS envios (id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT DEFAULT (datetime('now')),
+      tipo TEXT, mes TEXT, cantidad INTEGER, total REAL, pendientes INTEGER, ok INTEGER, detalle TEXT)`).run();
+    await env.DB.prepare('INSERT INTO envios (tipo,mes,cantidad,total,pendientes,ok,detalle) VALUES (?,?,?,?,?,?,?)')
+      .bind(tipo, mes, cantidad, Math.round((total || 0) * 100) / 100, pendientes || 0, ok ? 1 : 0, detalle).run();
+  } catch (e) { console.error('registrarEnvio:', e.message); }
+}
+async function reporteYaEnviado(env, mes) {
+  try { return !!(await env.DB.prepare(`SELECT 1 FROM envios WHERE tipo='contador' AND mes=? AND ok=1`).bind(mes).first()); }
+  catch (e) { return false; } // la tabla todavía no existe
+}
+// Días 1 a 10, cada mañana: termina de leer lo pendiente y, si el mes quedó todo
+// revisado, manda el reporte al contador. Si hay cargas en revisión avisa al
+// admin y espera (para que el contador no reciba comprobantes en $0); el día 3
+// sale igual, con esas cargas resaltadas en amarillo. Nunca se manda dos veces.
+async function intentarReporteContador(env) {
+  const dia = arNow().getDate();
+  if (dia < 1 || dia > 10) return;
+  const mes = mesAnterior(hoyAR().slice(0, 7));
+  if (await reporteYaEnviado(env, mes)) return;
+  await reintentarPendientes(env, 10).catch(() => { });
+  const pend = await env.DB.prepare(`SELECT COUNT(*) n FROM cargas WHERE substr(fecha,1,7)=? AND (validacion!='ok' OR total IS NULL OR total<=0)`).bind(mes).first();
+  const [y, m] = mes.split('-').map(Number);
+  if (pend?.n > 0 && dia < 3) {
+    await pushToAdmins(env, {
+      title: `🧾 Faltan ${pend.n} carga${pend.n === 1 ? '' : 's'} para el reporte al contador`, tag: 'contador-pendiente',
+      body: `${MESES_ES[m - 1]} ${y}: revisalas en Revisión (cargá el total mirando la foto). El reporte sale solo apenas estén, o el día 3 sí o sí.`,
+    }).catch(() => { });
+    return;
+  }
+  const r = await sendContadorReport(env, mes);
+  if (r && !r.ok) await pushToAdmins(env, { title: '⚠️ No salió el reporte al contador', body: `${mes}: ${r.detalle}. Se reintenta mañana.`, tag: 'contador-error' }).catch(() => { });
+}
+async function handleAdminEnvios(request, env) {
+  const admin = await reqAdmin(request, env);
+  if (!admin) return noAuth();
+  try { return json({ ok: true, envios: (await env.DB.prepare('SELECT * FROM envios ORDER BY id DESC LIMIT 50').all()).results }); }
+  catch (e) { return json({ ok: true, envios: [] }); }
 }
 
 // ── Reporte dueño (día 1, mes anterior) ──────────────────────────────────────

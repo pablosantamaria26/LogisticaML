@@ -7,6 +7,9 @@ name = "logisticaml"
 main = "worker/worker.js"
 compatibility_date = "2026-03-05"
 compatibility_flags = ["nodejs_compat"]
+# keep_vars: conserva las variables ya cargadas en Cloudflare que no están acá
+# (FROM_EMAIL vive allá, no en el repo público).
+keep_vars = true
 
 # ── CRON (límite 5 por CUENTA free — usamos 3, ramifica por fecha AR adentro) ─
 #  "*/15 * * * *" → cola de lectura IA: reintenta las cargas que quedaron 'procesando'
@@ -19,6 +22,10 @@ crons = ["*/15 * * * *", "0 11 * * *", "0 12 * * *"]
 binding = "FLOTA_KV"
 id = "c33c0e4c860c4a3cbbca28ff13be1541"
 
+# Segundo motor de lectura (Cloudflare Workers AI, gratis en esta cuenta)
+[ai]
+binding = "AI"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "flota-ml"
@@ -30,7 +37,6 @@ database_id = "d7fb5ae3-f035-4de6-9ea0-3f7bfed3993f"
 # bucket_name = "flota-ml-fotos"
 
 [vars]
-FROM_EMAIL = "santamariapablodaniel@gmail.com"
 VAPID_PUBLIC_KEY = "BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY"
 
 [observability]
