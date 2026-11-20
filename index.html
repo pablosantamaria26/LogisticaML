@@ -406,7 +406,7 @@ const API = 'https://logisticaml.santamariapablodaniel.workers.dev';
 const VAPID_PUBLIC = 'BO5ffoUk2v9SANCQEHtJoApnWxSVk2ozvV-Cc_yG_ktp7bo339VqwL99kbgEYfWWzjFbYCZGsdqLIy9BnI8IUZY';
 // Se bumpea junto con version.json en CADA publicación (ver worker/bump-version.js) —
 // permite detectar código desactualizado aunque el celular no vuelva a pedir la red.
-const APP_VERSION = '20261120-022545';
+const APP_VERSION = '20261120-023029';
 const SV_NOMBRES = {'oil-change':'🛢️ Service completo', tires:'⚙️ Neumáticos', suspension:'🔧 Suspensión', brakes:'🛑 Frenos', other:'🔩 Otro'};
 const W_LABELS = {ocr_ticket_fallo:'OCR falló', montos_no_cierran:'Montos no cierran', litros_x_precio_no_coincide:'Litros×precio ≠ neto',
   cuit_emisor_invalido:'CUIT emisor inválido', cuit_receptor_invalido:'CUIT receptor mal leído', sin_numero_comprobante:'Sin Nº comprobante',
@@ -598,7 +598,7 @@ const App = {
   async refreshMe(){
     const d=await api('/api/me');
     S.user=d.user; S.veh=d.vehiculo; S.mant=d.mantenimiento; S.vehiculos=d.vehiculos||[];
-    if(d.appMin&&d.appMin!=='PENDIENTE'&&APP_VERSION<d.appMin)aplicarActualizacion();
+    if(d.appMin&&d.appMin!=='PENDIENTE'&&APP_VERSION<d.appMin)avisarActualizacion();
     localStorage.setItem('fml2_user',JSON.stringify(d.user));
     if(d.vehiculo)localStorage.setItem('fml2_veh',JSON.stringify(d.vehiculo));
     this.updateHeader();
@@ -1612,8 +1612,32 @@ async function chequearActualizacion(){
     const r=await fetch('/LogisticaML/version.json?t='+Date.now(),{cache:'no-store'});
     if(!r.ok)return;
     const d=await r.json();
-    if(d.v && d.v!==APP_VERSION)aplicarActualizacion();
+    if(d.v && d.v!==APP_VERSION)avisarActualizacion();
   }catch(e){ /* sin señal — no hacer nada, se reintenta en el próximo chequeo */ }
+}
+// Aviso de versión nueva: tapa la pantalla con un solo botón "Actualizar ahora"
+// (no se puede cerrar sin actualizar). No aparece en medio de una foto: espera
+// a que la cámara se cierre y la foto quede guardada.
+function avisarActualizacion(){
+  if(Foto.abierta || Carga.preparando.ticket || Carga.preparando.tablero || Serv._procesando){ setTimeout(avisarActualizacion,5000); return; }
+  if($('upd-bg'))return; // ya está a la vista
+  const bg=document.createElement('div');
+  bg.id='upd-bg';
+  bg.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(5,12,20,.82);display:flex;align-items:center;justify-content:center;padding:1.2rem';
+  bg.innerHTML=`<div class="card" style="max-width:380px;width:100%;text-align:center;padding:1.6rem 1.3rem;border:2px solid var(--acc)">
+    <div style="font-size:2.6rem">🔄</div>
+    <h3 style="margin:.4rem 0 .5rem">Hay una nueva versión</h3>
+    <p class="muted" style="font-size:.86rem;margin:0 0 1.1rem;line-height:1.5">Tocá <b>Actualizar ahora</b>: tarda unos segundos y no se pierde nada (las fotos y las cargas pendientes quedan guardadas).</p>
+    <button class="btn btn-acc btn-big" id="upd-btn" onclick="actualizarDesdeAviso()">Actualizar ahora</button>
+    <p class="muted" id="upd-msg" style="font-size:.75rem;margin:.7rem 0 0"></p></div>`;
+  document.body.appendChild(bg);
+  haptic('med');
+}
+async function actualizarDesdeAviso(){
+  const b=$('upd-btn'); if(b){ b.disabled=true; b.innerHTML='<span class="spin" style="border-top-color:#fff"></span> Actualizando…'; }
+  const ok=await aplicarActualizacion();
+  // Si no recargó (freno anti-loop: la versión nueva todavía se está publicando)
+  if(ok===false&&b){ b.disabled=false; b.textContent='Reintentar'; $('upd-msg').textContent='La versión nueva todavía se está publicando — probá de nuevo en un minuto.'; }
 }
 async function aplicarActualizacion(){
   // Solo se espera si la cámara está abierta o se está preparando/enviando una
@@ -1628,7 +1652,7 @@ async function aplicarActualizacion(){
   if(!g.ts || ahora-g.ts>60000) g={ts:ahora,n:0};
   g.n=(g.n||0)+1;
   sessionStorage.setItem(key,JSON.stringify(g));
-  if(g.n>4){ console.warn('Actualización: demasiados intentos de recarga, se pausa por esta vez.'); return; }
+  if(g.n>4){ console.warn('Actualización: demasiados intentos de recarga, se pausa por esta vez.'); return false; }
   // Actualización "dura": Service Worker nuevo + caché vacío, así la recarga
   // trae sí o sí la versión publicada (la cola y el borrador viven en
   // IndexedDB, que esto NO toca).
